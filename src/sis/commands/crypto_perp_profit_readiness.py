@@ -5,6 +5,7 @@ from decimal import Decimal
 import hashlib
 import json
 from pathlib import Path
+from typing import Any
 
 import typer
 
@@ -47,6 +48,14 @@ from sis.crypto_perp.tournament import CryptoPerpTournamentReport
 from sis.crypto_perp.tournament_gate import CryptoPerpTournamentGate
 
 TICKER_MANIFEST_SCHEMA_VERSION = "crypto_perp_ticker_manifest.v1"
+TICKER_REQUIRED_METADATA_FIELDS = (
+    "last_px",
+    "bid_px",
+    "ask_px",
+    "mark_px",
+    "index_px",
+    "funding_rate",
+)
 
 
 def _utc_now() -> datetime:
@@ -95,9 +104,10 @@ def _parse_source_refs(values: list[str] | None) -> list[dict[str, str]]:
 
 def _parse_ticker_manifests(
     paths: list[Path] | None,
-) -> tuple[list[dict[str, str]], dict[str, int]]:
+) -> tuple[list[dict[str, str]], dict[str, int], dict[str, dict[str, Any]]]:
     refs: list[dict[str, str]] = []
     row_count = 0
+    ticker_metadata: dict[str, Any] = {}
     for path in paths or []:
         payload = _json_object(path)
         schema_version = str(payload.get("schema_version", ""))
@@ -117,8 +127,31 @@ def _parse_ticker_manifests(
         if count <= 0:
             raise ValueError(f"ticker manifest row_count_after_dedupe must be positive: {path}")
         row_count += count
+        fields_present = [str(field) for field in payload.get("fields_present", [])]
+        window = payload.get("window", {})
+        window_values = window if isinstance(window, dict) else {}
+        ticker_metadata = {
+            "coverage_class": str(payload.get("coverage_class", "")),
+            "coverage_start_ms": window_values.get("start_ms"),
+            "coverage_end_ms": window_values.get("end_ms"),
+            "exchange": str(payload.get("exchange", "")),
+            "fields_present": fields_present,
+            "market_type": str(payload.get("market_type", "")),
+            "missing_fields": [
+                field for field in TICKER_REQUIRED_METADATA_FIELDS if field not in fields_present
+            ],
+            "raw_inputs": [str(item) for item in payload.get("raw_inputs", [])],
+            "supports_cost_adjusted_estimate": payload.get("supports_cost_adjusted_estimate"),
+            "supports_edge_action": payload.get("supports_edge_action"),
+            "symbols": [str(symbol) for symbol in payload.get("symbols", [])],
+            "warnings": [str(warning) for warning in payload.get("warnings", [])],
+        }
         refs.append(_local_file_source_ref(path, schema_version))
-    return refs, ({"ticker": row_count} if row_count > 0 else {})
+    return (
+        refs,
+        ({"ticker": row_count} if row_count > 0 else {}),
+        ({"ticker": ticker_metadata} if ticker_metadata else {}),
+    )
 
 
 def _render_cash_ledger_markdown(ledger: CryptoPerpCashLedger) -> str:
@@ -264,7 +297,11 @@ def register_crypto_perp_profit_readiness_commands(app: typer.Typer) -> None:
         try:
             event_artifact = CryptoPerpEvent.model_validate(_json_object(event))
             outcome_artifact = CryptoPerpOutcome.model_validate(_json_object(outcome))
-            ticker_source_refs, extra_source_row_counts = _parse_ticker_manifests(ticker_manifest)
+            (
+                ticker_source_refs,
+                extra_source_row_counts,
+                extra_source_metadata,
+            ) = _parse_ticker_manifests(ticker_manifest)
             extra_source_refs = [
                 *_parse_source_refs(source_ref),
                 *ticker_source_refs,
@@ -279,6 +316,7 @@ def register_crypto_perp_profit_readiness_commands(app: typer.Typer) -> None:
                 notional_usd=Decimal(notional_usd),
                 extra_source_refs=extra_source_refs,
                 extra_source_row_counts=extra_source_row_counts,
+                extra_source_metadata=extra_source_metadata,
             )
             # Rebuild once for concrete artifact objects and write them in the same run directory.
             source = build_source_availability(
@@ -290,6 +328,7 @@ def register_crypto_perp_profit_readiness_commands(app: typer.Typer) -> None:
                     _source_ref(outcome, outcome_artifact.schema_version),
                     *extra_source_refs,
                 ],
+                source_metadata=extra_source_metadata,
             )
             replay = build_replay_slice(
                 event=event_artifact,

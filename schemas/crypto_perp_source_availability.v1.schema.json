@@ -82,7 +82,8 @@
         "available": {"type": "boolean"},
         "row_count": {"type": ["integer", "null"], "minimum": 0},
         "reason": {"type": "string", "minLength": 1},
-        "source_refs": {"type": "array", "items": {"type": "object"}}
+        "source_refs": {"type": "array", "items": {"type": "object"}},
+        "metadata": {"type": "object", "additionalProperties": true}
       }
     }
   }

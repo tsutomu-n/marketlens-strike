@@ -576,6 +576,7 @@ def _source_availability_matrix(
                 "available": status_by_id[source_id].available,
                 "row_count": status_by_id[source_id].row_count,
                 "reason": status_by_id[source_id].reason,
+                "metadata": status_by_id[source_id].metadata,
             }
             for source_id in _source_ids()
         }

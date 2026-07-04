@@ -956,8 +956,36 @@ def test_profit_readiness_run_local_accepts_ticker_manifest_row_count(
     by_source = {item["source_id"]: item for item in source["source_statuses"]}
     assert by_source["ticker"]["available"] is True
     assert by_source["ticker"]["row_count"] == 2
+    assert by_source["ticker"]["metadata"] == {
+        "coverage_class": "native",
+        "coverage_start_ms": 1710000000000,
+        "coverage_end_ms": 1710000300000,
+        "exchange": "bitget",
+        "fields_present": ["last_px", "bid_px", "ask_px", "funding_rate"],
+        "market_type": "perp_linear",
+        "missing_fields": ["index_px", "mark_px"],
+        "raw_inputs": ["bitget.mix.market.tickers"],
+        "supports_cost_adjusted_estimate": True,
+        "supports_edge_action": True,
+        "symbols": ["BTCUSDT"],
+        "warnings": [],
+    }
     assert by_source["ticker"]["source_refs"][0]["schema_version"] == (
         "crypto_perp_ticker_manifest.v1"
     )
     assert source["can_compute_cost_adjusted_estimate"] is True
     assert source["can_compute_actual_cash"] is False
+
+    summaries, _, _ = build_pre_actual_cash_evidence_pack(
+        data_dir=tmp_path / "inputs",
+        created_at="2026-06-21T07:00:00Z",
+        notional_usd=Decimal("100"),
+        min_events=1,
+    )
+    source_event = summaries["source_availability_matrix"]["events"][0]
+    assert source_event["sources"]["ticker"]["metadata"]["coverage_class"] == "native"
+    assert source_event["sources"]["ticker"]["metadata"]["coverage_start_ms"] == 1710000000000
+    assert source_event["sources"]["ticker"]["metadata"]["missing_fields"] == [
+        "index_px",
+        "mark_px",
+    ]

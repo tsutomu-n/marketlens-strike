@@ -636,6 +636,7 @@ def build_profit_readiness_run(
     notional_usd: Decimal,
     extra_source_refs: Sequence[dict[str, str]] | None = None,
     extra_source_row_counts: Mapping[str, int] | None = None,
+    extra_source_metadata: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> ProfitReadinessRunManifest:
     if outcome.event_id != event.event_id:
         raise ValueError("event and outcome event_id must match")
@@ -651,6 +652,7 @@ def build_profit_readiness_run(
         available_sources={"outcome": True},
         row_counts=source_row_counts,
         source_refs=source_refs,
+        source_metadata=extra_source_metadata,
     )
     replay = build_replay_slice(
         event=event,

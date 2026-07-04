@@ -34,6 +34,7 @@ class SourceAvailabilityStatus(BaseModel):
     row_count: int | None = Field(default=None, ge=0)
     reason: str
     source_refs: list[dict[str, str]] = Field(default_factory=list)
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class CryptoPerpSourceAvailability(BaseModel):
@@ -109,6 +110,7 @@ def _status(
     provided: Mapping[str, bool],
     row_counts: Mapping[str, int],
     source_refs: Sequence[dict[str, str]],
+    source_metadata: Mapping[str, Mapping[str, Any]],
 ) -> SourceAvailabilityStatus:
     row_count = row_counts.get(source_id)
     available = (
@@ -141,6 +143,7 @@ def _status(
         row_count=row_count,
         reason=reason,
         source_refs=refs,
+        metadata=dict(source_metadata.get(source_id, {})),
     )
 
 
@@ -151,6 +154,7 @@ def build_source_availability(
     available_sources: Mapping[str, bool] | None = None,
     row_counts: Mapping[str, int] | None = None,
     source_refs: Sequence[dict[str, str]] | None = None,
+    source_metadata: Mapping[str, Mapping[str, Any]] | None = None,
     known_gaps: Sequence[str] | None = None,
     producer_command: str = "crypto-perp-source-availability",
 ) -> CryptoPerpSourceAvailability:
@@ -165,6 +169,7 @@ def build_source_availability(
             provided=provided,
             row_counts=counts,
             source_refs=refs,
+            source_metadata=source_metadata or {},
         )
         for source_id in (
             "event",
