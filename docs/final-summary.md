@@ -1,9 +1,67 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-04_19:50 JST
+更新日: 2026-07-04_21:53 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: 10 Event / 10 Outcome Writer Dogfood
+
+Completed on branch `ai/pre-actual-cash-10-event-dogfood-20260704-2146`.
+
+Goal:
+
+- Dogfood the existing internal `write_pre_actual_cash_evidence_pack()` helper with 10 fixture events and 10 fixture outcomes through file output.
+- Keep the surface internal; do not add a public CLI, actual cash source, cash ledger, actual-cash rows, tiny-live behavior, live orders, external writes, or ML/LLM trade decisions.
+
+Achieved:
+
+- Added a 10 event / 10 outcome writer test in `tests/crypto_perp/test_profit_readiness_local_automation.py`.
+- Reused existing `_write_event_outcome_pairs(root, 10)` fixture setup and wrote the pack to `tmp_path / "pack"`.
+- Confirmed the writer emits the 11 expected artifacts: the 9 JSON summary artifacts from `PRE_ACTUAL_CASH_SUMMARY_ARTIFACT_NAMES`, plus `decision.json` and `decision.md`.
+- Validated written `decision.json` against `crypto_perp_pre_actual_cash_decision.v1.schema.json`.
+- Confirmed `decision.event_count == 10`, `decision.outcome_count == 10`, and decision remains one of `KILL`, `REVISE_EVENT_DEFINITION`, `COLLECT_MORE_SOURCES`, or `HOLD_FOR_FUTURE_ACTUAL_CASH`.
+- Confirmed all `non_goal_flags` are `false`.
+- Confirmed `decision.md` displays `event_count`, `outcome_count`, `main_source_gaps`, `selected_action_counts`, `leader_action`, `bias_guard_status`, `pbo_status`, false non-goal boundary flags, and the pre-actual-cash boundary sentence.
+- Production code did not need changes.
+
+Changed files:
+
+- `tests/crypto_perp/test_profit_readiness_local_automation.py`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/crypto_perp/test_profit_readiness_local_automation.py -q` -> 12 passed.
+- `uv run ruff check src/sis/crypto_perp/pre_actual_cash.py tests/crypto_perp/test_profit_readiness_local_automation.py` -> passed.
+- `uv run ruff format --check src/sis/crypto_perp/pre_actual_cash.py tests/crypto_perp/test_profit_readiness_local_automation.py` -> 2 files already formatted.
+- `uv run python scripts/check_current_docs.py` -> passed.
+- `uv run python scripts/check_cli_catalog.py` -> passed.
+- `./scripts/check` -> passed.
+
+Remaining work:
+
+- None for the 10 event / 10 outcome fixture writer dogfood.
+
+Usable scope:
+
+- Internal writer/helper only. This does not expose a public CLI and does not prove actual cash profit, actual cash readiness, tiny-live readiness, live trading readiness, wallet/signing readiness, or exchange-write readiness.
+
+Destructive change:
+
+No. This is additive test/docs coverage.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+- Revert the two changed files listed above.
 
 ## Latest Addendum: Pre Actual Cash Writer Helper
 
