@@ -828,3 +828,52 @@ def test_pre_actual_cash_pack_reads_existing_run_manifest(tmp_path: Path) -> Non
     assert run_manifest["missing_pair_count"] == 0
     assert run_manifest["existing_manifest_known_gap_count"] == len(manifest["known_gaps"])
     assert run_manifest["manifests"][0]["known_gap_count"] == len(manifest["known_gaps"])
+
+
+def test_profit_readiness_run_local_accepts_explicit_ticker_source_ref(
+    tmp_path: Path,
+) -> None:
+    event = _event()
+    outcome = _outcome(event.event_id)
+    event_path = _write_json(tmp_path / "inputs/events/event.json", event)
+    outcome_path = _write_json(tmp_path / "inputs/outcomes/outcome.json", outcome)
+    ticker_proxy_path = _write_json(
+        tmp_path / "inputs/ticker_proxy/event_ticker_proxy.json",
+        {
+            "schema_version": "crypto_perp_ticker_proxy.v1",
+            "event_id": event.event_id,
+            "symbol": "BTCUSDT",
+            "source_kind": "public_candle_close_as_ticker_proxy",
+            "observed_at": event.information_cutoff_at.isoformat(),
+            "known_gaps": ["NOT_EXCHANGE_TICKER_SNAPSHOT"],
+        },
+    )
+
+    run_result = runner.invoke(
+        app,
+        [
+            "crypto-perp-profit-readiness-run-local",
+            "--event",
+            str(event_path),
+            "--outcome",
+            str(outcome_path),
+            "--out",
+            str(tmp_path / "run"),
+            "--notional-usd",
+            "100",
+            "--source-ref",
+            f"{ticker_proxy_path}=crypto_perp_ticker_proxy.v1",
+        ],
+    )
+
+    assert run_result.exit_code == 0, run_result.stdout
+    source = json.loads((tmp_path / "run/source_availability.json").read_text(encoding="utf-8"))
+    by_source = {item["source_id"]: item for item in source["source_statuses"]}
+    assert by_source["ticker"]["available"] is True
+    assert by_source["ticker"]["reason"] == "available"
+    assert source["can_compute_cost_adjusted_estimate"] is True
+    assert source["can_compute_actual_cash"] is False
+
+    edge = json.loads((tmp_path / "run/edge_score.json").read_text(encoding="utf-8"))
+    assert edge["selected_action"] != "UNKNOWN"
+    assert "EDGE_SCORE_UNKNOWN_COST_ADJUSTED_INPUTS_MISSING" not in edge["known_gaps"]

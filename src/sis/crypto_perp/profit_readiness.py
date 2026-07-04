@@ -634,16 +634,21 @@ def build_profit_readiness_run(
     event_path: Path,
     outcome_path: Path,
     notional_usd: Decimal,
+    extra_source_refs: Sequence[dict[str, str]] | None = None,
 ) -> ProfitReadinessRunManifest:
     if outcome.event_id != event.event_id:
         raise ValueError("event and outcome event_id must match")
     created = ensure_utc_aware("created_at", created_at)
+    source_refs = [
+        _sha_ref(outcome_path, outcome.schema_version),
+        *(dict(ref) for ref in extra_source_refs or []),
+    ]
     source = build_source_availability(
         event=event,
         created_at=created,
         available_sources={"outcome": True},
         row_counts={"outcome": 1},
-        source_refs=[_sha_ref(outcome_path, outcome.schema_version)],
+        source_refs=source_refs,
     )
     replay = build_replay_slice(
         event=event,
@@ -710,6 +715,7 @@ def build_profit_readiness_run(
         source_refs=[
             _sha_ref(event_path, event.schema_version),
             _sha_ref(outcome_path, outcome.schema_version),
+            *(dict(ref) for ref in extra_source_refs or []),
         ],
         run_id=stable_hash(
             [
