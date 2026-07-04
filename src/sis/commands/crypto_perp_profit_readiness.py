@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from decimal import Decimal
+import hashlib
 import json
 from pathlib import Path
 
@@ -63,6 +64,28 @@ def _source_ref(path: Path, schema_version: str | None = None) -> dict[str, str]
     if schema_version:
         ref["schema_version"] = schema_version
     return ref
+
+
+def _local_file_source_ref(path: Path, schema_version: str | None = None) -> dict[str, str]:
+    ref = {"path": path.as_posix(), "sha256": "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()}
+    if schema_version:
+        ref["schema_version"] = schema_version
+    return ref
+
+
+def _parse_source_refs(values: list[str] | None) -> list[dict[str, str]]:
+    refs: list[dict[str, str]] = []
+    for value in values or []:
+        raw = value.strip()
+        if not raw:
+            continue
+        raw_path, raw_schema = raw, None
+        if "=" in raw:
+            raw_path, raw_schema = raw.split("=", 1)
+        path = Path(raw_path.strip())
+        schema_version = raw_schema.strip() if raw_schema else None
+        refs.append(_local_file_source_ref(path, schema_version or None))
+    return refs
 
 
 def _render_cash_ledger_markdown(ledger: CryptoPerpCashLedger) -> str:
