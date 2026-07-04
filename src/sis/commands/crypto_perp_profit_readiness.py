@@ -46,6 +46,8 @@ from sis.crypto_perp.outcomes import CryptoPerpOutcome
 from sis.crypto_perp.tournament import CryptoPerpTournamentReport
 from sis.crypto_perp.tournament_gate import CryptoPerpTournamentGate
 
+TICKER_MANIFEST_SCHEMA_VERSION = "crypto_perp_ticker_manifest.v1"
+
 
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc).replace(microsecond=0)
@@ -89,6 +91,31 @@ def _parse_source_refs(values: list[str] | None) -> list[dict[str, str]]:
         schema_version = raw_schema.strip() if raw_schema else None
         refs.append(_local_file_source_ref(path, schema_version or None))
     return refs
+
+
+def _parse_ticker_manifests(
+    paths: list[Path] | None,
+) -> tuple[list[dict[str, str]], dict[str, int]]:
+    refs: list[dict[str, str]] = []
+    row_count = 0
+    for path in paths or []:
+        payload = _json_object(path)
+        schema_version = str(payload.get("schema_version", ""))
+        if schema_version != TICKER_MANIFEST_SCHEMA_VERSION:
+            raise ValueError(
+                f"ticker manifest schema_version must be {TICKER_MANIFEST_SCHEMA_VERSION}: {path}"
+            )
+        if payload.get("supports_cost_adjusted_estimate") is not True:
+            raise ValueError(f"ticker manifest does not support cost-adjusted estimate: {path}")
+        for field in ("credentials_used", "exchange_write_used", "live_order_submitted"):
+            if payload.get(field) is not False:
+                raise ValueError(f"ticker manifest {field} must be false: {path}")
+        count = int(payload.get("row_count_after_dedupe", 0))
+        if count <= 0:
+            raise ValueError(f"ticker manifest row_count_after_dedupe must be positive: {path}")
+        row_count += count
+        refs.append(_local_file_source_ref(path, schema_version))
+    return refs, ({"ticker": row_count} if row_count > 0 else {})
 
 
 def _render_cash_ledger_markdown(ledger: CryptoPerpCashLedger) -> str:
@@ -225,11 +252,20 @@ def register_crypto_perp_profit_readiness_commands(app: typer.Typer) -> None:
             "--source-ref",
             help="Extra local source reference as path[=schema_version]. Repeatable.",
         ),
+        ticker_manifest: list[Path] | None = typer.Option(
+            None,
+            "--ticker-manifest",
+            help="Ticker manifest JSON produced by a native ticker_rows artifact. Repeatable.",
+        ),
     ) -> None:
         try:
             event_artifact = CryptoPerpEvent.model_validate(_json_object(event))
             outcome_artifact = CryptoPerpOutcome.model_validate(_json_object(outcome))
-            extra_source_refs = _parse_source_refs(source_ref)
+            ticker_source_refs, extra_source_row_counts = _parse_ticker_manifests(ticker_manifest)
+            extra_source_refs = [
+                *_parse_source_refs(source_ref),
+                *ticker_source_refs,
+            ]
             manifest = build_profit_readiness_run(
                 event=event_artifact,
                 outcome=outcome_artifact,
@@ -239,13 +275,14 @@ def register_crypto_perp_profit_readiness_commands(app: typer.Typer) -> None:
                 outcome_path=outcome,
                 notional_usd=Decimal(notional_usd),
                 extra_source_refs=extra_source_refs,
+                extra_source_row_counts=extra_source_row_counts,
             )
             # Rebuild once for concrete artifact objects and write them in the same run directory.
             source = build_source_availability(
                 event=event_artifact,
                 created_at=manifest.created_at,
                 available_sources={"outcome": True},
-                row_counts={"outcome": 1},
+                row_counts={"outcome": 1, **extra_source_row_counts},
                 source_refs=[
                     _source_ref(outcome, outcome_artifact.schema_version),
                     *extra_source_refs,

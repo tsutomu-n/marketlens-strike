@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from decimal import Decimal
 import json
@@ -635,6 +635,7 @@ def build_profit_readiness_run(
     outcome_path: Path,
     notional_usd: Decimal,
     extra_source_refs: Sequence[dict[str, str]] | None = None,
+    extra_source_row_counts: Mapping[str, int] | None = None,
 ) -> ProfitReadinessRunManifest:
     if outcome.event_id != event.event_id:
         raise ValueError("event and outcome event_id must match")
@@ -643,11 +644,12 @@ def build_profit_readiness_run(
         _sha_ref(outcome_path, outcome.schema_version),
         *(dict(ref) for ref in extra_source_refs or []),
     ]
+    source_row_counts = {"outcome": 1, **dict(extra_source_row_counts or {})}
     source = build_source_availability(
         event=event,
         created_at=created,
         available_sources={"outcome": True},
-        row_counts={"outcome": 1},
+        row_counts=source_row_counts,
         source_refs=source_refs,
     )
     replay = build_replay_slice(
