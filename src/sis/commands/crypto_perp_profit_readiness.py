@@ -5,7 +5,7 @@ from decimal import Decimal
 import hashlib
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import typer
 
@@ -136,7 +136,7 @@ def _parse_ticker_manifests(
         row_count += count
         fields_present = _string_list(payload, "fields_present", path)
         window = payload.get("window", {})
-        window_values = window if isinstance(window, dict) else {}
+        window_values = cast(dict[str, object], window) if isinstance(window, dict) else {}
         ticker_metadata = {
             "coverage_class": str(payload.get("coverage_class", "")),
             "coverage_start_ms": window_values.get("start_ms"),
