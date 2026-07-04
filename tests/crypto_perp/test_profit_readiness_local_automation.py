@@ -858,6 +858,7 @@ def test_profit_readiness_run_local_accepts_explicit_ticker_source_ref(
             "known_gaps": ["NOT_EXCHANGE_TICKER_SNAPSHOT"],
         },
     )
+    run_dir = tmp_path / "inputs/run"
 
     run_result = runner.invoke(
         app,
@@ -868,7 +869,7 @@ def test_profit_readiness_run_local_accepts_explicit_ticker_source_ref(
             "--outcome",
             str(outcome_path),
             "--out",
-            str(tmp_path / "run"),
+            str(run_dir),
             "--notional-usd",
             "100",
             "--source-ref",
@@ -877,14 +878,14 @@ def test_profit_readiness_run_local_accepts_explicit_ticker_source_ref(
     )
 
     assert run_result.exit_code == 0, run_result.stdout
-    source = json.loads((tmp_path / "run/source_availability.json").read_text(encoding="utf-8"))
+    source = json.loads((run_dir / "source_availability.json").read_text(encoding="utf-8"))
     by_source = {item["source_id"]: item for item in source["source_statuses"]}
     assert by_source["ticker"]["available"] is True
     assert by_source["ticker"]["reason"] == "available"
     assert source["can_compute_cost_adjusted_estimate"] is True
     assert source["can_compute_actual_cash"] is False
 
-    edge = json.loads((tmp_path / "run/edge_score.json").read_text(encoding="utf-8"))
+    edge = json.loads((run_dir / "edge_score.json").read_text(encoding="utf-8"))
     assert edge["selected_action"] != "UNKNOWN"
     assert "EDGE_SCORE_UNKNOWN_COST_ADJUSTED_INPUTS_MISSING" not in edge["known_gaps"]
 
@@ -933,6 +934,7 @@ def test_profit_readiness_run_local_accepts_ticker_manifest_row_count(
             "live_order_submitted": False,
         },
     )
+    run_dir = tmp_path / "inputs/run"
 
     run_result = runner.invoke(
         app,
@@ -943,7 +945,7 @@ def test_profit_readiness_run_local_accepts_ticker_manifest_row_count(
             "--outcome",
             str(outcome_path),
             "--out",
-            str(tmp_path / "run"),
+            str(run_dir),
             "--notional-usd",
             "100",
             "--ticker-manifest",
@@ -952,7 +954,7 @@ def test_profit_readiness_run_local_accepts_ticker_manifest_row_count(
     )
 
     assert run_result.exit_code == 0, run_result.stdout
-    source = json.loads((tmp_path / "run/source_availability.json").read_text(encoding="utf-8"))
+    source = json.loads((run_dir / "source_availability.json").read_text(encoding="utf-8"))
     by_source = {item["source_id"]: item for item in source["source_statuses"]}
     assert by_source["ticker"]["available"] is True
     assert by_source["ticker"]["row_count"] == 2

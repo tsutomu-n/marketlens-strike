@@ -137,9 +137,9 @@ def _parse_ticker_manifests(
             "exchange": str(payload.get("exchange", "")),
             "fields_present": fields_present,
             "market_type": str(payload.get("market_type", "")),
-            "missing_fields": [
+            "missing_fields": sorted(
                 field for field in TICKER_REQUIRED_METADATA_FIELDS if field not in fields_present
-            ],
+            ),
             "raw_inputs": [str(item) for item in payload.get("raw_inputs", [])],
             "supports_cost_adjusted_estimate": payload.get("supports_cost_adjusted_estimate"),
             "supports_edge_action": payload.get("supports_edge_action"),
