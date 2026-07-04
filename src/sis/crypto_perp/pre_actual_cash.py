@@ -420,47 +420,103 @@ def _build_per_event_artifacts(
     *,
     pairs: Sequence[_EventOutcomePair],
     created: datetime,
+    existing_artifacts: _ExistingArtifacts,
 ) -> tuple[
     list[CryptoPerpSourceAvailability],
     list[CryptoPerpReplaySlice],
     list[CryptoPerpFeaturePack],
     list[CryptoPerpEdgeScore],
+    dict[str, dict[str, _ArtifactOrigin]],
     list[str],
 ]:
     source_artifacts: list[CryptoPerpSourceAvailability] = []
     replay_artifacts: list[CryptoPerpReplaySlice] = []
     feature_artifacts: list[CryptoPerpFeaturePack] = []
     edge_artifacts: list[CryptoPerpEdgeScore] = []
+    artifact_origins: dict[str, dict[str, _ArtifactOrigin]] = {
+        "source_availability": {},
+        "replay_slice": {},
+        "feature_pack": {},
+        "edge_score": {},
+    }
     known_gaps: list[str] = []
     for pair in pairs:
-        source = build_source_availability(
-            event=pair.event,
-            created_at=created,
-            available_sources={"outcome": True},
-            row_counts={"outcome": 1},
-            source_refs=[_artifact_ref(pair.outcome_path, pair.outcome.schema_version)],
-            producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
-        )
-        replay = build_replay_slice(
-            event=pair.event,
-            created_at=created,
-            included_sources=["event", "outcome"],
-            row_counts={"event": 1, "outcome": 1},
-            source_refs=[_artifact_ref(pair.outcome_path, pair.outcome.schema_version)],
-            producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
-        )
-        feature = build_feature_pack(
-            event=pair.event,
-            source_availability=source,
-            created_at=created,
-            producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
-        )
-        edge = build_edge_score(
-            feature_pack=feature,
-            source_availability=source,
-            created_at=created,
-            producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
-        )
+        event_id = pair.event.event_id
+        source_record = existing_artifacts.source_availability.get(event_id)
+        if source_record is None:
+            source = build_source_availability(
+                event=pair.event,
+                created_at=created,
+                available_sources={"outcome": True},
+                row_counts={"outcome": 1},
+                source_refs=[_artifact_ref(pair.outcome_path, pair.outcome.schema_version)],
+                producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
+            )
+            artifact_origins["source_availability"][event_id] = _recomputed_origin(
+                "source_availability artifact missing for event_id"
+            )
+        else:
+            source_path, source = source_record
+            artifact_origins["source_availability"][event_id] = _existing_origin(
+                source_path,
+                "matched_by_event_id",
+            )
+
+        replay_record = existing_artifacts.replay_slice.get(event_id)
+        if replay_record is None:
+            replay = build_replay_slice(
+                event=pair.event,
+                created_at=created,
+                included_sources=["event", "outcome"],
+                row_counts={"event": 1, "outcome": 1},
+                source_refs=[_artifact_ref(pair.outcome_path, pair.outcome.schema_version)],
+                producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
+            )
+            artifact_origins["replay_slice"][event_id] = _recomputed_origin(
+                "replay_slice artifact missing for event_id"
+            )
+        else:
+            replay_path, replay = replay_record
+            artifact_origins["replay_slice"][event_id] = _existing_origin(
+                replay_path,
+                "matched_by_event_id",
+            )
+
+        feature_record = existing_artifacts.feature_pack.get(event_id)
+        if feature_record is None:
+            feature = build_feature_pack(
+                event=pair.event,
+                source_availability=source,
+                created_at=created,
+                producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
+            )
+            artifact_origins["feature_pack"][event_id] = _recomputed_origin(
+                "feature_pack artifact missing for event_id"
+            )
+        else:
+            feature_path, feature = feature_record
+            artifact_origins["feature_pack"][event_id] = _existing_origin(
+                feature_path,
+                "matched_by_event_id",
+            )
+
+        edge_record = existing_artifacts.edge_score.get(event_id)
+        if edge_record is None:
+            edge = build_edge_score(
+                feature_pack=feature,
+                source_availability=source,
+                created_at=created,
+                producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
+            )
+            artifact_origins["edge_score"][event_id] = _recomputed_origin(
+                "edge_score artifact missing for event_id"
+            )
+        else:
+            edge_path, edge = edge_record
+            artifact_origins["edge_score"][event_id] = _existing_origin(
+                edge_path,
+                "matched_by_event_id",
+            )
         source_artifacts.append(source)
         replay_artifacts.append(replay)
         feature_artifacts.append(feature)
@@ -474,6 +530,7 @@ def _build_per_event_artifacts(
         replay_artifacts,
         feature_artifacts,
         edge_artifacts,
+        artifact_origins,
         _unique(known_gaps),
     )
 
@@ -495,6 +552,7 @@ def _source_ids() -> tuple[SourceId, ...]:
 
 def _source_availability_matrix(
     source_artifacts: Sequence[CryptoPerpSourceAvailability],
+    origins: Mapping[str, _ArtifactOrigin] | None = None,
 ) -> dict[str, Any]:
     events: list[dict[str, Any]] = []
     can_compute_actual_cash_count = 0
@@ -525,10 +583,12 @@ def _source_availability_matrix(
                 "can_compute_depth": artifact.can_compute_depth,
                 "known_gap_count": len(artifact.known_gaps),
                 "sources": sources,
+                **_origin_for_event(origins, artifact.event_id),
             }
         )
     return {
         "event_count": len(source_artifacts),
+        "artifact_origin_counts": _origin_counts(list(origins.values())) if origins else {},
         "source_ids": list(_source_ids()),
         "can_compute_actual_cash_count": can_compute_actual_cash_count,
         "can_compute_cost_adjusted_estimate_count": can_compute_cost_adjusted_count,
@@ -614,10 +674,14 @@ def _outcomes_summary(
     }
 
 
-def _feature_pack_summary(features: Sequence[CryptoPerpFeaturePack]) -> dict[str, Any]:
+def _feature_pack_summary(
+    features: Sequence[CryptoPerpFeaturePack],
+    origins: Mapping[str, _ArtifactOrigin] | None = None,
+) -> dict[str, Any]:
     optional_counts = [len(feature.available_optional_features) for feature in features]
     return {
         "event_count": len(features),
+        "artifact_origin_counts": _origin_counts(list(origins.values())) if origins else {},
         "optional_feature_count_min": min(optional_counts, default=0),
         "optional_feature_count_max": max(optional_counts, default=0),
         "optional_feature_count_total": sum(optional_counts),
@@ -632,6 +696,7 @@ def _feature_pack_summary(features: Sequence[CryptoPerpFeaturePack]) -> dict[str
                 "available_optional_features": list(feature.available_optional_features),
                 "sets_entry_action": False,
                 "known_gap_count": len(feature.known_gaps),
+                **_origin_for_event(origins, feature.event_id),
             }
             for feature in features
         ],
@@ -647,9 +712,13 @@ def _summary_int(summary: Mapping[str, Any], key: str, default: int = 0) -> int:
     return default
 
 
-def _replay_slice_summary(replays: Sequence[CryptoPerpReplaySlice]) -> dict[str, Any]:
+def _replay_slice_summary(
+    replays: Sequence[CryptoPerpReplaySlice],
+    origins: Mapping[str, _ArtifactOrigin] | None = None,
+) -> dict[str, Any]:
     return {
         "event_count": len(replays),
+        "artifact_origin_counts": _origin_counts(list(origins.values())) if origins else {},
         "future_data_included": any(
             bool(replay.summary.get("future_data_included")) for replay in replays
         ),
@@ -664,16 +733,21 @@ def _replay_slice_summary(replays: Sequence[CryptoPerpReplaySlice]) -> dict[str,
                 "row_counts": dict(replay.row_counts),
                 "future_data_included": bool(replay.summary.get("future_data_included")),
                 "known_gap_count": len(replay.known_gaps),
+                **_origin_for_event(origins, replay.event_id),
             }
             for replay in replays
         ],
     }
 
 
-def _edge_score_summary(edges: Sequence[CryptoPerpEdgeScore]) -> dict[str, Any]:
+def _edge_score_summary(
+    edges: Sequence[CryptoPerpEdgeScore],
+    origins: Mapping[str, _ArtifactOrigin] | None = None,
+) -> dict[str, Any]:
     selected_counts = Counter(edge.selected_action for edge in edges)
     return {
         "event_count": len(edges),
+        "artifact_origin_counts": _origin_counts(list(origins.values())) if origins else {},
         "selected_action_counts": dict(sorted(selected_counts.items())),
         "unknown_selected_action_count": selected_counts.get("UNKNOWN", 0),
         "no_trade_selected_action_count": selected_counts.get("NO_TRADE", 0),
@@ -684,13 +758,17 @@ def _edge_score_summary(edges: Sequence[CryptoPerpEdgeScore]) -> dict[str, Any]:
                 "selected_action": edge.selected_action,
                 "why_no_trade": list(edge.why_no_trade),
                 "known_gap_count": len(edge.known_gaps),
+                **_origin_for_event(origins, edge.event_id),
             }
             for edge in edges
         ],
     }
 
 
-def _tournament_summary(rows: CryptoPerpTournamentRowsV2 | None) -> dict[str, Any]:
+def _tournament_summary(
+    rows: CryptoPerpTournamentRowsV2 | None,
+    origin: _ArtifactOrigin,
+) -> dict[str, Any]:
     if rows is None:
         return {
             "event_count": 0,
@@ -699,6 +777,7 @@ def _tournament_summary(rows: CryptoPerpTournamentRowsV2 | None) -> dict[str, An
             "leader_beats_no_trade": False,
             "known_gap_count": 0,
             "status": "NOT_RUN",
+            **_origin_payload(origin),
         }
     action_totals: dict[str, Decimal] = {}
     for row in rows.rows:
@@ -715,10 +794,14 @@ def _tournament_summary(rows: CryptoPerpTournamentRowsV2 | None) -> dict[str, An
         "actual_cash_result_null_count": sum(
             1 for row in rows.rows if row.actual_cash_result_usd is None
         ),
+        **_origin_payload(origin),
     }
 
 
-def _bias_guard_summary(guard: CryptoPerpBiasGuard | None) -> dict[str, Any]:
+def _bias_guard_summary(
+    guard: CryptoPerpBiasGuard | None,
+    origin: _ArtifactOrigin,
+) -> dict[str, Any]:
     if guard is None:
         return {
             "guard_status": "NOT_RUN",
@@ -726,6 +809,7 @@ def _bias_guard_summary(guard: CryptoPerpBiasGuard | None) -> dict[str, Any]:
             "event_count": 0,
             "known_gaps": ["BIAS_GUARD_NOT_RUN_NO_ROWS"],
             "stop_reasons": ["BIAS_GUARD_NOT_RUN_NO_ROWS"],
+            **_origin_payload(origin),
         }
     return {
         "guard_status": guard.guard_status,
@@ -736,6 +820,7 @@ def _bias_guard_summary(guard: CryptoPerpBiasGuard | None) -> dict[str, Any]:
         "stop_reasons": list(guard.stop_reasons),
         "known_gaps": list(guard.known_gaps),
         "summary": _json_ready(guard.summary),
+        **_origin_payload(origin),
     }
 
 
