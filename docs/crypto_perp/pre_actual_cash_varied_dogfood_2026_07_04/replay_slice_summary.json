@@ -1,0 +1,191 @@
+{
+  "event_count": 10,
+  "artifact_origin_counts": {
+    "recomputed_minimal": 10
+  },
+  "future_data_included": false,
+  "row_count_total": 20,
+  "known_gap_count": 0,
+  "events": [
+    {
+      "event_id": "event-varied-00",
+      "included_sources": [
+        "event",
+        "outcome"
+      ],
+      "row_counts": {
+        "event": 1,
+        "outcome": 1
+      },
+      "future_data_included": false,
+      "known_gap_count": 0,
+      "outcome_id": "e6095ddaa347050ba039314fc58009bce9e953df274a806b51ddc2882d236548",
+      "artifact_origin": "recomputed_minimal",
+      "artifact_path": null,
+      "artifact_gap_origin": "minimal recomputed from event/outcome only",
+      "artifact_match_note": "replay_slice artifact missing for event_id"
+    },
+    {
+      "event_id": "event-varied-01",
+      "included_sources": [
+        "event",
+        "outcome"
+      ],
+      "row_counts": {
+        "event": 1,
+        "outcome": 1
+      },
+      "future_data_included": false,
+      "known_gap_count": 0,
+      "outcome_id": "2fc7f187f6cc6fd8fc99cd78d41971521db1140256b9b59751b23e5206cc0852",
+      "artifact_origin": "recomputed_minimal",
+      "artifact_path": null,
+      "artifact_gap_origin": "minimal recomputed from event/outcome only",
+      "artifact_match_note": "replay_slice artifact missing for event_id"
+    },
+    {
+      "event_id": "event-varied-02",
+      "included_sources": [
+        "event",
+        "outcome"
+      ],
+      "row_counts": {
+        "event": 1,
+        "outcome": 1
+      },
+      "future_data_included": false,
+      "known_gap_count": 0,
+      "outcome_id": "3e18b18d0dfdccfd8a689c878ab9fb481ba89a0d64c30498924388484ae1ed2b",
+      "artifact_origin": "recomputed_minimal",
+      "artifact_path": null,
+      "artifact_gap_origin": "minimal recomputed from event/outcome only",
+      "artifact_match_note": "replay_slice artifact missing for event_id"
+    },
+    {
+      "event_id": "event-varied-03",
+      "included_sources": [
+        "event",
+        "outcome"
+      ],
+      "row_counts": {
+        "event": 1,
+        "outcome": 1
+      },
+      "future_data_included": false,
+      "known_gap_count": 0,
+      "outcome_id": "cada1c3ac1c14c9d9eb7e248cc79f15ad58519d6593d384f7d1d6ff18a49b21e",
+      "artifact_origin": "recomputed_minimal",
+      "artifact_path": null,
+      "artifact_gap_origin": "minimal recomputed from event/outcome only",
+      "artifact_match_note": "replay_slice artifact missing for event_id"
+    },
+    {
+      "event_id": "event-varied-04",
+      "included_sources": [
+        "event",
+        "outcome"
+      ],
+      "row_counts": {
+        "event": 1,
+        "outcome": 1
+      },
+      "future_data_included": false,
+      "known_gap_count": 0,
+      "outcome_id": "e6b142fc68cf23443b8f6c296c0e1d423b061be589bb7b97d647d208d66e8c91",
+      "artifact_origin": "recomputed_minimal",
+      "artifact_path": null,
+      "artifact_gap_origin": "minimal recomputed from event/outcome only",
+      "artifact_match_note": "replay_slice artifact missing for event_id"
+    },
+    {
+      "event_id": "event-varied-05",
+      "included_sources": [
+        "event",
+        "outcome"
+      ],
+      "row_counts": {
+        "event": 1,
+        "outcome": 1
+      },
+      "future_data_included": false,
+      "known_gap_count": 0,
+      "outcome_id": "20c4d79e5416d965c4fd70e816543cc6b41b026a8c267f09cab98709cefc15fd",
+      "artifact_origin": "recomputed_minimal",
+      "artifact_path": null,
+      "artifact_gap_origin": "minimal recomputed from event/outcome only",
+      "artifact_match_note": "replay_slice artifact missing for event_id"
+    },
+    {
+      "event_id": "event-varied-06",
+      "included_sources": [
+        "event",
+        "outcome"
+      ],
+      "row_counts": {
+        "event": 1,
+        "outcome": 1
+      },
+      "future_data_included": false,
+      "known_gap_count": 0,
+      "outcome_id": "296e0a5b53ae4760fc9c85a5ce5d0da94c25b95d290f66f2167e37b8dc065e00",
+      "artifact_origin": "recomputed_minimal",
+      "artifact_path": null,
+      "artifact_gap_origin": "minimal recomputed from event/outcome only",
+      "artifact_match_note": "replay_slice artifact missing for event_id"
+    },
+    {
+      "event_id": "event-varied-07",
+      "included_sources": [
+        "event",
+        "outcome"
+      ],
+      "row_counts": {
+        "event": 1,
+        "outcome": 1
+      },
+      "future_data_included": false,
+      "known_gap_count": 0,
+      "outcome_id": "9ba598522e7571d821e82a574b105a6e866fd75ea898d6aa9b937334324de685",
+      "artifact_origin": "recomputed_minimal",
+      "artifact_path": null,
+      "artifact_gap_origin": "minimal recomputed from event/outcome only",
+      "artifact_match_note": "replay_slice artifact missing for event_id"
+    },
+    {
+      "event_id": "event-varied-08",
+      "included_sources": [
+        "event",
+        "outcome"
+      ],
+      "row_counts": {
+        "event": 1,
+        "outcome": 1
+      },
+      "future_data_included": false,
+      "known_gap_count": 0,
+      "outcome_id": "5760bc21531b8dc7f8845b4203354eeec0332e28673a5621f4907a620e41e3a1",
+      "artifact_origin": "recomputed_minimal",
+      "artifact_path": null,
+      "artifact_gap_origin": "minimal recomputed from event/outcome only",
+      "artifact_match_note": "replay_slice artifact missing for event_id"
+    },
+    {
+      "event_id": "event-varied-09",
+      "included_sources": [
+        "event",
+        "outcome"
+      ],
+      "row_counts": {
+        "event": 1,
+        "outcome": 1
+      },
+      "future_data_included": false,
+      "known_gap_count": 0,
+      "outcome_id": "89949289f5d1c2a8e02f1a42667401d20084439e569d376883e8581702e99eeb",
+      "artifact_origin": "recomputed_minimal",
+      "artifact_path": null,
+      "artifact_gap_origin": "minimal recomputed from event/outcome only",
+      "artifact_match_note": "replay_slice artifact missing for event_id"
+    }
+  ]
+}

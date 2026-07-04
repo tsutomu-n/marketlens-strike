@@ -1,0 +1,154 @@
+{
+  "sources": {
+    "event": {
+      "missing_event_count": 0,
+      "reason_codes": []
+    },
+    "bars": {
+      "missing_event_count": 10,
+      "reason_codes": [
+        "BARS_SOURCE_MISSING"
+      ]
+    },
+    "ticker": {
+      "missing_event_count": 10,
+      "reason_codes": [
+        "TICKER_SOURCE_MISSING"
+      ]
+    },
+    "funding": {
+      "missing_event_count": 0,
+      "reason_codes": []
+    },
+    "trades": {
+      "missing_event_count": 10,
+      "reason_codes": [
+        "TRADES_SOURCE_MISSING"
+      ]
+    },
+    "books": {
+      "missing_event_count": 10,
+      "reason_codes": [
+        "BOOKS_SOURCE_MISSING"
+      ]
+    },
+    "outcome": {
+      "missing_event_count": 0,
+      "reason_codes": []
+    },
+    "replay": {
+      "missing_event_count": 10,
+      "reason_codes": [
+        "REPLAY_SOURCE_MISSING"
+      ]
+    },
+    "cash_ledger": {
+      "missing_event_count": 10,
+      "reason_codes": [
+        "CASH_LEDGER_SOURCE_MISSING"
+      ]
+    },
+    "live_measurement": {
+      "missing_event_count": 10,
+      "reason_codes": [
+        "LIVE_MEASUREMENT_SOURCE_MISSING"
+      ]
+    }
+  },
+  "global_known_gaps": [
+    "ACTUAL_CASH_SOURCE_MISSING",
+    "BOOKS_SOURCE_MISSING",
+    "CASH_LEDGER_SOURCE_MISSING",
+    "DEPTH_10BPS_SOURCE_MISSING",
+    "EDGE_SCORE_UNKNOWN_COST_ADJUSTED_INPUTS_MISSING",
+    "LIVE_MEASUREMENT_SOURCE_MISSING",
+    "OFI_SOURCE_MISSING",
+    "REPLAY_SOURCE_MISSING",
+    "TRADES_SOURCE_MISSING",
+    "TRADE_SIGN_IMBALANCE_SOURCE_MISSING"
+  ],
+  "artifact_usage": {
+    "per_event_artifacts": {
+      "edge_score": {
+        "recomputed_minimal": 10
+      },
+      "feature_pack": {
+        "recomputed_minimal": 10
+      },
+      "replay_slice": {
+        "recomputed_minimal": 10
+      },
+      "source_availability": {
+        "recomputed_minimal": 10
+      }
+    },
+    "tournament_rows_v2": {
+      "artifact_origin": "recomputed_minimal",
+      "artifact_path": null,
+      "artifact_gap_origin": "minimal recomputed from event/outcome only",
+      "artifact_match_note": "tournament_rows_v2 artifact missing for event set"
+    },
+    "bias_guard": {
+      "artifact_origin": "recomputed_minimal",
+      "artifact_path": null,
+      "artifact_gap_origin": "minimal recomputed from event/outcome only",
+      "artifact_match_note": "bias_guard artifact missing for event count"
+    },
+    "event_outcome_pairs": [
+      {
+        "event_id": "event-varied-00",
+        "outcome_id": "e6095ddaa347050ba039314fc58009bce9e953df274a806b51ddc2882d236548"
+      },
+      {
+        "event_id": "event-varied-01",
+        "outcome_id": "2fc7f187f6cc6fd8fc99cd78d41971521db1140256b9b59751b23e5206cc0852"
+      },
+      {
+        "event_id": "event-varied-02",
+        "outcome_id": "3e18b18d0dfdccfd8a689c878ab9fb481ba89a0d64c30498924388484ae1ed2b"
+      },
+      {
+        "event_id": "event-varied-03",
+        "outcome_id": "cada1c3ac1c14c9d9eb7e248cc79f15ad58519d6593d384f7d1d6ff18a49b21e"
+      },
+      {
+        "event_id": "event-varied-04",
+        "outcome_id": "e6b142fc68cf23443b8f6c296c0e1d423b061be589bb7b97d647d208d66e8c91"
+      },
+      {
+        "event_id": "event-varied-05",
+        "outcome_id": "20c4d79e5416d965c4fd70e816543cc6b41b026a8c267f09cab98709cefc15fd"
+      },
+      {
+        "event_id": "event-varied-06",
+        "outcome_id": "296e0a5b53ae4760fc9c85a5ce5d0da94c25b95d290f66f2167e37b8dc065e00"
+      },
+      {
+        "event_id": "event-varied-07",
+        "outcome_id": "9ba598522e7571d821e82a574b105a6e866fd75ea898d6aa9b937334324de685"
+      },
+      {
+        "event_id": "event-varied-08",
+        "outcome_id": "5760bc21531b8dc7f8845b4203354eeec0332e28673a5621f4907a620e41e3a1"
+      },
+      {
+        "event_id": "event-varied-09",
+        "outcome_id": "89949289f5d1c2a8e02f1a42667401d20084439e569d376883e8581702e99eeb"
+      }
+    ],
+    "existing_artifact_known_gaps": [],
+    "existing_artifact_known_gap_count": 0
+  },
+  "run_manifest": {
+    "status": "missing",
+    "known_gap_count": 16,
+    "existing_manifest_count": 0,
+    "matched_manifest_count": 0,
+    "missing_pair_count": 10,
+    "status_counts": {},
+    "existing_manifest_known_gap_count": 0,
+    "computed_reason_code_count": 6,
+    "manifests": [],
+    "artifact_count": 11
+  }
+}

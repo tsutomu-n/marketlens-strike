@@ -1,0 +1,88 @@
+{
+  "outcome_count": 10,
+  "raw_matured_outcome_count": 10,
+  "minimum_required_outcome_count": 10,
+  "known_gaps": [],
+  "outcomes": [
+    {
+      "event_id": "event-varied-00",
+      "outcome_id": "e6095ddaa347050ba039314fc58009bce9e953df274a806b51ddc2882d236548",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/outcomes/outcome-varied-00.json",
+      "settled_at": "2026-06-21T01:00:00Z",
+      "matured_horizon_count": 1,
+      "known_gap_count": 1
+    },
+    {
+      "event_id": "event-varied-01",
+      "outcome_id": "2fc7f187f6cc6fd8fc99cd78d41971521db1140256b9b59751b23e5206cc0852",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/outcomes/outcome-varied-01.json",
+      "settled_at": "2026-06-21T04:07:00Z",
+      "matured_horizon_count": 1,
+      "known_gap_count": 1
+    },
+    {
+      "event_id": "event-varied-02",
+      "outcome_id": "3e18b18d0dfdccfd8a689c878ab9fb481ba89a0d64c30498924388484ae1ed2b",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/outcomes/outcome-varied-02.json",
+      "settled_at": "2026-06-21T07:14:00Z",
+      "matured_horizon_count": 1,
+      "known_gap_count": 1
+    },
+    {
+      "event_id": "event-varied-03",
+      "outcome_id": "cada1c3ac1c14c9d9eb7e248cc79f15ad58519d6593d384f7d1d6ff18a49b21e",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/outcomes/outcome-varied-03.json",
+      "settled_at": "2026-06-21T10:21:00Z",
+      "matured_horizon_count": 1,
+      "known_gap_count": 1
+    },
+    {
+      "event_id": "event-varied-04",
+      "outcome_id": "e6b142fc68cf23443b8f6c296c0e1d423b061be589bb7b97d647d208d66e8c91",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/outcomes/outcome-varied-04.json",
+      "settled_at": "2026-06-21T13:28:00Z",
+      "matured_horizon_count": 1,
+      "known_gap_count": 1
+    },
+    {
+      "event_id": "event-varied-05",
+      "outcome_id": "20c4d79e5416d965c4fd70e816543cc6b41b026a8c267f09cab98709cefc15fd",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/outcomes/outcome-varied-05.json",
+      "settled_at": "2026-06-21T16:35:00Z",
+      "matured_horizon_count": 1,
+      "known_gap_count": 1
+    },
+    {
+      "event_id": "event-varied-06",
+      "outcome_id": "296e0a5b53ae4760fc9c85a5ce5d0da94c25b95d290f66f2167e37b8dc065e00",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/outcomes/outcome-varied-06.json",
+      "settled_at": "2026-06-21T19:42:00Z",
+      "matured_horizon_count": 1,
+      "known_gap_count": 1
+    },
+    {
+      "event_id": "event-varied-07",
+      "outcome_id": "9ba598522e7571d821e82a574b105a6e866fd75ea898d6aa9b937334324de685",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/outcomes/outcome-varied-07.json",
+      "settled_at": "2026-06-21T22:49:00Z",
+      "matured_horizon_count": 1,
+      "known_gap_count": 1
+    },
+    {
+      "event_id": "event-varied-08",
+      "outcome_id": "5760bc21531b8dc7f8845b4203354eeec0332e28673a5621f4907a620e41e3a1",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/outcomes/outcome-varied-08.json",
+      "settled_at": "2026-06-22T01:56:00Z",
+      "matured_horizon_count": 1,
+      "known_gap_count": 1
+    },
+    {
+      "event_id": "event-varied-09",
+      "outcome_id": "89949289f5d1c2a8e02f1a42667401d20084439e569d376883e8581702e99eeb",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/outcomes/outcome-varied-09.json",
+      "settled_at": "2026-06-22T05:03:00Z",
+      "matured_horizon_count": 1,
+      "known_gap_count": 1
+    }
+  ]
+}

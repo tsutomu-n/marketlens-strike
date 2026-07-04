@@ -1,0 +1,100 @@
+{
+  "event_count": 10,
+  "raw_event_count": 10,
+  "minimum_required_event_count": 10,
+  "known_gaps": [],
+  "events": [
+    {
+      "event_id": "event-varied-00",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/events/event-varied-00.json",
+      "event_family": "slow_pump_74h_v1",
+      "canonical_symbol": "BTCUSDT",
+      "information_cutoff_at": "2026-06-21T00:00:00Z",
+      "status": "CAPTURE_REQUESTED"
+    },
+    {
+      "event_id": "event-varied-01",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/events/event-varied-01.json",
+      "event_family": "fast_pump_1h_v1",
+      "canonical_symbol": "BTCUSDT",
+      "information_cutoff_at": "2026-06-21T03:00:00Z",
+      "status": "CAPTURE_REQUESTED"
+    },
+    {
+      "event_id": "event-varied-02",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/events/event-varied-02.json",
+      "event_family": "near_miss_v1",
+      "canonical_symbol": "BTCUSDT",
+      "information_cutoff_at": "2026-06-21T06:00:00Z",
+      "status": "CAPTURE_REQUESTED"
+    },
+    {
+      "event_id": "event-varied-03",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/events/event-varied-03.json",
+      "event_family": "market_window_v1",
+      "canonical_symbol": "BTCUSDT",
+      "information_cutoff_at": "2026-06-21T09:00:00Z",
+      "status": "CAPTURE_REQUESTED"
+    },
+    {
+      "event_id": "event-varied-04",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/events/event-varied-04.json",
+      "event_family": "slow_pump_74h_v1",
+      "canonical_symbol": "BTCUSDT",
+      "information_cutoff_at": "2026-06-21T12:00:00Z",
+      "status": "CAPTURE_REQUESTED"
+    },
+    {
+      "event_id": "event-varied-05",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/events/event-varied-05.json",
+      "event_family": "fast_pump_1h_v1",
+      "canonical_symbol": "BTCUSDT",
+      "information_cutoff_at": "2026-06-21T15:00:00Z",
+      "status": "CAPTURE_REQUESTED"
+    },
+    {
+      "event_id": "event-varied-06",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/events/event-varied-06.json",
+      "event_family": "near_miss_v1",
+      "canonical_symbol": "BTCUSDT",
+      "information_cutoff_at": "2026-06-21T18:00:00Z",
+      "status": "CAPTURE_REQUESTED"
+    },
+    {
+      "event_id": "event-varied-07",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/events/event-varied-07.json",
+      "event_family": "market_window_v1",
+      "canonical_symbol": "BTCUSDT",
+      "information_cutoff_at": "2026-06-21T21:00:00Z",
+      "status": "CAPTURE_REQUESTED"
+    },
+    {
+      "event_id": "event-varied-08",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/events/event-varied-08.json",
+      "event_family": "slow_pump_74h_v1",
+      "canonical_symbol": "BTCUSDT",
+      "information_cutoff_at": "2026-06-22T00:00:00Z",
+      "status": "CAPTURE_REQUESTED"
+    },
+    {
+      "event_id": "event-varied-09",
+      "path": "docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/inputs/events/event-varied-09.json",
+      "event_family": "fast_pump_1h_v1",
+      "canonical_symbol": "BTCUSDT",
+      "information_cutoff_at": "2026-06-22T03:00:00Z",
+      "status": "CAPTURE_REQUESTED"
+    }
+  ],
+  "run_manifest": {
+    "status": "missing",
+    "known_gap_count": 16,
+    "existing_manifest_count": 0,
+    "matched_manifest_count": 0,
+    "missing_pair_count": 10,
+    "status_counts": {},
+    "existing_manifest_known_gap_count": 0,
+    "computed_reason_code_count": 6,
+    "manifests": [],
+    "artifact_count": 11
+  }
+}

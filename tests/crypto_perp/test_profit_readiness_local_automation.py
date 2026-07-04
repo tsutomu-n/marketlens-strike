@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import json
 from pathlib import Path
@@ -427,6 +428,107 @@ def _write_event_outcome_pairs(root: Path, count: int) -> None:
         _write_json(root / f"outcomes/outcome-{index:02d}.json", _outcome(event_id))
 
 
+def _write_varied_event_outcome_pairs(root: Path) -> None:
+    template_event = _event()
+    base_cutoff = datetime(2026, 6, 21, 0, 0, tzinfo=timezone.utc)
+    event_families = [
+        "slow_pump_74h_v1",
+        "fast_pump_1h_v1",
+        "near_miss_v1",
+        "market_window_v1",
+        "slow_pump_74h_v1",
+        "fast_pump_1h_v1",
+        "near_miss_v1",
+        "market_window_v1",
+        "slow_pump_74h_v1",
+        "fast_pump_1h_v1",
+    ]
+    raw_returns = [
+        Decimal("0.05"),
+        Decimal("-0.03"),
+        Decimal("0.012"),
+        Decimal("-0.08"),
+        Decimal("0.004"),
+        Decimal("0.035"),
+        Decimal("-0.015"),
+        Decimal("0.07"),
+        Decimal("-0.045"),
+        Decimal("0.022"),
+    ]
+    market_returns = [
+        Decimal("0.010"),
+        Decimal("-0.008"),
+        Decimal("0.002"),
+        Decimal("-0.015"),
+        Decimal("0"),
+        Decimal("0.006"),
+        Decimal("-0.004"),
+        Decimal("0.014"),
+        Decimal("-0.009"),
+        Decimal("0.003"),
+    ]
+    for index, raw_return in enumerate(raw_returns):
+        cutoff = base_cutoff + timedelta(hours=index * 3)
+        event_id = f"event-varied-{index:02d}"
+        family = event_families[index]
+        feature_update = {
+            "return_15m": str(raw_return / Decimal("4")),
+            "return_60m": str(raw_return),
+            "return_74h": str(raw_return + Decimal("0.02")),
+            "turnover_impulse": str(Decimal("0.16") + Decimal(index) / Decimal("100")),
+            "robust_return_z": str(Decimal("3.0") + Decimal(index) / Decimal("10")),
+            "turnover_percentile": str(Decimal("0.90") + Decimal(index) / Decimal("1000")),
+            "funding_rate": str(Decimal("0.0001") * Decimal(index + 1)),
+        }
+        event = template_event.model_copy(
+            update={
+                "artifact_id": f"event-artifact-varied-{index:02d}",
+                "created_at": cutoff,
+                "event_id": event_id,
+                "event_family": family,
+                "first_detected_at": cutoff,
+                "information_cutoff_at": cutoff,
+                "universe_snapshot_id": f"universe-varied-{index:02d}",
+                "market_snapshot_id": f"market-varied-{index:02d}",
+                "features_at_detection": template_event.features_at_detection.model_copy(
+                    update=feature_update
+                ),
+                "market_context": template_event.market_context.model_copy(
+                    update={
+                        "btc_return": str(market_returns[index]),
+                        "eth_return": str(market_returns[index] / Decimal("2")),
+                        "cross_section_median_return": str(market_returns[index] / Decimal("3")),
+                        "breadth": str(Decimal("-0.4") + Decimal(index) / Decimal("10")),
+                        "market_adjusted_return": str(raw_return - market_returns[index]),
+                    }
+                ),
+            }
+        )
+        reference = Decimal("100") + Decimal(index)
+        close = reference * (Decimal("1") + raw_return)
+        high = max(reference, close) * Decimal("1.015")
+        low = min(reference, close) * Decimal("0.985")
+        outcome = build_outcome(
+            event_id=event_id,
+            settled_at=cutoff + timedelta(minutes=60 + index * 7),
+            horizons=[
+                OutcomePriceWindow(
+                    horizon_minutes=60 + index,
+                    matured=True,
+                    reference_price=reference,
+                    close_price=close,
+                    high_price=high,
+                    low_price=low,
+                    market_return=market_returns[index],
+                    observed_high_low_order="HIGH_FIRST" if index % 2 == 0 else "LOW_FIRST",
+                )
+            ],
+            known_gaps=[f"DOGFOOD_VARIED_REGIME_PROXY_{family.upper()}"],
+        )
+        _write_json(root / f"events/event-varied-{index:02d}.json", event)
+        _write_json(root / f"outcomes/outcome-varied-{index:02d}.json", outcome)
+
+
 def test_pre_actual_cash_pack_is_not_public_cli() -> None:
     result = runner.invoke(app, ["crypto-perp-pre-actual-cash-evidence-pack", "--help"])
 
@@ -519,7 +621,7 @@ def test_pre_actual_cash_pack_builder_returns_required_summaries_for_ten_pairs(
 def test_pre_actual_cash_pack_writer_dogfoods_ten_pairs(
     tmp_path: Path,
 ) -> None:
-    _write_event_outcome_pairs(tmp_path / "inputs", 10)
+    _write_varied_event_outcome_pairs(tmp_path / "inputs")
 
     paths = write_pre_actual_cash_evidence_pack(
         data_dir=tmp_path / "inputs",
@@ -553,6 +655,24 @@ def test_pre_actual_cash_pack_writer_dogfoods_ten_pairs(
         "HOLD_FOR_FUTURE_ACTUAL_CASH",
     }
     assert all(value is False for value in decision_payload["non_goal_flags"].values())
+    event_summary = json.loads((tmp_path / "pack/events_summary.json").read_text(encoding="utf-8"))
+    outcome_summary = json.loads(
+        (tmp_path / "pack/outcomes_summary.json").read_text(encoding="utf-8")
+    )
+    assert len({item["event_id"] for item in event_summary["events"]}) == 10
+    assert len({item["information_cutoff_at"] for item in event_summary["events"]}) == 10
+    assert len({item["event_family"] for item in event_summary["events"]}) >= 3
+    assert len({item["outcome_id"] for item in outcome_summary["outcomes"]}) == 10
+    assert len({item["settled_at"] for item in outcome_summary["outcomes"]}) == 10
+    outcome_returns = {
+        json.loads(path.read_text(encoding="utf-8"))["horizons"][0]["raw_return"]
+        for path in sorted((tmp_path / "inputs/outcomes").glob("*.json"))
+    }
+    assert len(outcome_returns) == 10
+    assert decision_payload["source_gap_summary"]["artifact_usage"]["event_outcome_pairs"] == [
+        {"event_id": item["event_id"], "outcome_id": item["outcome_id"]}
+        for item in outcome_summary["outcomes"]
+    ]
     assert "event_count: `10`" in decision_md
     assert "outcome_count: `10`" in decision_md
     assert "main_source_gaps:" in decision_md

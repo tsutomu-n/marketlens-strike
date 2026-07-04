@@ -1,0 +1,74 @@
+{
+  "guard_status": "BLOCKED",
+  "pbo_status": "NOT_ESTIMABLE",
+  "event_count": 10,
+  "min_events_for_pbo": 30,
+  "fold_count": 0,
+  "stop_reasons": [
+    "BIAS_GUARD_FAILED_sample_sufficient_for_pbo",
+    "BIAS_GUARD_FAILED_stress_cash_non_negative"
+  ],
+  "known_gaps": [
+    "DOGFOOD_VARIED_REGIME_PROXY_SLOW_PUMP_74H_V1",
+    "ACTUAL_CASH_RESULT_NOT_AVAILABLE",
+    "ESTIMATE_NOT_ACTUAL_CASH",
+    "DOGFOOD_VARIED_REGIME_PROXY_FAST_PUMP_1H_V1",
+    "DOGFOOD_VARIED_REGIME_PROXY_NEAR_MISS_V1",
+    "DOGFOOD_VARIED_REGIME_PROXY_MARKET_WINDOW_V1",
+    "PBO_NOT_ESTIMABLE_SAMPLE_INSUFFICIENT"
+  ],
+  "summary": {
+    "guard_status": "BLOCKED",
+    "pbo_status": "NOT_ESTIMABLE",
+    "event_count": 10,
+    "failed_check_count": 2,
+    "min_stress_cash_estimate_usd": "-8.12000",
+    "max_profit_concentration_observed": "0.4769975786924939467312348668"
+  },
+  "event_outcome_pairs": [
+    {
+      "event_id": "event-varied-00",
+      "outcome_id": "e6095ddaa347050ba039314fc58009bce9e953df274a806b51ddc2882d236548"
+    },
+    {
+      "event_id": "event-varied-01",
+      "outcome_id": "2fc7f187f6cc6fd8fc99cd78d41971521db1140256b9b59751b23e5206cc0852"
+    },
+    {
+      "event_id": "event-varied-02",
+      "outcome_id": "3e18b18d0dfdccfd8a689c878ab9fb481ba89a0d64c30498924388484ae1ed2b"
+    },
+    {
+      "event_id": "event-varied-03",
+      "outcome_id": "cada1c3ac1c14c9d9eb7e248cc79f15ad58519d6593d384f7d1d6ff18a49b21e"
+    },
+    {
+      "event_id": "event-varied-04",
+      "outcome_id": "e6b142fc68cf23443b8f6c296c0e1d423b061be589bb7b97d647d208d66e8c91"
+    },
+    {
+      "event_id": "event-varied-05",
+      "outcome_id": "20c4d79e5416d965c4fd70e816543cc6b41b026a8c267f09cab98709cefc15fd"
+    },
+    {
+      "event_id": "event-varied-06",
+      "outcome_id": "296e0a5b53ae4760fc9c85a5ce5d0da94c25b95d290f66f2167e37b8dc065e00"
+    },
+    {
+      "event_id": "event-varied-07",
+      "outcome_id": "9ba598522e7571d821e82a574b105a6e866fd75ea898d6aa9b937334324de685"
+    },
+    {
+      "event_id": "event-varied-08",
+      "outcome_id": "5760bc21531b8dc7f8845b4203354eeec0332e28673a5621f4907a620e41e3a1"
+    },
+    {
+      "event_id": "event-varied-09",
+      "outcome_id": "89949289f5d1c2a8e02f1a42667401d20084439e569d376883e8581702e99eeb"
+    }
+  ],
+  "artifact_origin": "recomputed_minimal",
+  "artifact_path": null,
+  "artifact_gap_origin": "minimal recomputed from event/outcome only",
+  "artifact_match_note": "bias_guard artifact missing for event count"
+}

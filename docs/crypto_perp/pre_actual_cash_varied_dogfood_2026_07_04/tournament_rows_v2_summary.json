@@ -1,0 +1,34 @@
+{
+  "row_set_id": "f496e495f12f2aaa1bd4d2cfa202c2125d5b0a586476d2b602b322bc4514df81",
+  "event_count": 10,
+  "row_count": 30,
+  "leader_action": "CONTINUATION_LONG",
+  "leader_cost_adjusted_cash_estimate_usd": "1.100000000000000000000000000",
+  "no_trade_cost_adjusted_cash_estimate_usd": "0",
+  "leader_beats_no_trade": true,
+  "known_gap_count": 6,
+  "status": "BUILT",
+  "primary_metric": "cost_adjusted_cash_estimate_usd",
+  "outcome_ids": [
+    "e6095ddaa347050ba039314fc58009bce9e953df274a806b51ddc2882d236548",
+    "2fc7f187f6cc6fd8fc99cd78d41971521db1140256b9b59751b23e5206cc0852",
+    "3e18b18d0dfdccfd8a689c878ab9fb481ba89a0d64c30498924388484ae1ed2b",
+    "cada1c3ac1c14c9d9eb7e248cc79f15ad58519d6593d384f7d1d6ff18a49b21e",
+    "e6b142fc68cf23443b8f6c296c0e1d423b061be589bb7b97d647d208d66e8c91",
+    "20c4d79e5416d965c4fd70e816543cc6b41b026a8c267f09cab98709cefc15fd",
+    "296e0a5b53ae4760fc9c85a5ce5d0da94c25b95d290f66f2167e37b8dc065e00",
+    "9ba598522e7571d821e82a574b105a6e866fd75ea898d6aa9b937334324de685",
+    "5760bc21531b8dc7f8845b4203354eeec0332e28673a5621f4907a620e41e3a1",
+    "89949289f5d1c2a8e02f1a42667401d20084439e569d376883e8581702e99eeb"
+  ],
+  "action_totals_cost_adjusted_cash_estimate_usd": {
+    "CONTINUATION_LONG": "1.100000000000000000000000000",
+    "NO_TRADE": "0",
+    "REVERSAL_SHORT": "-3.500000000000000000000000000"
+  },
+  "actual_cash_result_null_count": 30,
+  "artifact_origin": "recomputed_minimal",
+  "artifact_path": null,
+  "artifact_gap_origin": "minimal recomputed from event/outcome only",
+  "artifact_match_note": "tournament_rows_v2 artifact missing for event set"
+}

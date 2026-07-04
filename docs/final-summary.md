@@ -1,9 +1,94 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-04_22:23 JST
+更新日: 2026-07-04_22:40 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Varied 10 Event / 10 Outcome Pre Actual Cash Writer Dogfood
+
+Completed on branch `ai/pre-actual-cash-varied-dogfood-20260704-2237`.
+
+Goal:
+
+- Use the existing internal `write_pre_actual_cash_evidence_pack()` helper.
+- Dogfood a pre-actual-cash evidence pack with 10 event / 10 outcome inputs that are not fixture clones.
+- Vary event time, outcome identity/result, and schema-supported regime proxy.
+- Record the result as `decision.json`, `decision.md`, and this final summary.
+- Do not add a public CLI, actual cash source, cash ledger, actual-cash rows, actual-cash gate, tiny-live behavior, live orders, exchange writes, wallet/signing, or ML/LLM trade decisions.
+
+Achieved:
+
+- Added `_write_varied_event_outcome_pairs()` in `tests/crypto_perp/test_profit_readiness_local_automation.py`.
+- The varied dogfood input now writes 10 unique event ids and 10 unique outcome ids.
+- Event time varies through 10 distinct `information_cutoff_at` values.
+- Outcome time varies through 10 distinct `settled_at` values.
+- Outcome result varies through 10 distinct matured horizon `raw_return` values.
+- Because `CryptoPerpEvent` has no literal `regime` field, the dogfood uses current schema-supported regime proxies: 4 distinct `event_family` values plus varied feature and market-context values.
+- The writer dogfood test now proves the variation instead of only checking `event_count == 10` and `outcome_count == 10`.
+- Generated a durable dogfood pack under `docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/`.
+- The generated `decision.json` validates against `crypto_perp_pre_actual_cash_decision.v1.schema.json`.
+- The generated `decision.md` records:
+  - `event_count: 10`
+  - `outcome_count: 10`
+  - `selected_action_counts: {'UNKNOWN': 10}`
+  - `leader_action: CONTINUATION_LONG`
+  - `leader_beats_no_trade: True`
+  - `bias_guard_status: BLOCKED`
+  - `pbo_status: NOT_ESTIMABLE`
+  - `decision: COLLECT_MORE_SOURCES`
+  - the explicit boundary that this is not profit proof, actual cash readiness, tiny-live readiness, or live trading readiness.
+- All generated `non_goal_flags` remain `false`.
+- Production writer code did not require changes.
+
+Result artifacts:
+
+- `docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/decision.json`
+- `docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/decision.md`
+- Supporting generated pack summaries and deterministic input artifacts are in the same directory.
+- Implementation plan and two critique passes are recorded in `docs/plans/pre-actual-cash-varied-dogfood-2026-07-04.md`.
+
+Changed files:
+
+- `tests/crypto_perp/test_profit_readiness_local_automation.py`
+- `docs/plans/pre-actual-cash-varied-dogfood-2026-07-04.md`
+- `docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/crypto_perp/test_profit_readiness_local_automation.py -q` -> 12 passed.
+- `uv run ruff check tests/crypto_perp/test_profit_readiness_local_automation.py src/sis/crypto_perp/pre_actual_cash.py` -> passed.
+- `uv run ruff format --check tests/crypto_perp/test_profit_readiness_local_automation.py src/sis/crypto_perp/pre_actual_cash.py` -> 2 files already formatted.
+- Direct writer dogfood generation into `docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/` -> wrote 11 pack artifacts, validated `decision.json` against schema, produced `decision=COLLECT_MORE_SOURCES`, `event_count=10`, `outcome_count=10`, 4 distinct event-family regime proxies, 10 distinct cutoff times, 10 distinct settled times, 10 distinct outcome ids, and all `non_goal_flags=false`.
+- `uv run python scripts/check_current_docs.py` -> passed.
+- `uv run python scripts/check_cli_catalog.py` -> passed.
+- `uv run sis --help | rg "pre-actual-cash|pre_actual_cash|evidence-pack" || true` -> no output; no pre-actual-cash public CLI is exposed.
+- `./scripts/check` -> passed.
+
+Remaining work:
+
+- None for this varied pre-actual-cash writer dogfood scope.
+
+Usable scope:
+
+- Internal writer/helper and deterministic local dogfood artifacts only. This does not expose a public CLI and does not prove actual cash profit, actual cash readiness, tiny-live readiness, live trading readiness, wallet/signing readiness, or exchange-write readiness.
+
+Destructive change:
+
+No. The change is additive and reversible.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+- Revert the changed test file, the new plan file, this final-summary addendum, and the `docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/` artifact directory.
 
 ## Latest Addendum: Pre Actual Cash Existing Artifact Read Scope
 
