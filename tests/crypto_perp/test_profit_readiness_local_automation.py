@@ -10,7 +10,7 @@ from typer.testing import CliRunner
 
 from sis.cli import app
 from sis.crypto_perp.cash_ledger import CashLedgerEntry, build_cash_ledger
-from sis.crypto_perp.events import detect_event
+from sis.crypto_perp.events import EventSourceRef, detect_event
 from sis.crypto_perp.features import EventDetectorConfig
 from sis.crypto_perp.outcomes import OutcomePriceWindow, build_outcome
 from sis.crypto_perp.pre_actual_cash import (
@@ -833,7 +833,17 @@ def test_pre_actual_cash_pack_reads_existing_run_manifest(tmp_path: Path) -> Non
 def test_profit_readiness_run_local_accepts_explicit_ticker_source_ref(
     tmp_path: Path,
 ) -> None:
-    event = _event()
+    event = _event().model_copy(
+        update={
+            "source_refs": [
+                EventSourceRef(
+                    path="local/BTCUSDT_5m_candles.csv",
+                    sha256="sha256:" + "c" * 64,
+                    schema_version="bitget_public_candles_5m.input_projection.v1",
+                )
+            ]
+        }
+    )
     outcome = _outcome(event.event_id)
     event_path = _write_json(tmp_path / "inputs/events/event.json", event)
     outcome_path = _write_json(tmp_path / "inputs/outcomes/outcome.json", outcome)

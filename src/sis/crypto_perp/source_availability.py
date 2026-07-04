@@ -84,17 +84,20 @@ def _infer_available(
     *,
     event: CryptoPerpEvent,
     provided: Mapping[str, bool],
+    source_refs: Sequence[dict[str, str]],
 ) -> bool:
     if source_id == "event":
         return True
     if source_id in provided:
         return bool(provided[source_id])
-    refs = _source_refs_from_event(event)
     if source_id == "bars":
-        return any(_source_ref_matches(ref, ("candle", "candles", "bar")) for ref in refs)
+        return any(
+            _source_ref_matches(ref, ("candle", "candles", "bar")) for ref in source_refs
+        )
     if source_id == "ticker":
         return any(
-            _source_ref_matches(ref, ("ticker", "tickers", "market_snapshot")) for ref in refs
+            _source_ref_matches(ref, ("ticker", "tickers", "market_snapshot"))
+            for ref in source_refs
         )
     if source_id == "funding":
         return event.features_at_detection.funding_rate != ""
@@ -113,7 +116,12 @@ def _status(
     available = (
         row_count > 0
         if row_count is not None
-        else _infer_available(source_id, event=event, provided=provided)
+        else _infer_available(
+            source_id,
+            event=event,
+            provided=provided,
+            source_refs=source_refs,
+        )
     )
     refs = [
         dict(ref)
