@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-04_12:44 JST
-更新日: 2026-07-04_12:44 JST
+更新日: 2026-07-04_13:08 JST
 -->
 
 # Read This First: Progress To 90
@@ -12,13 +12,15 @@
 読む順番:
 
 1. [FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md](FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md)
-2. [PROGRESS_TO_90_ROADMAP_2026-07-04.md](PROGRESS_TO_90_ROADMAP_2026-07-04.md)
+2. [PRE_ACTUAL_CASH_PROGRESS_2026-07-04.md](PRE_ACTUAL_CASH_PROGRESS_2026-07-04.md)
+3. [PROGRESS_TO_90_ROADMAP_2026-07-04.md](PROGRESS_TO_90_ROADMAP_2026-07-04.md)
 
 ## 使い方
 
 - まず現在地を知るなら `FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md`。
+- actual cash以前の進捗だけを読むなら `PRE_ACTUAL_CASH_PROGRESS_2026-07-04.md`。
 - 次に何をすれば90%に近づくかを見るなら `PROGRESS_TO_90_ROADMAP_2026-07-04.md`。
-- どちらも current docs からのコピーであり、移動ではない。
+- root docs からのコピー文書と、このフォルダー専用の補足文書をまとめて置いている。
 
 ## 注意
 
