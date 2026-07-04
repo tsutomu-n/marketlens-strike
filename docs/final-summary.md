@@ -44,11 +44,19 @@ Changed files:
 
 Verification:
 
-- Pending in this addendum until the post-change verification pass below is run.
+- `uv run pytest tests/crypto_perp/test_profit_readiness_local_automation.py -q` -> 11 passed.
+- `uv run ruff check src/sis/crypto_perp/pre_actual_cash.py tests/crypto_perp/test_profit_readiness_local_automation.py` -> passed.
+- `uv run ruff format --check src/sis/crypto_perp/pre_actual_cash.py tests/crypto_perp/test_profit_readiness_local_automation.py` -> 2 files already formatted.
+- `uv run python scripts/check_current_docs.py` -> checked 178 current docs.
+- `uv run python scripts/check_cli_catalog.py` -> checked 233 public CLI commands.
+- `uv run sis --help | rg "pre-actual-cash|pre_actual_cash|evidence-pack" || true` -> no output; no pre-actual-cash public CLI is exposed.
+- `git diff --check` -> passed.
+- Direct writer dogfood over `data/crypto_perp` into `.tmp/pre_actual_cash_pack_current/` -> wrote 11 artifacts, validated `decision.json` against schema, and produced `decision=COLLECT_MORE_SOURCES`, `event_count=1`, `outcome_count=1`, `leader_action=NO_TRADE`, `selected_action_counts={'UNKNOWN': 1}`, `bias_guard_status=BLOCKED`, `pbo_status=NOT_ESTIMABLE`, `run_manifest.status=blocked`, and all `non_goal_flags=false`.
+- `./scripts/check` -> passed, including `2879 passed`.
 
 Remaining work:
 
-- Run focused pytest, ruff, current-docs check, and final completion audit.
+- None for this helper.
 
 Destructive change:
 
