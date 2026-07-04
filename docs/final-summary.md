@@ -1,9 +1,43 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-04_23:27 JST
+更新日: 2026-07-05_00:01 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Ticker Coverage Metadata
+
+Completed on branch `ai/ticker-coverage-metadata-20260704-2356`.
+
+Goal:
+
+- Crush only the necessary residual risk after the Bitget ticker artifact merge.
+- Keep scope to explanatory ticker coverage metadata.
+- Do not add OKX historical backfill, WS always-on collection, trades/books
+  expansion, actual cash, live orders, exchange writes, wallet/signing, or
+  event-definition changes.
+
+Achieved:
+
+- Added per-source `metadata` to `crypto_perp_source_availability.v1` statuses.
+- Parsed `crypto_perp_ticker_manifest.v1` coverage class, window, exchange,
+  market type, symbols, fields present, missing fields, warnings, raw inputs,
+  and support flags through `--ticker-manifest`.
+- Propagated ticker metadata through `build_profit_readiness_run()` and
+  `build_source_availability()`.
+- Included the same metadata in the pre-actual-cash `source_availability_matrix`
+  so ticker availability is no longer row-count-only.
+
+Boundary:
+
+- This does not implement OKX historical backfill.
+- This does not implement WS collection.
+- This does not claim actual cash, live readiness, or profit proof.
+
+Verification:
+
+- `uv run pytest tests/crypto_perp/test_source_availability.py tests/crypto_perp/test_profit_readiness_local_automation.py` -> 16 passed.
+- `uv run pyrefly check` -> 0 errors.
 
 ## Latest Addendum: G3 Ticker Source for Real Data Adjacent Dogfood
 
