@@ -1,9 +1,71 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-04_18:05 JST
+更新日: 2026-07-04_18:37 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Code-Truth Docs Triage Cleanup v1
+
+Completed on branch `ai/pre-actual-cash-evidence-pack-20260704-1709`.
+
+Goal:
+
+- Make `docs/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04/` the progress-to-90 read-first source.
+- Reduce stale progress-doc entry points and old pass-count misread risk.
+- Keep code, schemas, tests, and public CLI unchanged.
+- Do not delete or move docs in this v1 cleanup.
+
+Achieved:
+
+- Updated `README.md` and `docs/CURRENT_STATE.md` to route progress readers to `docs/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04/README.md`.
+- Replaced root `docs/FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md` and `docs/PROGRESS_TO_90_ROADMAP_2026-07-04.md` with thin compatibility pointers.
+- Updated `docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md` to classify current update targets, stale old progress bodies, `docs/final-summary.md` as history ledger, and root-level `docs/plans/*.md` as archive candidates without moving them.
+- Updated `docs/action-required.md` so the first visible status is `Open action なし`; existing resolved entries remain as history.
+- Re-stated the pre-actual-cash boundary in current docs: public candle only, 1 event, `NO_TRADE` leader, `selected_action=UNKNOWN`, and bias guard sample insufficient are not profit evidence. They are only inputs for `KILL` / `REVISE_EVENT_DEFINITION` / `COLLECT_MORE_SOURCES` / `HOLD_FOR_FUTURE_ACTUAL_CASH`.
+
+Changed files:
+
+- `README.md`
+- `docs/CURRENT_STATE.md`
+- `docs/FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md`
+- `docs/PROGRESS_TO_90_ROADMAP_2026-07-04.md`
+- `docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md`
+- `docs/action-required.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run python scripts/check_current_docs.py` -> checked 213 current docs.
+- `uv run python scripts/check_cli_catalog.py` -> checked 233 public CLI commands.
+- `uv run sis --help | rg "pre-actual-cash|actual-cash|evidence-pack"` -> only existing `crypto-perp-actual-cash-rows-build` and `crypto-perp-actual-cash-report-gate` appear; no new pre-actual-cash public CLI is exposed.
+- `rg -n "profit proof|利益証明|actual cash.*shortest|pre-actual-cash evidence pack" README.md docs plan schemas src tests --glob '!docs/archive/**' --glob '!plan/archive/**' --glob '!data/**' --glob '!logs/**'` -> reviewed matches; remaining hits are boundary warnings, source/test strings, or historical/current plan wording, not new profit-proof claims.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed, including `2879 passed`.
+
+Remaining work:
+
+- Optional later archive move for root-level `docs/plans/*.md`, one group at a time.
+
+User judgment required:
+
+- None for this cleanup.
+
+Destructive change:
+
+No. The root progress docs were reduced to pointers, but files were retained for link compatibility.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required. Read progress docs from `docs/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04/README.md`.
+
+Rollback:
+
+- Revert the docs-only changes in the files listed above.
 
 ## Latest Addendum: Pre Actual Cash Evidence Pack v1
 
