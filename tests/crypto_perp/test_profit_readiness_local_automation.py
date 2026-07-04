@@ -493,6 +493,10 @@ def test_pre_actual_cash_pack_builder_returns_required_summaries_for_ten_pairs(
         summaries["source_availability_matrix"]["events"][0]["artifact_gap_origin"]
         == "minimal recomputed from event/outcome only"
     )
+    assert (
+        summaries["source_availability_matrix"]["events"][0]["outcome_id"]
+        == summaries["outcomes_summary"]["outcomes"][0]["outcome_id"]
+    )
     assert decision.source_gap_summary["artifact_usage"]["per_event_artifacts"][
         "source_availability"
     ] == {"recomputed_minimal": 10}
@@ -674,15 +678,23 @@ def test_pre_actual_cash_pack_reads_existing_run_manifest(tmp_path: Path) -> Non
     assert summaries["edge_score_summary"]["artifact_origin_counts"] == {"existing": 1}
     source_event = summaries["source_availability_matrix"]["events"][0]
     assert source_event["artifact_origin"] == "existing"
+    assert source_event["outcome_id"] == outcome.outcome_id
     assert source_event["artifact_path"].endswith("run/source_availability.json")
     assert source_event["artifact_gap_origin"] == "existing artifact payload"
     assert summaries["tournament_rows_v2_summary"]["artifact_origin"] == "existing"
+    assert summaries["tournament_rows_v2_summary"]["outcome_ids"] == [outcome.outcome_id]
     assert summaries["tournament_rows_v2_summary"]["artifact_path"].endswith(
         "run/tournament_rows_v2.json"
     )
     assert summaries["bias_guard_summary"]["artifact_origin"] == "existing"
+    assert summaries["bias_guard_summary"]["event_outcome_pairs"] == [
+        {"event_id": event.event_id, "outcome_id": outcome.outcome_id}
+    ]
     assert summaries["bias_guard_summary"]["artifact_path"].endswith("run/bias_guard.json")
     artifact_usage = decision.source_gap_summary["artifact_usage"]
+    assert artifact_usage["event_outcome_pairs"] == [
+        {"event_id": event.event_id, "outcome_id": outcome.outcome_id}
+    ]
     assert artifact_usage["per_event_artifacts"]["source_availability"] == {"existing": 1}
     assert artifact_usage["per_event_artifacts"]["replay_slice"] == {"existing": 1}
     assert artifact_usage["per_event_artifacts"]["feature_pack"] == {"existing": 1}

@@ -237,6 +237,15 @@ def _origin_for_event(
     return _origin_payload(origins[event_id])
 
 
+def _outcome_for_event(
+    outcome_ids_by_event: Mapping[str, str] | None,
+    event_id: str,
+) -> dict[str, str]:
+    if outcome_ids_by_event is None or event_id not in outcome_ids_by_event:
+        return {}
+    return {"outcome_id": outcome_ids_by_event[event_id]}
+
+
 def _load_existing_per_event_artifacts(
     *,
     inventory: ProfitReadinessInventory,
@@ -553,6 +562,7 @@ def _source_ids() -> tuple[SourceId, ...]:
 def _source_availability_matrix(
     source_artifacts: Sequence[CryptoPerpSourceAvailability],
     origins: Mapping[str, _ArtifactOrigin] | None = None,
+    outcome_ids_by_event: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     events: list[dict[str, Any]] = []
     can_compute_actual_cash_count = 0
@@ -583,6 +593,7 @@ def _source_availability_matrix(
                 "can_compute_depth": artifact.can_compute_depth,
                 "known_gap_count": len(artifact.known_gaps),
                 "sources": sources,
+                **_outcome_for_event(outcome_ids_by_event, artifact.event_id),
                 **_origin_for_event(origins, artifact.event_id),
             }
         )
@@ -677,6 +688,7 @@ def _outcomes_summary(
 def _feature_pack_summary(
     features: Sequence[CryptoPerpFeaturePack],
     origins: Mapping[str, _ArtifactOrigin] | None = None,
+    outcome_ids_by_event: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     optional_counts = [len(feature.available_optional_features) for feature in features]
     return {
@@ -696,6 +708,7 @@ def _feature_pack_summary(
                 "available_optional_features": list(feature.available_optional_features),
                 "sets_entry_action": False,
                 "known_gap_count": len(feature.known_gaps),
+                **_outcome_for_event(outcome_ids_by_event, feature.event_id),
                 **_origin_for_event(origins, feature.event_id),
             }
             for feature in features
@@ -715,6 +728,7 @@ def _summary_int(summary: Mapping[str, Any], key: str, default: int = 0) -> int:
 def _replay_slice_summary(
     replays: Sequence[CryptoPerpReplaySlice],
     origins: Mapping[str, _ArtifactOrigin] | None = None,
+    outcome_ids_by_event: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     return {
         "event_count": len(replays),
@@ -733,6 +747,7 @@ def _replay_slice_summary(
                 "row_counts": dict(replay.row_counts),
                 "future_data_included": bool(replay.summary.get("future_data_included")),
                 "known_gap_count": len(replay.known_gaps),
+                **_outcome_for_event(outcome_ids_by_event, replay.event_id),
                 **_origin_for_event(origins, replay.event_id),
             }
             for replay in replays
@@ -743,6 +758,7 @@ def _replay_slice_summary(
 def _edge_score_summary(
     edges: Sequence[CryptoPerpEdgeScore],
     origins: Mapping[str, _ArtifactOrigin] | None = None,
+    outcome_ids_by_event: Mapping[str, str] | None = None,
 ) -> dict[str, Any]:
     selected_counts = Counter(edge.selected_action for edge in edges)
     return {
@@ -758,6 +774,7 @@ def _edge_score_summary(
                 "selected_action": edge.selected_action,
                 "why_no_trade": list(edge.why_no_trade),
                 "known_gap_count": len(edge.known_gaps),
+                **_outcome_for_event(outcome_ids_by_event, edge.event_id),
                 **_origin_for_event(origins, edge.event_id),
             }
             for edge in edges
@@ -768,11 +785,13 @@ def _edge_score_summary(
 def _tournament_summary(
     rows: CryptoPerpTournamentRowsV2 | None,
     origin: _ArtifactOrigin,
+    outcome_ids: Sequence[str],
 ) -> dict[str, Any]:
     if rows is None:
         return {
             "event_count": 0,
             "row_count": 0,
+            "outcome_ids": list(outcome_ids),
             "leader_action": None,
             "leader_beats_no_trade": False,
             "known_gap_count": 0,
@@ -788,6 +807,7 @@ def _tournament_summary(
         **_json_ready(rows.summary),
         "status": "BUILT",
         "primary_metric": rows.primary_metric,
+        "outcome_ids": list(outcome_ids),
         "action_totals_cost_adjusted_cash_estimate_usd": {
             action: str(value) for action, value in sorted(action_totals.items())
         },
@@ -801,12 +821,14 @@ def _tournament_summary(
 def _bias_guard_summary(
     guard: CryptoPerpBiasGuard | None,
     origin: _ArtifactOrigin,
+    event_outcome_pairs: Sequence[dict[str, str]],
 ) -> dict[str, Any]:
     if guard is None:
         return {
             "guard_status": "NOT_RUN",
             "pbo_status": "NOT_ESTIMABLE",
             "event_count": 0,
+            "event_outcome_pairs": list(event_outcome_pairs),
             "known_gaps": ["BIAS_GUARD_NOT_RUN_NO_ROWS"],
             "stop_reasons": ["BIAS_GUARD_NOT_RUN_NO_ROWS"],
             **_origin_payload(origin),
@@ -820,6 +842,7 @@ def _bias_guard_summary(
         "stop_reasons": list(guard.stop_reasons),
         "known_gaps": list(guard.known_gaps),
         "summary": _json_ready(guard.summary),
+        "event_outcome_pairs": list(event_outcome_pairs),
         **_origin_payload(origin),
     }
 
@@ -876,6 +899,7 @@ def _artifact_usage_summary(
     tournament_rows_origin: _ArtifactOrigin,
     bias_guard_origin: _ArtifactOrigin,
     existing_known_gaps: Sequence[str],
+    event_outcome_pairs: Sequence[dict[str, str]],
 ) -> dict[str, Any]:
     per_event_counts = {
         name: _origin_counts(list(origins.values()))
@@ -885,6 +909,7 @@ def _artifact_usage_summary(
         "per_event_artifacts": per_event_counts,
         "tournament_rows_v2": _origin_payload(tournament_rows_origin),
         "bias_guard": _origin_payload(bias_guard_origin),
+        "event_outcome_pairs": list(event_outcome_pairs),
         "existing_artifact_known_gaps": list(existing_known_gaps),
         "existing_artifact_known_gap_count": len(existing_known_gaps),
     }
@@ -1094,24 +1119,46 @@ def build_pre_actual_cash_evidence_pack(
                 guard_path,
                 "matched_by_event_count; bias_guard schema has no event ids",
             )
+    outcome_ids_by_event = {pair.event.event_id: pair.outcome.outcome_id for pair in pairs}
+    event_outcome_pairs = [
+        {"event_id": pair.event.event_id, "outcome_id": pair.outcome.outcome_id} for pair in pairs
+    ]
     source_matrix = _source_availability_matrix(
         source_artifacts,
         artifact_origins["source_availability"],
+        outcome_ids_by_event,
     )
     known_gaps = _unique(
         [*inventory.known_gaps, *selection_gaps, *per_event_gaps, *existing_artifacts.known_gaps]
     )
     known_gaps_by_source = _known_gaps_by_source(source_artifacts, known_gaps)
-    replay_summary = _replay_slice_summary(replay_artifacts, artifact_origins["replay_slice"])
-    feature_summary = _feature_pack_summary(feature_artifacts, artifact_origins["feature_pack"])
-    edge_summary = _edge_score_summary(edge_artifacts, artifact_origins["edge_score"])
-    tournament_summary = _tournament_summary(rows, rows_origin)
-    bias_summary = _bias_guard_summary(guard, guard_origin)
+    replay_summary = _replay_slice_summary(
+        replay_artifacts,
+        artifact_origins["replay_slice"],
+        outcome_ids_by_event,
+    )
+    feature_summary = _feature_pack_summary(
+        feature_artifacts,
+        artifact_origins["feature_pack"],
+        outcome_ids_by_event,
+    )
+    edge_summary = _edge_score_summary(
+        edge_artifacts,
+        artifact_origins["edge_score"],
+        outcome_ids_by_event,
+    )
+    tournament_summary = _tournament_summary(
+        rows,
+        rows_origin,
+        [pair.outcome.outcome_id for pair in pairs],
+    )
+    bias_summary = _bias_guard_summary(guard, guard_origin, event_outcome_pairs)
     known_gaps_by_source["artifact_usage"] = _artifact_usage_summary(
         artifact_origins=artifact_origins,
         tournament_rows_origin=rows_origin,
         bias_guard_origin=guard_origin,
         existing_known_gaps=existing_artifacts.known_gaps,
+        event_outcome_pairs=event_outcome_pairs,
     )
     summaries = {
         "events_summary": _events_summary(
