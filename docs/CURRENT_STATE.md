@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-07-04_10:30 JST
+更新日: 2026-07-04_10:47 JST
 -->
 
 # Current State
@@ -24,6 +24,7 @@
 - 実装済みの pre-intake candidate set contract、writer、blocked input-evidence artifact、shortlist export sidecar を見る場合は [strategy_idea_candidates/README.md](strategy_idea_candidates/README.md) を読む。
 - Profit Core / Reality Check の次に直す1箇所を見る場合は `uv run sis profit-core-reality-check` を使う。これは既存 candidate / search ledger / C9 bridge / profit-readiness / risk / actual-cash artifact を読むだけで、missing artifact生成、actual-cash代用、demo/testnet、外部API、live permission は行わない。
 - 最終形までの進捗と、research/backtest platform、Profit Core、production live trading を分けた評価は [FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md](FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md) を読む。
+- 90%に近づけるための大チャンク、順序、やらないことは [PROGRESS_TO_90_ROADMAP_2026-07-04.md](PROGRESS_TO_90_ROADMAP_2026-07-04.md) を読む。
 - 戦略アイデア候補生成をより良くする依存関係の採否、追加順、optional extra 境界を見る場合は [STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md](STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md) を読む。
 - backtest 結果を HTML / JS で見る入口は `uv run sis strategy-backtest-html-report`。生成先は `data/reports/strategy_backtest_html_report.html` と `data/research/backtest_html_report/strategy_backtest_html_report.json`。
 - 専門用語を減らして「できること / できないこと」を読む場合は [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md) を読む。
@@ -51,6 +52,7 @@
 | 実装済み candidate set contract と export sidecar を見る | [strategy_idea_candidates/README.md](strategy_idea_candidates/README.md) |
 | Profit Core / Reality Check の次blockerを読む | `uv run sis profit-core-reality-check` |
 | 最終形までの進捗を読む | [FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md](FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md) |
+| 90%に近づける大チャンクを読む | [PROGRESS_TO_90_ROADMAP_2026-07-04.md](PROGRESS_TO_90_ROADMAP_2026-07-04.md) |
 | 戦略アイデア候補生成に依存関係を足すか判断する | [STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md](STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md) |
 | backtest 結果をHTMLで見る | `uv run sis strategy-backtest-html-report` |
 | 技術詳細の capability catalog を見る | [REPO_CAPABILITIES_CURRENT_2026-06-16.md](REPO_CAPABILITIES_CURRENT_2026-06-16.md) |

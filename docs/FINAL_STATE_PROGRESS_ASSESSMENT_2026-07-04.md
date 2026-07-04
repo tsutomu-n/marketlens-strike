@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-04_10:30 JST
-更新日: 2026-07-04_10:35 JST
+更新日: 2026-07-04_10:47 JST
 -->
 
 # Final State Progress Assessment
@@ -12,6 +12,8 @@
 ただし、最終形を「実資金または実損益に接続した、利益判断可能な個人運用システム」と定義すると、現在地は **50%前後** と見る。理由は、local validation と before-cost / estimate / virtual / review artifact は厚いが、Reality Check の次 blocker が `ACTUAL_CASH_SOURCE_MISSING` であり、actual cash evidence がまだ入っていないため。
 
 live trading / wallet / signing / exchange write / 自動売買まで含めた最終形としては、現行 operator path では未許可なので **30%未満** と見る。
+
+90%に近づける具体的な大チャンクと順序は [PROGRESS_TO_90_ROADMAP_2026-07-04.md](PROGRESS_TO_90_ROADMAP_2026-07-04.md) を読む。
 
 ## この文書の評価対象
 
