@@ -12,7 +12,11 @@ from sis.crypto_perp.cash_ledger import CashLedgerEntry, build_cash_ledger
 from sis.crypto_perp.events import detect_event
 from sis.crypto_perp.features import EventDetectorConfig
 from sis.crypto_perp.outcomes import OutcomePriceWindow, build_outcome
-from sis.crypto_perp.pre_actual_cash import build_pre_actual_cash_evidence_pack
+from sis.crypto_perp.pre_actual_cash import (
+    PRE_ACTUAL_CASH_SUMMARY_ARTIFACT_NAMES,
+    build_pre_actual_cash_evidence_pack,
+    write_pre_actual_cash_evidence_pack,
+)
 from sis.crypto_perp.profit_readiness import (
     build_profit_readiness_inventory,
     build_profit_readiness_plan,
@@ -452,30 +456,87 @@ def test_pre_actual_cash_pack_builder_returns_required_summaries_for_ten_pairs(
     assert decision.tournament_summary["actual_cash_result_null_count"] == 30
     assert decision.source_gap_summary["run_manifest"]["status"] == "missing"
     assert decision.source_gap_summary["run_manifest"]["known_gap_count"] > 0
+    assert decision.non_goal_flags["cost_adjusted_estimate_is_actual_cash"] is False
+    assert decision.non_goal_flags["bias_guard_sample_insufficient_is_robustness_pass"] is False
+    assert decision.non_goal_flags["llm_trade_decision_used"] is False
     replay_summary = summaries["replay_slice_summary"]
     assert replay_summary["event_count"] == 10
     assert replay_summary["future_data_included"] is False
     events_summary = summaries["events_summary"]
     assert events_summary["run_manifest"]["status"] == "missing"
+    assert "event_count: `10`" in decision_md
+    assert "outcome_count: `10`" in decision_md
+    assert "main_source_gaps:" in decision_md
+    assert "selected_action_counts:" in decision_md
+    assert "leader_action:" in decision_md
+    assert "bias_guard_status:" in decision_md
     assert "actual_cash_used: `false`" in decision_md
     assert "profit_proven: `false`" in decision_md
 
 
-def test_pre_actual_cash_pack_blocks_small_sample_without_profit_claim(tmp_path: Path) -> None:
+def test_pre_actual_cash_pack_writer_blocks_small_sample_without_profit_claim(
+    tmp_path: Path,
+) -> None:
     _write_event_outcome_pairs(tmp_path / "inputs", 1)
-    _, decision, _ = build_pre_actual_cash_evidence_pack(
+    paths = write_pre_actual_cash_evidence_pack(
         data_dir=tmp_path / "inputs",
+        out_dir=tmp_path / "pack",
         created_at="2026-06-21T07:00:00Z",
         notional_usd=Decimal("100"),
         min_events=10,
     )
+    expected_files = {f"{name}.json" for name in PRE_ACTUAL_CASH_SUMMARY_ARTIFACT_NAMES} | {
+        "decision.json",
+        "decision.md",
+    }
+    assert set(paths) == expected_files
+    assert {path.name for path in paths.values()} == expected_files
+    assert all(path.exists() for path in paths.values())
 
-    assert decision.decision == "COLLECT_MORE_SOURCES"
-    assert "MIN_EVENT_OUTCOME_SAMPLE_NOT_MET" in decision.reason_codes
-    assert decision.event_count == 1
-    assert decision.source_gap_summary["run_manifest"]["status"] == "missing"
-    assert decision.non_goal_flags["actual_cash_used"] is False
-    assert decision.non_goal_flags["public_candle_outcome_is_profit_evidence"] is False
+    decision_payload = json.loads((tmp_path / "pack/decision.json").read_text(encoding="utf-8"))
+    Draft202012Validator(_schema("crypto_perp_pre_actual_cash_decision.v1.schema.json")).validate(
+        decision_payload
+    )
+    decision_md = (tmp_path / "pack/decision.md").read_text(encoding="utf-8")
+
+    assert decision_payload["decision"] == "COLLECT_MORE_SOURCES"
+    assert {
+        "MIN_EVENT_OUTCOME_SAMPLE_NOT_MET",
+        "COST_ADJUSTED_INPUTS_MISSING",
+        "DEPTH_SOURCE_MISSING",
+        "OPTIONAL_FEATURES_MISSING",
+        "EDGE_SELECTED_ACTION_UNKNOWN",
+        "TOURNAMENT_LEADER_NO_TRADE",
+        "LEADER_DOES_NOT_BEAT_NO_TRADE",
+        "BIAS_GUARD_SAMPLE_INSUFFICIENT_OR_NOT_ESTIMABLE",
+        "BIAS_GUARD_NOT_PASSING",
+    }.issubset(set(decision_payload["reason_codes"]))
+    assert decision_payload["event_count"] == 1
+    assert decision_payload["outcome_count"] == 1
+    assert decision_payload["source_gap_summary"]["run_manifest"]["status"] == "missing"
+    assert decision_payload["edge_summary"]["selected_action_counts"] == {"UNKNOWN": 1}
+    assert decision_payload["tournament_summary"]["leader_action"] == "NO_TRADE"
+    assert decision_payload["tournament_summary"]["leader_beats_no_trade"] is False
+    assert decision_payload["tournament_summary"]["actual_cash_result_null_count"] == 3
+    assert decision_payload["bias_guard_summary"]["guard_status"] == "BLOCKED"
+    assert decision_payload["bias_guard_summary"]["pbo_status"] == "NOT_ESTIMABLE"
+    assert decision_payload["non_goal_flags"]["actual_cash_used"] is False
+    assert decision_payload["non_goal_flags"]["profit_proven"] is False
+    assert decision_payload["non_goal_flags"]["actual_cash_readiness_claimed"] is False
+    assert decision_payload["non_goal_flags"]["tiny_live_readiness_claimed"] is False
+    assert decision_payload["non_goal_flags"]["live_trading_readiness_claimed"] is False
+    assert decision_payload["non_goal_flags"]["exchange_write_used"] is False
+    assert decision_payload["non_goal_flags"]["llm_trade_decision_used"] is False
+    assert decision_payload["non_goal_flags"]["public_candle_outcome_is_profit_evidence"] is False
+    assert "event_count: `1`" in decision_md
+    assert "outcome_count: `1`" in decision_md
+    assert "selected_action_counts: `{'UNKNOWN': 1}`" in decision_md
+    assert "leader_action: `NO_TRADE`" in decision_md
+    assert "bias_guard_status: `BLOCKED`" in decision_md
+    assert "pbo_status: `NOT_ESTIMABLE`" in decision_md
+    assert "actual_cash_readiness_claimed: `false`" in decision_md
+    assert "tiny_live_readiness_claimed: `false`" in decision_md
+    assert "live_trading_readiness_claimed: `false`" in decision_md
 
 
 def test_pre_actual_cash_pack_reads_existing_run_manifest(tmp_path: Path) -> None:

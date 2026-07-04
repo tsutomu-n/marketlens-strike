@@ -16,6 +16,7 @@ from sis.crypto_perp.clock import ensure_utc_aware, serialize_utc_z
 from sis.crypto_perp.edge_scorer import CryptoPerpEdgeScore, build_edge_score
 from sis.crypto_perp.events import CryptoPerpEvent
 from sis.crypto_perp.features import CryptoPerpFeaturePack, build_feature_pack
+from sis.crypto_perp.io import write_json_artifact, write_text_artifact
 from sis.crypto_perp.models import CryptoPerpBoundary, CryptoPerpProducer, stable_hash
 from sis.crypto_perp.outcomes import CryptoPerpOutcome
 from sis.crypto_perp.profit_readiness import (
@@ -37,6 +38,17 @@ from sis.crypto_perp.tournament_rows import (
 
 PRE_ACTUAL_CASH_DECISION_SCHEMA_VERSION = "crypto_perp_pre_actual_cash_decision.v1"
 PRE_ACTUAL_CASH_PACK_PRODUCER = "pre_actual_cash_evidence_pack_v1"
+PRE_ACTUAL_CASH_SUMMARY_ARTIFACT_NAMES = (
+    "events_summary",
+    "outcomes_summary",
+    "source_availability_matrix",
+    "known_gaps_by_source",
+    "replay_slice_summary",
+    "feature_pack_summary",
+    "edge_score_summary",
+    "tournament_rows_v2_summary",
+    "bias_guard_summary",
+)
 PreActualCashDecisionName = Literal[
     "KILL",
     "REVISE_EVENT_DEFINITION",
@@ -793,6 +805,48 @@ def build_pre_actual_cash_evidence_pack(
         bias_guard_summary=bias_summary,
     )
     return summaries, artifact, render_pre_actual_cash_decision_markdown(artifact)
+
+
+def write_pre_actual_cash_evidence_pack(
+    *,
+    data_dir: Path,
+    out_dir: Path,
+    created_at: datetime | str,
+    notional_usd: Decimal,
+    min_events: int = 10,
+    min_events_for_pbo: int = 30,
+    fold_count: int = 0,
+    fee_rate: Decimal = Decimal("0.0006"),
+    funding_rate: Decimal = Decimal("0"),
+    slippage_bps: Decimal = Decimal("0"),
+    operator_time_minutes: Decimal = Decimal("0"),
+    operator_hourly_cost_usd: Decimal = Decimal("0"),
+) -> dict[str, Path]:
+    summaries, decision, decision_md = build_pre_actual_cash_evidence_pack(
+        data_dir=data_dir,
+        created_at=created_at,
+        notional_usd=notional_usd,
+        min_events=min_events,
+        min_events_for_pbo=min_events_for_pbo,
+        fold_count=fold_count,
+        fee_rate=fee_rate,
+        funding_rate=funding_rate,
+        slippage_bps=slippage_bps,
+        operator_time_minutes=operator_time_minutes,
+        operator_hourly_cost_usd=operator_hourly_cost_usd,
+    )
+    paths: dict[str, Path] = {}
+    for name in PRE_ACTUAL_CASH_SUMMARY_ARTIFACT_NAMES:
+        path = out_dir / f"{name}.json"
+        write_json_artifact(path, summaries[name])
+        paths[f"{name}.json"] = path
+    decision_json = out_dir / "decision.json"
+    write_json_artifact(decision_json, decision.model_dump(mode="json"))
+    paths["decision.json"] = decision_json
+    decision_markdown = out_dir / "decision.md"
+    write_text_artifact(decision_markdown, decision_md)
+    paths["decision.md"] = decision_markdown
+    return paths
 
 
 def _next_action(decision: PreActualCashDecisionName) -> str:

@@ -1,9 +1,70 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-04_18:37 JST
+更新日: 2026-07-04_19:37 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Pre Actual Cash Writer Helper
+
+Completed on branch `ai/pre-actual-cash-writer-audit-20260704-1937`.
+
+Goal:
+
+- Close the dogfood gap in the pre-actual-cash evidence pack by adding an internal writer for the expected artifact files.
+- Keep the surface internal; do not add a public CLI or actual-cash/tiny-live/live-order behavior.
+
+Achieved:
+
+- Added `write_pre_actual_cash_evidence_pack()` in `src/sis/crypto_perp/pre_actual_cash.py`.
+- The helper writes:
+  - `events_summary.json`
+  - `outcomes_summary.json`
+  - `source_availability_matrix.json`
+  - `known_gaps_by_source.json`
+  - `replay_slice_summary.json`
+  - `feature_pack_summary.json`
+  - `edge_score_summary.json`
+  - `tournament_rows_v2_summary.json`
+  - `bias_guard_summary.json`
+  - `decision.json`
+  - `decision.md`
+- Added `PRE_ACTUAL_CASH_SUMMARY_ARTIFACT_NAMES` as the single expected summary list for writer tests.
+- Strengthened the 1 event / 1 outcome smoke test so it validates written `decision.json` against schema and checks sample insufficiency, missing source inputs, `selected_action=UNKNOWN`, `leader_action=NO_TRADE`, bias guard insufficiency, and false non-goal flags.
+- Updated `docs/crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md` so the implementation description matches the writer behavior.
+- Added `docs/plans/pre-actual-cash-writer-helper-2026-07-04.md`.
+
+Changed files:
+
+- `src/sis/crypto_perp/pre_actual_cash.py`
+- `tests/crypto_perp/test_profit_readiness_local_automation.py`
+- `docs/crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md`
+- `docs/plans/pre-actual-cash-writer-helper-2026-07-04.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- Pending in this addendum until the post-change verification pass below is run.
+
+Remaining work:
+
+- Run focused pytest, ruff, current-docs check, and final completion audit.
+
+Destructive change:
+
+No. This is additive.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required. Existing builder callers can keep using `build_pre_actual_cash_evidence_pack()`; dogfood runs can use `write_pre_actual_cash_evidence_pack()`.
+
+Rollback:
+
+- Revert the files listed above. Generated runtime pack outputs can be deleted if desired.
 
 ## Latest Addendum: Code-Truth Docs Triage Cleanup v1
 
