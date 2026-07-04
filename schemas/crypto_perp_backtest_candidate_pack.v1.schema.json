@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": "crypto_perp_backtest_candidate_pack.v1"},
+    "artifact_id": {"type": "string"},
+    "created_at": {"type": "string"},
+    "producer": {"type": "object"},
+    "source_refs": {"type": "array"},
+    "boundary": {
+      "additionalProperties": false,
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false}
+      },
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ],
+      "type": "object"
+    },
+    "pack_id": {"type": "string"},
+    "decision": {
+      "enum": [
+        "BACKTEST_REJECT",
+        "BACKTEST_REVISE",
+        "BACKTEST_COLLECT_MORE_DATA",
+        "BACKTEST_CANDIDATE_HOLD"
+      ]
+    },
+    "reason_codes": {"items": {"type": "string"}, "type": "array"},
+    "event_count": {"minimum": 0, "type": "integer"},
+    "outcome_count": {"minimum": 0, "type": "integer"},
+    "artifact_paths": {"additionalProperties": {"type": "string"}, "type": "object"},
+    "summary": {"type": "object"},
+    "non_goal_flags": {
+      "additionalProperties": {"type": "boolean"},
+      "properties": {
+        "actual_cash_used": {"const": false},
+        "profit_proven": {"const": false},
+        "actual_cash_readiness_claimed": {"const": false},
+        "tiny_live_readiness_claimed": {"const": false},
+        "live_trading_readiness_claimed": {"const": false},
+        "wallet_or_signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false},
+        "backtest_promote_to_live_available": {"const": false},
+        "ml_or_llm_trade_decision_used": {"const": false}
+      },
+      "required": [
+        "actual_cash_used",
+        "profit_proven",
+        "actual_cash_readiness_claimed",
+        "tiny_live_readiness_claimed",
+        "live_trading_readiness_claimed",
+        "wallet_or_signing_used",
+        "exchange_write_used",
+        "live_order_submitted",
+        "backtest_promote_to_live_available",
+        "ml_or_llm_trade_decision_used"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "created_at",
+    "producer",
+    "source_refs",
+    "boundary",
+    "pack_id",
+    "decision",
+    "reason_codes",
+    "event_count",
+    "outcome_count",
+    "artifact_paths",
+    "summary",
+    "non_goal_flags"
+  ],
+  "type": "object"
+}

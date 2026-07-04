@@ -1,9 +1,128 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-05_00:01 JST
+更新日: 2026-07-05_00:24 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Crypto Perp Backtest Candidate Pack v1
+
+Completed on branch `ai/crypto-perp-backtest-pack-20260705-0011`.
+
+Goal:
+
+- Move the no-actual-cash endpoint from `Pre Actual Cash Evidence Gate` toward `Crypto Perp Backtest Candidate Pack v1`.
+- Produce timestamp-safe simulation evidence from local artifacts.
+- Classify candidates as `BACKTEST_REJECT`, `BACKTEST_REVISE`, `BACKTEST_COLLECT_MORE_DATA`, or `BACKTEST_CANDIDATE_HOLD`.
+- Do not add actual cash, cash ledger, actual-cash rows, tiny-live, live orders, ML/LLM trade decisions, external writes, paid operations, production deployment, or secret changes.
+
+Achieved:
+
+- Added `crypto-perp-backtest-candidate-pack` public CLI.
+- Added `src/sis/crypto_perp/backtest_candidate_pack.py` to build a local pack from existing Crypto Perp event/outcome/source artifacts.
+- The pack writes:
+  - `signal_rows.jsonl`
+  - `data_availability_ledger.json`
+  - `execution_assumptions.json`
+  - `no_lookahead_report.json`
+  - `backtest_result.json`
+  - `stress_result.json`
+  - `regime_split_result.json`
+  - `rolling_stability_result.json`
+  - `decision.json`
+  - `decision.md`
+- Added `schemas/crypto_perp_backtest_candidate_pack.v1.schema.json`.
+- Added focused tests in `tests/crypto_perp/test_backtest_candidate_pack.py`.
+- Updated current docs/catalog so the new command is discoverable and not misread as live/profit permission.
+- Recorded the implementation plan and two critique passes in `docs/plans/crypto-perp-backtest-candidate-pack-v1-2026-07-05.md`.
+
+Result on current local `data/crypto_perp`:
+
+- Command: `uv run sis crypto-perp-backtest-candidate-pack`
+- Output directory: `data/crypto_perp/backtest_candidate_pack/latest/`
+- `decision=BACKTEST_COLLECT_MORE_DATA`
+- `event_count=10`
+- `outcome_count=10`
+- `selected_action_counts={'NO_TRADE': 8, 'REVERSAL_SHORT': 2}`
+- `no_lookahead.failed_count=0`
+- `no_lookahead.unverified_count=0`
+- `backtest.total_result_usd=0.5548161621815293823691474309`
+- `backtest.executed_trade_count=2`
+- `bias_guard_status=BLOCKED`
+- `pbo_status=NOT_ESTIMABLE`
+- reason codes:
+  - `PBO_NOT_ESTIMABLE_SAMPLE_INSUFFICIENT`
+  - `ROLLING_STABILITY_SAMPLE_INSUFFICIENT`
+
+Boundary:
+
+- This is simulation evidence only, not profit proof.
+- `BACKTEST_CANDIDATE_HOLD` does not permit paper, tiny-live, live, wallet, signing, or exchange writes.
+- The command does not fetch missing public data and does not call external APIs.
+- Zero-cost simulation is rejected: `fee_rate` and `slippage_bps` must be positive.
+- `BACKTEST_PROMOTE_TO_LIVE` is intentionally absent.
+
+Changed files:
+
+- `src/sis/crypto_perp/backtest_candidate_pack.py`
+- `src/sis/commands/crypto_perp_backtest_candidate_pack.py`
+- `src/sis/commands/crypto_perp.py`
+- `schemas/crypto_perp_backtest_candidate_pack.v1.schema.json`
+- `tests/crypto_perp/test_backtest_candidate_pack.py`
+- `docs/plans/crypto-perp-backtest-candidate-pack-v1-2026-07-05.md`
+- `docs/CURRENT_STATE.md`
+- `docs/IMPLEMENTED_SURFACES.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/crypto_perp/test_backtest_candidate_pack.py` -> 4 passed.
+- `uv run sis crypto-perp-backtest-candidate-pack --help` -> command help renders.
+- `uv run sis crypto-perp-backtest-candidate-pack` -> generated the local 10-event pack.
+- `uv run python scripts/check_cli_catalog.py` -> checked 234 public CLI commands.
+- `uv run python scripts/check_current_docs.py` -> checked 181 current docs.
+- `uv run pyrefly check` -> 0 errors.
+- `uv run ty check src --python-version 3.13 --output-format concise` -> all checks passed.
+- `./scripts/check` -> passed; 2886 pytest tests passed.
+
+Unexecuted verification:
+
+- No external data refresh was executed. This is intentional because the task forbids external writes and the implemented command is local-artifact only.
+- No `git push` was executed yet. This branch is local unless a later step explicitly pushes it.
+
+Remaining work:
+
+- To move from `BACKTEST_COLLECT_MORE_DATA` toward `BACKTEST_CANDIDATE_HOLD` on current local data, collect or generate enough additional local evidence to make PBO and rolling stability interpretable. The current 10-event sample is insufficient by the command's default stability threshold.
+- Trades/books/depth/replay expansion and 30+ event expansion remain separate future work.
+- Actual cash, paper, tiny-live, and live readiness remain out of scope.
+
+User action required:
+
+- None for local use.
+- If remote sharing is required, push the branch explicitly.
+
+Destructive change:
+
+No. The implementation is additive.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required. Existing Crypto Perp artifacts remain readable.
+
+Rollback:
+
+- Revert the new command registration in `src/sis/commands/crypto_perp.py`.
+- Remove the new module, schema, tests, and docs plan listed above.
+- Remove generated runtime artifacts under `data/crypto_perp/backtest_candidate_pack/latest/` if local cleanup is desired.
+
+Next consideration:
+
+- Decide whether the next implementation step should be 30+ event expansion, deeper source availability, or a stricter event-definition revision. Do not mix those with actual cash work.
 
 ## Latest Addendum: Ticker Coverage Metadata
 

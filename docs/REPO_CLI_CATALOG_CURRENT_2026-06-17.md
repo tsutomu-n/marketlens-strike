@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-07-04_18:00 JST
+更新日: 2026-07-05_00:21 JST
 -->
 
 # Repo CLI Catalog Current
@@ -144,6 +144,7 @@ uv run python scripts/check_current_docs.py
 - `crypto-perp-profit-readiness-inventory`
 - `crypto-perp-profit-readiness-plan`
 - `crypto-perp-profit-readiness-run-local`
+- `crypto-perp-backtest-candidate-pack`
 - `crypto-perp-source-availability`
 - `crypto-perp-replay-slice`
 - `crypto-perp-feature-pack`
@@ -164,7 +165,7 @@ uv run python scripts/check_current_docs.py
 - `crypto-perp-truth-cycle-dogfood-pack`
 - `crypto-perp-truth-cycle-status`
 
-M10 の cash ledger、execution replay、calibration と M11 の Workbench bridge は Python/schema artifact surface です。M11 の hypothesis tournament は `crypto-perp-tournament-report` で同一event setのactual cash比較reportを生成できます。profit-readiness 追加層は `crypto-perp-profit-readiness-inventory`、`crypto-perp-profit-readiness-plan`、`crypto-perp-profit-readiness-run-local`、`crypto-perp-source-availability`、`crypto-perp-replay-slice`、`crypto-perp-feature-pack`、`crypto-perp-edge-score`、`crypto-perp-tournament-rows-v2`、`crypto-perp-bias-guard`、`crypto-perp-risk-taker-review`、`crypto-perp-cash-ledger`、`crypto-perp-actual-cash-rows-build`、`crypto-perp-actual-cash-report-gate`、`crypto-perp-tiny-live-review-packet`、`crypto-perp-tiny-live-shadow-readiness`、`crypto-perp-tiny-live-shadow` で local artifact を作ります。pre-actual-cash の4択 decision gate は内部 builder / schema surface であり、新しい public CLI はありません。`crypto-perp-risk-taker-review` は human risk review 用の分類 artifact であり、live order permissionではありません。`crypto-perp-tournament-gate` は report を読んで next action を分けるlocal gateであり、live order permissionではありません。`crypto-perp-truth-cycle-status` は既存artifactから次に欠けているlocal stepとstop reasonを出すだけで、network / order / live permissionではありません。`crypto-perp-truth-cycle-dogfood-pack` は fixture-only の status / Daily Brief / Workbench Viewer pack を生成するlocal確認入口です。
+M10 の cash ledger、execution replay、calibration と M11 の Workbench bridge は Python/schema artifact surface です。M11 の hypothesis tournament は `crypto-perp-tournament-report` で同一event setのactual cash比較reportを生成できます。profit-readiness 追加層は `crypto-perp-profit-readiness-inventory`、`crypto-perp-profit-readiness-plan`、`crypto-perp-profit-readiness-run-local`、`crypto-perp-backtest-candidate-pack`、`crypto-perp-source-availability`、`crypto-perp-replay-slice`、`crypto-perp-feature-pack`、`crypto-perp-edge-score`、`crypto-perp-tournament-rows-v2`、`crypto-perp-bias-guard`、`crypto-perp-risk-taker-review`、`crypto-perp-cash-ledger`、`crypto-perp-actual-cash-rows-build`、`crypto-perp-actual-cash-report-gate`、`crypto-perp-tiny-live-review-packet`、`crypto-perp-tiny-live-shadow-readiness`、`crypto-perp-tiny-live-shadow` で local artifact を作ります。`crypto-perp-backtest-candidate-pack` は actual cash なしの timestamp-safe simulation evidence pack を作る command で、profit proof や live order permission ではありません。pre-actual-cash の4択 decision gate は内部 builder / schema surface です。`crypto-perp-risk-taker-review` は human risk review 用の分類 artifact であり、live order permissionではありません。`crypto-perp-tournament-gate` は report を読んで next action を分けるlocal gateであり、live order permissionではありません。`crypto-perp-truth-cycle-status` は既存artifactから次に欠けているlocal stepとstop reasonを出すだけで、network / order / live permissionではありません。`crypto-perp-truth-cycle-dogfood-pack` は fixture-only の status / Daily Brief / Workbench Viewer pack を生成するlocal確認入口です。
 
 ### Trade[XYZ] / Quotes / Data Readiness
 
