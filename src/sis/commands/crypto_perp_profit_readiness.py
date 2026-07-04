@@ -217,10 +217,16 @@ def register_crypto_perp_profit_readiness_commands(app: typer.Typer) -> None:
         outcome: Path = typer.Option(..., "--outcome"),
         out: Path = typer.Option(Path("data/crypto_perp/profit_readiness_run/latest"), "--out"),
         notional_usd: str = typer.Option(..., "--notional-usd"),
+        source_ref: list[str] | None = typer.Option(
+            None,
+            "--source-ref",
+            help="Extra local source reference as path[=schema_version]. Repeatable.",
+        ),
     ) -> None:
         try:
             event_artifact = CryptoPerpEvent.model_validate(_json_object(event))
             outcome_artifact = CryptoPerpOutcome.model_validate(_json_object(outcome))
+            extra_source_refs = _parse_source_refs(source_ref)
             manifest = build_profit_readiness_run(
                 event=event_artifact,
                 outcome=outcome_artifact,
@@ -229,6 +235,7 @@ def register_crypto_perp_profit_readiness_commands(app: typer.Typer) -> None:
                 event_path=event,
                 outcome_path=outcome,
                 notional_usd=Decimal(notional_usd),
+                extra_source_refs=extra_source_refs,
             )
             # Rebuild once for concrete artifact objects and write them in the same run directory.
             source = build_source_availability(
@@ -236,7 +243,10 @@ def register_crypto_perp_profit_readiness_commands(app: typer.Typer) -> None:
                 created_at=manifest.created_at,
                 available_sources={"outcome": True},
                 row_counts={"outcome": 1},
-                source_refs=[_source_ref(outcome, outcome_artifact.schema_version)],
+                source_refs=[
+                    _source_ref(outcome, outcome_artifact.schema_version),
+                    *extra_source_refs,
+                ],
             )
             replay = build_replay_slice(
                 event=event_artifact,
