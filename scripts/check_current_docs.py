@@ -79,7 +79,6 @@ CURRENT_DOC_DIRS = (
     "docs/strategy_workbench_viewer",
     "docs/strategy_research_lab",
     "docs/strategy_idea_candidates",
-    "docs/plans",
     "docs/runbooks",
     "docs/crypto_perp",
     "docs/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04",

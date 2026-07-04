@@ -1,9 +1,15 @@
 <!--
 作成日: 2026-07-03_12:53 JST
-更新日: 2026-07-03_13:08 JST
+更新日: 2026-07-04_18:37 JST
 -->
 
 # Action Required
+
+## Open Actions
+
+Open action なし。
+
+以下は resolved entries の履歴です。現在のユーザー判断待ちとして扱いません。
 
 ## AR-2026-07-03-001: C9 `side_bias=both` semantics
 
