@@ -497,6 +497,62 @@ def test_pre_actual_cash_pack_builder_returns_required_summaries_for_ten_pairs(
     assert "profit_proven: `false`" in decision_md
 
 
+def test_pre_actual_cash_pack_writer_dogfoods_ten_pairs(
+    tmp_path: Path,
+) -> None:
+    _write_event_outcome_pairs(tmp_path / "inputs", 10)
+
+    paths = write_pre_actual_cash_evidence_pack(
+        data_dir=tmp_path / "inputs",
+        out_dir=tmp_path / "pack",
+        created_at="2026-06-21T07:00:00Z",
+        notional_usd=Decimal("100"),
+        min_events=10,
+    )
+
+    expected_files = {f"{name}.json" for name in PRE_ACTUAL_CASH_SUMMARY_ARTIFACT_NAMES} | {
+        "decision.json",
+        "decision.md",
+    }
+    assert len(expected_files) == 11
+    assert set(paths) == expected_files
+    assert {path.name for path in paths.values()} == expected_files
+    assert all(path.exists() for path in paths.values())
+
+    decision_payload = json.loads((tmp_path / "pack/decision.json").read_text(encoding="utf-8"))
+    Draft202012Validator(_schema("crypto_perp_pre_actual_cash_decision.v1.schema.json")).validate(
+        decision_payload
+    )
+    decision_md = (tmp_path / "pack/decision.md").read_text(encoding="utf-8")
+
+    assert decision_payload["event_count"] == 10
+    assert decision_payload["outcome_count"] == 10
+    assert decision_payload["decision"] in {
+        "KILL",
+        "REVISE_EVENT_DEFINITION",
+        "COLLECT_MORE_SOURCES",
+        "HOLD_FOR_FUTURE_ACTUAL_CASH",
+    }
+    assert all(value is False for value in decision_payload["non_goal_flags"].values())
+    assert "event_count: `10`" in decision_md
+    assert "outcome_count: `10`" in decision_md
+    assert "main_source_gaps:" in decision_md
+    assert "selected_action_counts:" in decision_md
+    assert "leader_action:" in decision_md
+    assert "bias_guard_status:" in decision_md
+    assert "pbo_status:" in decision_md
+    assert "actual_cash_used: `false`" in decision_md
+    assert "profit_proven: `false`" in decision_md
+    assert "actual_cash_readiness_claimed: `false`" in decision_md
+    assert "tiny_live_readiness_claimed: `false`" in decision_md
+    assert "live_trading_readiness_claimed: `false`" in decision_md
+    assert (
+        "This pack is a pre-actual-cash candidate handling gate only. "
+        "It does not prove profit, actual cash readiness, tiny-live readiness, "
+        "or live trading readiness."
+    ) in decision_md
+
+
 def test_pre_actual_cash_pack_writer_blocks_small_sample_without_profit_claim(
     tmp_path: Path,
 ) -> None:
