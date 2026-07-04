@@ -129,5 +129,15 @@
       "outcome_return_360m": "-0.0005551252688368629771334927",
       "observed_high_low_order": "LOW_FIRST"
     }
-  ]
+  ],
+  "g3_ticker_source": {
+    "created_at": "2026-07-04T14:27:00Z",
+    "ticker_proxy_root": "data/crypto_perp/pre_actual_cash_realdata_ticker_proxy_20260704/",
+    "source_kind": "public_candle_close_as_ticker_proxy",
+    "event_count": 10,
+    "not_exchange_ticker_snapshot": true,
+    "actual_cash_used": false,
+    "exchange_write_used": false,
+    "live_order_submitted": false
+  }
 }

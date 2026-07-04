@@ -67,7 +67,10 @@ def _source_ref(path: Path, schema_version: str | None = None) -> dict[str, str]
 
 
 def _local_file_source_ref(path: Path, schema_version: str | None = None) -> dict[str, str]:
-    ref = {"path": path.as_posix(), "sha256": "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()}
+    ref = {
+        "path": path.as_posix(),
+        "sha256": "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest(),
+    }
     if schema_version:
         ref["schema_version"] = schema_version
     return ref

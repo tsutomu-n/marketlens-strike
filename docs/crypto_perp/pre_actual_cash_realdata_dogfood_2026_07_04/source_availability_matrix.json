@@ -16,14 +16,14 @@
     "live_measurement"
   ],
   "can_compute_actual_cash_count": 0,
-  "can_compute_cost_adjusted_estimate_count": 0,
+  "can_compute_cost_adjusted_estimate_count": 10,
   "can_compute_depth_count": 0,
   "public_candle_only_or_no_microstructure_count": 10,
   "events": [
     {
       "event_id": "1fc7eaed5f3299432f3979bdb5db62897c0967230796233a4e0055a4723d755a",
       "can_compute_actual_cash": false,
-      "can_compute_cost_adjusted_estimate": false,
+      "can_compute_cost_adjusted_estimate": true,
       "can_compute_depth": false,
       "known_gap_count": 6,
       "sources": {
@@ -38,9 +38,9 @@
           "reason": "available"
         },
         "ticker": {
-          "available": false,
+          "available": true,
           "row_count": null,
-          "reason": "TICKER_SOURCE_MISSING"
+          "reason": "available"
         },
         "funding": {
           "available": true,
@@ -87,7 +87,7 @@
     {
       "event_id": "22ef7416c3f105e26d3353b4345c2b60db4fdf0003a84b5734bc89ffa9ee837e",
       "can_compute_actual_cash": false,
-      "can_compute_cost_adjusted_estimate": false,
+      "can_compute_cost_adjusted_estimate": true,
       "can_compute_depth": false,
       "known_gap_count": 6,
       "sources": {
@@ -102,9 +102,9 @@
           "reason": "available"
         },
         "ticker": {
-          "available": false,
+          "available": true,
           "row_count": null,
-          "reason": "TICKER_SOURCE_MISSING"
+          "reason": "available"
         },
         "funding": {
           "available": true,
@@ -151,7 +151,7 @@
     {
       "event_id": "7f0c9a6f9be54b364631cfabf3d7a4bdc169353e46d5353ac7e8ff627144ef8e",
       "can_compute_actual_cash": false,
-      "can_compute_cost_adjusted_estimate": false,
+      "can_compute_cost_adjusted_estimate": true,
       "can_compute_depth": false,
       "known_gap_count": 6,
       "sources": {
@@ -166,9 +166,9 @@
           "reason": "available"
         },
         "ticker": {
-          "available": false,
+          "available": true,
           "row_count": null,
-          "reason": "TICKER_SOURCE_MISSING"
+          "reason": "available"
         },
         "funding": {
           "available": true,
@@ -215,7 +215,7 @@
     {
       "event_id": "8c12c3e75494cfab964f97cabae141f5182d3c3dc929d2a2365f79c9c5b027de",
       "can_compute_actual_cash": false,
-      "can_compute_cost_adjusted_estimate": false,
+      "can_compute_cost_adjusted_estimate": true,
       "can_compute_depth": false,
       "known_gap_count": 6,
       "sources": {
@@ -230,9 +230,9 @@
           "reason": "available"
         },
         "ticker": {
-          "available": false,
+          "available": true,
           "row_count": null,
-          "reason": "TICKER_SOURCE_MISSING"
+          "reason": "available"
         },
         "funding": {
           "available": true,
@@ -279,7 +279,7 @@
     {
       "event_id": "9ed7a715a42fab7dbbb1b80be5680b567d3becf5a20ef2a145e7b884fb28b556",
       "can_compute_actual_cash": false,
-      "can_compute_cost_adjusted_estimate": false,
+      "can_compute_cost_adjusted_estimate": true,
       "can_compute_depth": false,
       "known_gap_count": 6,
       "sources": {
@@ -294,9 +294,9 @@
           "reason": "available"
         },
         "ticker": {
-          "available": false,
+          "available": true,
           "row_count": null,
-          "reason": "TICKER_SOURCE_MISSING"
+          "reason": "available"
         },
         "funding": {
           "available": true,
@@ -343,7 +343,7 @@
     {
       "event_id": "c07c92077899c68358cade21d613843b5e4d5bac89167b84262f1e8149171b10",
       "can_compute_actual_cash": false,
-      "can_compute_cost_adjusted_estimate": false,
+      "can_compute_cost_adjusted_estimate": true,
       "can_compute_depth": false,
       "known_gap_count": 6,
       "sources": {
@@ -358,9 +358,9 @@
           "reason": "available"
         },
         "ticker": {
-          "available": false,
+          "available": true,
           "row_count": null,
-          "reason": "TICKER_SOURCE_MISSING"
+          "reason": "available"
         },
         "funding": {
           "available": true,
@@ -407,7 +407,7 @@
     {
       "event_id": "d5f11ebae4f04e4b263242cc338fe941882dd5b76d51241b8d45abb29a298aeb",
       "can_compute_actual_cash": false,
-      "can_compute_cost_adjusted_estimate": false,
+      "can_compute_cost_adjusted_estimate": true,
       "can_compute_depth": false,
       "known_gap_count": 6,
       "sources": {
@@ -422,9 +422,9 @@
           "reason": "available"
         },
         "ticker": {
-          "available": false,
+          "available": true,
           "row_count": null,
-          "reason": "TICKER_SOURCE_MISSING"
+          "reason": "available"
         },
         "funding": {
           "available": true,
@@ -471,7 +471,7 @@
     {
       "event_id": "e7fbd5d4ed013f4a93299889a0e73473230cdf70c682299fb00b3e8e6e3249da",
       "can_compute_actual_cash": false,
-      "can_compute_cost_adjusted_estimate": false,
+      "can_compute_cost_adjusted_estimate": true,
       "can_compute_depth": false,
       "known_gap_count": 6,
       "sources": {
@@ -486,9 +486,9 @@
           "reason": "available"
         },
         "ticker": {
-          "available": false,
+          "available": true,
           "row_count": null,
-          "reason": "TICKER_SOURCE_MISSING"
+          "reason": "available"
         },
         "funding": {
           "available": true,
@@ -535,7 +535,7 @@
     {
       "event_id": "e9e75d6fd74a8178af923b6bf86a1b7a468904357a86374420e8106421069f02",
       "can_compute_actual_cash": false,
-      "can_compute_cost_adjusted_estimate": false,
+      "can_compute_cost_adjusted_estimate": true,
       "can_compute_depth": false,
       "known_gap_count": 6,
       "sources": {
@@ -550,9 +550,9 @@
           "reason": "available"
         },
         "ticker": {
-          "available": false,
+          "available": true,
           "row_count": null,
-          "reason": "TICKER_SOURCE_MISSING"
+          "reason": "available"
         },
         "funding": {
           "available": true,
@@ -599,7 +599,7 @@
     {
       "event_id": "f97225d80ab3525e8c97c9279e656a22c7df37fc9f7a462faff082e869ba23cd",
       "can_compute_actual_cash": false,
-      "can_compute_cost_adjusted_estimate": false,
+      "can_compute_cost_adjusted_estimate": true,
       "can_compute_depth": false,
       "known_gap_count": 6,
       "sources": {
@@ -614,9 +614,9 @@
           "reason": "available"
         },
         "ticker": {
-          "available": false,
+          "available": true,
           "row_count": null,
-          "reason": "TICKER_SOURCE_MISSING"
+          "reason": "available"
         },
         "funding": {
           "available": true,

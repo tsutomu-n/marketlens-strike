@@ -1,9 +1,72 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-04_22:57 JST
+更新日: 2026-07-04_23:27 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: G3 Ticker Source for Real Data Adjacent Dogfood
+
+Completed on branch `ai/g3-ticker-source-20260704-2318`.
+
+Goal:
+
+- Implement the G3 ticker-source-only step selected by the previous real-data-adjacent dogfood.
+- Keep scope to ticker source availability for the existing 10 BTCUSDT public-candle event windows.
+- Do not add trades, books, replay expansion, event-definition changes, 30-event expansion, actual cash, tiny-live, live orders, exchange writes, wallet/signing, or ML/LLM trade decisions.
+
+Achieved:
+
+- Added an explicit local source-ref path to `crypto-perp-profit-readiness-run-local` through `--source-ref path[=schema_version]`.
+- Added `extra_source_refs` support to `build_profit_readiness_run()`.
+- Updated `build_source_availability()` so supplemental source refs can satisfy ticker availability instead of only event-embedded refs.
+- Generated 10 local ticker proxy artifacts under `data/crypto_perp/pre_actual_cash_realdata_ticker_proxy_20260704/`.
+- Rebuilt the 10 per-event run-local artifacts with those ticker proxy refs.
+- Regenerated the tracked dogfood pack under `docs/crypto_perp/pre_actual_cash_realdata_dogfood_2026_07_04/`.
+
+Result:
+
+- `ticker.missing_event_count=0`
+- `can_compute_cost_adjusted_estimate_count=10`
+- `can_compute_actual_cash_count=0`
+- `can_compute_depth_count=0`
+- `selected_action_counts={'NO_TRADE': 8, 'REVERSAL_SHORT': 2}`
+- `unknown_selected_action_count=0`
+- `decision=COLLECT_MORE_SOURCES`
+- all `non_goal_flags=false`
+
+Selected blocker after G3:
+
+- `DEPTH_SOURCE_MISSING_BLOCKS_OPTIONAL_FEATURES_AND_BIAS_INTERPRETATION`
+
+Boundary:
+
+- The ticker source is a local public-candle-close proxy at or before each event cutoff.
+- It is not an exchange ticker snapshot, fill evidence, measured slippage evidence, actual cash evidence, profit proof, tiny-live readiness, live trading readiness, wallet/signing readiness, or exchange-write readiness.
+- Bias guard remains `BLOCKED` and PBO remains `NOT_ESTIMABLE` with the 10-event sample.
+
+Changed files:
+
+- `src/sis/crypto_perp/source_availability.py`
+- `src/sis/crypto_perp/profit_readiness.py`
+- `src/sis/commands/crypto_perp_profit_readiness.py`
+- `tests/crypto_perp/test_profit_readiness_local_automation.py`
+- `docs/plans/g3-ticker-source-2026-07-04.md`
+- `docs/crypto_perp/pre_actual_cash_realdata_dogfood_2026_07_04/`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/crypto_perp/test_profit_readiness_local_automation.py::test_profit_readiness_run_local_accepts_explicit_ticker_source_ref` -> passed.
+- `uv run pytest tests/crypto_perp/test_source_availability.py tests/crypto_perp/test_profit_readiness_local_automation.py` -> 15 passed.
+- `uv run python scripts/check_current_docs.py` -> checked 181 current docs.
+- `uv run python scripts/check_cli_catalog.py` -> checked 233 public CLI commands.
+- `uv run sis --help | rg "pre-actual-cash|pre_actual_cash|evidence-pack" || true` -> no output; no pre-actual-cash public CLI is exposed.
+- `./scripts/check` -> passed; 2881 pytest tests passed in 121.08s.
+
+Remaining work:
+
+- Next optional source step is depth/optional microstructure triage. Do not start trades/books/replay, 30-event expansion, or actual cash work without a separate explicit instruction.
 
 ## Latest Addendum: Real Data Adjacent 10 Event Pre Actual Cash Dogfood
 

@@ -91,9 +91,7 @@ def _infer_available(
     if source_id in provided:
         return bool(provided[source_id])
     if source_id == "bars":
-        return any(
-            _source_ref_matches(ref, ("candle", "candles", "bar")) for ref in source_refs
-        )
+        return any(_source_ref_matches(ref, ("candle", "candles", "bar")) for ref in source_refs)
     if source_id == "ticker":
         return any(
             _source_ref_matches(ref, ("ticker", "tickers", "market_snapshot"))
