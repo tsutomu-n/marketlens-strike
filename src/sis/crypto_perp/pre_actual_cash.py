@@ -1,0 +1,727 @@
+from __future__ import annotations
+
+from collections import Counter
+from collections.abc import Sequence
+from dataclasses import dataclass
+from datetime import datetime
+from decimal import Decimal
+import json
+from pathlib import Path
+from typing import Any, Literal
+
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
+
+from sis.crypto_perp.bias_guards import CryptoPerpBiasGuard, build_bias_guard
+from sis.crypto_perp.clock import ensure_utc_aware, serialize_utc_z
+from sis.crypto_perp.edge_scorer import CryptoPerpEdgeScore, build_edge_score
+from sis.crypto_perp.events import CryptoPerpEvent
+from sis.crypto_perp.features import CryptoPerpFeaturePack, build_feature_pack
+from sis.crypto_perp.models import CryptoPerpBoundary, CryptoPerpProducer, stable_hash
+from sis.crypto_perp.outcomes import CryptoPerpOutcome
+from sis.crypto_perp.profit_readiness import (
+    ProfitReadinessInventory,
+    build_profit_readiness_inventory,
+)
+from sis.crypto_perp.replay import build_replay_slice
+from sis.crypto_perp.source_availability import (
+    CryptoPerpSourceAvailability,
+    SourceId,
+    build_source_availability,
+)
+from sis.crypto_perp.tournament_rows import (
+    CryptoPerpTournamentRowsV2,
+    build_cost_aware_tournament_rows,
+)
+
+
+PRE_ACTUAL_CASH_DECISION_SCHEMA_VERSION = "crypto_perp_pre_actual_cash_decision.v1"
+PRE_ACTUAL_CASH_PACK_COMMAND = "crypto-perp-pre-actual-cash-evidence-pack"
+PreActualCashDecisionName = Literal[
+    "KILL",
+    "REVISE_EVENT_DEFINITION",
+    "COLLECT_MORE_SOURCES",
+    "HOLD_FOR_FUTURE_ACTUAL_CASH",
+]
+
+
+class PreActualCashDecisionArtifact(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    schema_version: Literal["crypto_perp_pre_actual_cash_decision.v1"] = (
+        PRE_ACTUAL_CASH_DECISION_SCHEMA_VERSION
+    )
+    artifact_id: str
+    created_at: datetime
+    producer: CryptoPerpProducer
+    source_refs: list[dict[str, str]]
+    boundary: CryptoPerpBoundary = Field(default_factory=CryptoPerpBoundary)
+    decision: PreActualCashDecisionName
+    reason_codes: list[str]
+    event_count: int = Field(ge=0)
+    outcome_count: int = Field(ge=0)
+    source_gap_summary: dict[str, Any]
+    edge_summary: dict[str, Any]
+    tournament_summary: dict[str, Any]
+    bias_guard_summary: dict[str, Any]
+    non_goal_flags: dict[str, bool]
+
+    @field_validator("created_at", mode="before")
+    @classmethod
+    def validate_created_at(cls, value: datetime | str) -> datetime:
+        return ensure_utc_aware("created_at", value)
+
+    @field_serializer("created_at")
+    def serialize_timestamp(self, value: datetime) -> str:
+        return serialize_utc_z(value)
+
+
+@dataclass(frozen=True)
+class _EventOutcomePair:
+    event_path: Path
+    event: CryptoPerpEvent
+    outcome_path: Path
+    outcome: CryptoPerpOutcome
+
+
+def _load_json_object(path: Path) -> dict[str, Any]:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(payload, dict):
+        raise ValueError(f"expected JSON object: {path}")
+    return payload
+
+
+def _artifact_ref(path: Path, schema_version: str | None = None) -> dict[str, str]:
+    ref = {"path": path.as_posix(), "sha256": "sha256:" + stable_hash([path.read_text("utf-8")])}
+    if schema_version:
+        ref["schema_version"] = schema_version
+    return ref
+
+
+def _json_ready(value: Any) -> Any:
+    return json.loads(json.dumps(value, default=str))
+
+
+def _unique(values: Sequence[str]) -> list[str]:
+    return list(dict.fromkeys(values))
+
+
+def _load_events(inventory: ProfitReadinessInventory) -> dict[str, tuple[Path, CryptoPerpEvent]]:
+    events: dict[str, tuple[Path, CryptoPerpEvent]] = {}
+    for item in inventory.items:
+        if item.category != "event":
+            continue
+        path = Path(item.path)
+        event = CryptoPerpEvent.model_validate(_load_json_object(path))
+        events.setdefault(event.event_id, (path, event))
+    return events
+
+
+def _load_matured_outcomes(
+    inventory: ProfitReadinessInventory,
+) -> dict[str, list[tuple[Path, CryptoPerpOutcome]]]:
+    outcomes_by_event: dict[str, list[tuple[Path, CryptoPerpOutcome]]] = {}
+    for item in inventory.items:
+        if item.category != "outcome" or not item.matured_outcome:
+            continue
+        path = Path(item.path)
+        outcome = CryptoPerpOutcome.model_validate(_load_json_object(path))
+        outcomes_by_event.setdefault(outcome.event_id, []).append((path, outcome))
+    for outcomes in outcomes_by_event.values():
+        outcomes.sort(key=lambda pair: pair[0].as_posix())
+    return outcomes_by_event
+
+
+def _select_pairs(
+    *,
+    events_by_id: dict[str, tuple[Path, CryptoPerpEvent]],
+    outcomes_by_event: dict[str, list[tuple[Path, CryptoPerpOutcome]]],
+) -> tuple[list[_EventOutcomePair], list[str]]:
+    known_gaps: list[str] = []
+    pairs: list[_EventOutcomePair] = []
+    for event_id in sorted(events_by_id):
+        event_path, event = events_by_id[event_id]
+        outcomes = outcomes_by_event.get(event_id, [])
+        if not outcomes:
+            known_gaps.append("EVENT_WITHOUT_MATURED_OUTCOME")
+            continue
+        if len(outcomes) > 1:
+            known_gaps.append("MULTIPLE_MATURED_OUTCOMES_FOR_EVENT_COLLAPSED_TO_FIRST")
+        outcome_path, outcome = outcomes[0]
+        pairs.append(
+            _EventOutcomePair(
+                event_path=event_path,
+                event=event,
+                outcome_path=outcome_path,
+                outcome=outcome,
+            )
+        )
+    for event_id in sorted(outcomes_by_event):
+        if event_id not in events_by_id:
+            known_gaps.append("MATURED_OUTCOME_WITHOUT_EVENT")
+    return pairs, _unique(known_gaps)
+
+
+def _build_per_event_artifacts(
+    *,
+    pairs: Sequence[_EventOutcomePair],
+    created: datetime,
+) -> tuple[
+    list[CryptoPerpSourceAvailability],
+    list[CryptoPerpFeaturePack],
+    list[CryptoPerpEdgeScore],
+    list[str],
+]:
+    source_artifacts: list[CryptoPerpSourceAvailability] = []
+    feature_artifacts: list[CryptoPerpFeaturePack] = []
+    edge_artifacts: list[CryptoPerpEdgeScore] = []
+    known_gaps: list[str] = []
+    for pair in pairs:
+        source = build_source_availability(
+            event=pair.event,
+            created_at=created,
+            available_sources={"outcome": True},
+            row_counts={"outcome": 1},
+            source_refs=[_artifact_ref(pair.outcome_path, pair.outcome.schema_version)],
+            producer_command=PRE_ACTUAL_CASH_PACK_COMMAND,
+        )
+        build_replay_slice(
+            event=pair.event,
+            created_at=created,
+            included_sources=["event", "outcome"],
+            row_counts={"event": 1, "outcome": 1},
+            source_refs=[_artifact_ref(pair.outcome_path, pair.outcome.schema_version)],
+            producer_command=PRE_ACTUAL_CASH_PACK_COMMAND,
+        )
+        feature = build_feature_pack(
+            event=pair.event,
+            source_availability=source,
+            created_at=created,
+            producer_command=PRE_ACTUAL_CASH_PACK_COMMAND,
+        )
+        edge = build_edge_score(
+            feature_pack=feature,
+            source_availability=source,
+            created_at=created,
+            producer_command=PRE_ACTUAL_CASH_PACK_COMMAND,
+        )
+        source_artifacts.append(source)
+        feature_artifacts.append(feature)
+        edge_artifacts.append(edge)
+        known_gaps.extend(source.known_gaps)
+        known_gaps.extend(feature.known_gaps)
+        known_gaps.extend(edge.known_gaps)
+    return source_artifacts, feature_artifacts, edge_artifacts, _unique(known_gaps)
+
+
+def _source_ids() -> tuple[SourceId, ...]:
+    return (
+        "event",
+        "bars",
+        "ticker",
+        "funding",
+        "trades",
+        "books",
+        "outcome",
+        "replay",
+        "cash_ledger",
+        "live_measurement",
+    )
+
+
+def _source_availability_matrix(
+    source_artifacts: Sequence[CryptoPerpSourceAvailability],
+) -> dict[str, Any]:
+    events: list[dict[str, Any]] = []
+    can_compute_actual_cash_count = 0
+    can_compute_cost_adjusted_count = 0
+    can_compute_depth_count = 0
+    public_candle_only_count = 0
+    for artifact in source_artifacts:
+        status_by_id = {status.source_id: status for status in artifact.source_statuses}
+        sources = {
+            source_id: {
+                "available": status_by_id[source_id].available,
+                "row_count": status_by_id[source_id].row_count,
+                "reason": status_by_id[source_id].reason,
+            }
+            for source_id in _source_ids()
+        }
+        can_compute_actual_cash_count += int(artifact.can_compute_actual_cash)
+        can_compute_cost_adjusted_count += int(artifact.can_compute_cost_adjusted_estimate)
+        can_compute_depth_count += int(artifact.can_compute_depth)
+        has_microstructure = sources["trades"]["available"] or sources["books"]["available"]
+        if not has_microstructure and not artifact.can_compute_actual_cash:
+            public_candle_only_count += 1
+        events.append(
+            {
+                "event_id": artifact.event_id,
+                "can_compute_actual_cash": artifact.can_compute_actual_cash,
+                "can_compute_cost_adjusted_estimate": artifact.can_compute_cost_adjusted_estimate,
+                "can_compute_depth": artifact.can_compute_depth,
+                "known_gap_count": len(artifact.known_gaps),
+                "sources": sources,
+            }
+        )
+    return {
+        "event_count": len(source_artifacts),
+        "source_ids": list(_source_ids()),
+        "can_compute_actual_cash_count": can_compute_actual_cash_count,
+        "can_compute_cost_adjusted_estimate_count": can_compute_cost_adjusted_count,
+        "can_compute_depth_count": can_compute_depth_count,
+        "public_candle_only_or_no_microstructure_count": public_candle_only_count,
+        "events": events,
+    }
+
+
+def _known_gaps_by_source(
+    source_artifacts: Sequence[CryptoPerpSourceAvailability],
+    extra_known_gaps: Sequence[str],
+) -> dict[str, Any]:
+    sources: dict[str, dict[str, Any]] = {
+        source_id: {"missing_event_count": 0, "reason_codes": []} for source_id in _source_ids()
+    }
+    for artifact in source_artifacts:
+        for status in artifact.source_statuses:
+            if status.available:
+                continue
+            bucket = sources[status.source_id]
+            bucket["missing_event_count"] += 1
+            bucket["reason_codes"].append(status.reason)
+    for bucket in sources.values():
+        bucket["reason_codes"] = sorted(set(bucket["reason_codes"]))
+    return {
+        "sources": sources,
+        "global_known_gaps": sorted(set(extra_known_gaps)),
+    }
+
+
+def _events_summary(
+    *,
+    pairs: Sequence[_EventOutcomePair],
+    raw_event_count: int,
+    min_events: int,
+    selection_gaps: Sequence[str],
+) -> dict[str, Any]:
+    return {
+        "event_count": len(pairs),
+        "raw_event_count": raw_event_count,
+        "minimum_required_event_count": min_events,
+        "known_gaps": list(selection_gaps),
+        "events": [
+            {
+                "event_id": pair.event.event_id,
+                "path": pair.event_path.as_posix(),
+                "event_family": pair.event.event_family,
+                "canonical_symbol": pair.event.canonical_symbol,
+                "information_cutoff_at": serialize_utc_z(pair.event.information_cutoff_at),
+                "status": pair.event.status,
+            }
+            for pair in pairs
+        ],
+    }
+
+
+def _outcomes_summary(
+    *,
+    pairs: Sequence[_EventOutcomePair],
+    raw_matured_outcome_count: int,
+    min_events: int,
+    selection_gaps: Sequence[str],
+) -> dict[str, Any]:
+    return {
+        "outcome_count": len(pairs),
+        "raw_matured_outcome_count": raw_matured_outcome_count,
+        "minimum_required_outcome_count": min_events,
+        "known_gaps": list(selection_gaps),
+        "outcomes": [
+            {
+                "event_id": pair.outcome.event_id,
+                "outcome_id": pair.outcome.outcome_id,
+                "path": pair.outcome_path.as_posix(),
+                "settled_at": serialize_utc_z(pair.outcome.settled_at),
+                "matured_horizon_count": sum(
+                    1 for horizon in pair.outcome.horizons if horizon.matured
+                ),
+                "known_gap_count": len(pair.outcome.known_gaps),
+            }
+            for pair in pairs
+        ],
+    }
+
+
+def _feature_pack_summary(features: Sequence[CryptoPerpFeaturePack]) -> dict[str, Any]:
+    optional_counts = [len(feature.available_optional_features) for feature in features]
+    return {
+        "event_count": len(features),
+        "optional_feature_count_min": min(optional_counts, default=0),
+        "optional_feature_count_max": max(optional_counts, default=0),
+        "optional_feature_count_total": sum(optional_counts),
+        "optional_feature_zero_event_count": sum(1 for count in optional_counts if count == 0),
+        "sets_entry_action": False,
+        "sets_entry_action_count": 0,
+        "events": [
+            {
+                "event_id": feature.event_id,
+                "feature_pack_id": feature.feature_pack_id,
+                "optional_feature_count": len(feature.available_optional_features),
+                "available_optional_features": list(feature.available_optional_features),
+                "sets_entry_action": False,
+                "known_gap_count": len(feature.known_gaps),
+            }
+            for feature in features
+        ],
+    }
+
+
+def _edge_score_summary(edges: Sequence[CryptoPerpEdgeScore]) -> dict[str, Any]:
+    selected_counts = Counter(edge.selected_action for edge in edges)
+    return {
+        "event_count": len(edges),
+        "selected_action_counts": dict(sorted(selected_counts.items())),
+        "unknown_selected_action_count": selected_counts.get("UNKNOWN", 0),
+        "no_trade_selected_action_count": selected_counts.get("NO_TRADE", 0),
+        "known_gap_count": sum(len(edge.known_gaps) for edge in edges),
+        "events": [
+            {
+                "event_id": edge.event_id,
+                "selected_action": edge.selected_action,
+                "why_no_trade": list(edge.why_no_trade),
+                "known_gap_count": len(edge.known_gaps),
+            }
+            for edge in edges
+        ],
+    }
+
+
+def _tournament_summary(rows: CryptoPerpTournamentRowsV2 | None) -> dict[str, Any]:
+    if rows is None:
+        return {
+            "event_count": 0,
+            "row_count": 0,
+            "leader_action": None,
+            "leader_beats_no_trade": False,
+            "known_gap_count": 0,
+            "status": "NOT_RUN",
+        }
+    action_totals: dict[str, Decimal] = {}
+    for row in rows.rows:
+        action_totals[row.action] = action_totals.get(row.action, Decimal("0")) + (
+            row.cost_adjusted_cash_estimate_usd
+        )
+    return {
+        **_json_ready(rows.summary),
+        "status": "BUILT",
+        "primary_metric": rows.primary_metric,
+        "action_totals_cost_adjusted_cash_estimate_usd": {
+            action: str(value) for action, value in sorted(action_totals.items())
+        },
+        "actual_cash_result_null_count": sum(
+            1 for row in rows.rows if row.actual_cash_result_usd is None
+        ),
+    }
+
+
+def _bias_guard_summary(guard: CryptoPerpBiasGuard | None) -> dict[str, Any]:
+    if guard is None:
+        return {
+            "guard_status": "NOT_RUN",
+            "pbo_status": "NOT_ESTIMABLE",
+            "event_count": 0,
+            "known_gaps": ["BIAS_GUARD_NOT_RUN_NO_ROWS"],
+            "stop_reasons": ["BIAS_GUARD_NOT_RUN_NO_ROWS"],
+        }
+    return {
+        "guard_status": guard.guard_status,
+        "pbo_status": guard.pbo_status,
+        "event_count": guard.event_count,
+        "min_events_for_pbo": guard.min_events_for_pbo,
+        "fold_count": guard.fold_count,
+        "stop_reasons": list(guard.stop_reasons),
+        "known_gaps": list(guard.known_gaps),
+        "summary": _json_ready(guard.summary),
+    }
+
+
+def _decide(
+    *,
+    event_count: int,
+    outcome_count: int,
+    min_events: int,
+    source_matrix: dict[str, Any],
+    feature_summary: dict[str, Any],
+    edge_summary: dict[str, Any],
+    tournament_summary: dict[str, Any],
+    bias_guard_summary: dict[str, Any],
+) -> tuple[PreActualCashDecisionName, list[str]]:
+    reasons: list[str] = []
+    if event_count < min_events or outcome_count < min_events:
+        reasons.append("MIN_EVENT_OUTCOME_SAMPLE_NOT_MET")
+    if source_matrix["can_compute_cost_adjusted_estimate_count"] < event_count:
+        reasons.append("COST_ADJUSTED_INPUTS_MISSING")
+    if source_matrix["can_compute_depth_count"] < event_count:
+        reasons.append("DEPTH_SOURCE_MISSING")
+    if int(feature_summary["optional_feature_zero_event_count"]) > 0:
+        reasons.append("OPTIONAL_FEATURES_MISSING")
+    if int(edge_summary["unknown_selected_action_count"]) > 0:
+        reasons.append("EDGE_SELECTED_ACTION_UNKNOWN")
+    if tournament_summary.get("status") != "BUILT":
+        reasons.append("TOURNAMENT_ROWS_NOT_BUILT")
+    if tournament_summary.get("leader_action") == "NO_TRADE":
+        reasons.append("TOURNAMENT_LEADER_NO_TRADE")
+    if tournament_summary.get("leader_beats_no_trade") is False:
+        reasons.append("LEADER_DOES_NOT_BEAT_NO_TRADE")
+    if bias_guard_summary.get("pbo_status") == "NOT_ESTIMABLE":
+        reasons.append("BIAS_GUARD_SAMPLE_INSUFFICIENT_OR_NOT_ESTIMABLE")
+    if bias_guard_summary.get("guard_status") in {"BLOCKED", "NOT_RUN"}:
+        reasons.append("BIAS_GUARD_NOT_PASSING")
+
+    collection_reasons = {
+        "MIN_EVENT_OUTCOME_SAMPLE_NOT_MET",
+        "COST_ADJUSTED_INPUTS_MISSING",
+        "DEPTH_SOURCE_MISSING",
+        "OPTIONAL_FEATURES_MISSING",
+        "EDGE_SELECTED_ACTION_UNKNOWN",
+        "TOURNAMENT_ROWS_NOT_BUILT",
+        "BIAS_GUARD_SAMPLE_INSUFFICIENT_OR_NOT_ESTIMABLE",
+    }
+    if collection_reasons.intersection(reasons):
+        return "COLLECT_MORE_SOURCES", _unique(reasons)
+    if "TOURNAMENT_LEADER_NO_TRADE" in reasons or "LEADER_DOES_NOT_BEAT_NO_TRADE" in reasons:
+        return "KILL", _unique(reasons)
+    selected_counts = edge_summary.get("selected_action_counts", {})
+    if not selected_counts or set(selected_counts) <= {"UNKNOWN", "NO_TRADE"}:
+        reasons.append("NO_ACTION_DEFINITION_SURVIVES_PRE_ACTUAL_CASH_GATE")
+        return "REVISE_EVENT_DEFINITION", _unique(reasons)
+    reasons.append("PRE_ACTUAL_CASH_CANNOT_DECIDE_EXECUTION_QUALITY")
+    reasons.append("ACTUAL_CASH_DEFERRED_BY_SCOPE")
+    return "HOLD_FOR_FUTURE_ACTUAL_CASH", _unique(reasons)
+
+
+def _non_goal_flags() -> dict[str, bool]:
+    return {
+        "actual_cash_used": False,
+        "profit_proven": False,
+        "actual_cash_readiness_claimed": False,
+        "tiny_live_readiness_claimed": False,
+        "live_trading_readiness_claimed": False,
+        "wallet_or_signing_used": False,
+        "exchange_write_used": False,
+        "live_order_submitted": False,
+        "public_candle_outcome_is_profit_evidence": False,
+        "cost_adjusted_estimate_is_actual_cash": False,
+        "bias_guard_sample_insufficient_is_robustness_pass": False,
+        "llm_trade_decision_used": False,
+    }
+
+
+def _decision_artifact(
+    *,
+    created: datetime,
+    pairs: Sequence[_EventOutcomePair],
+    decision: PreActualCashDecisionName,
+    reason_codes: Sequence[str],
+    source_gap_summary: dict[str, Any],
+    edge_summary: dict[str, Any],
+    tournament_summary: dict[str, Any],
+    bias_guard_summary: dict[str, Any],
+) -> PreActualCashDecisionArtifact:
+    source_refs = [_artifact_ref(pair.event_path, pair.event.schema_version) for pair in pairs] + [
+        _artifact_ref(pair.outcome_path, pair.outcome.schema_version) for pair in pairs
+    ]
+    payload = {
+        "decision": decision,
+        "reason_codes": list(reason_codes),
+        "event_count": len(pairs),
+        "outcome_count": len(pairs),
+        "source_gap_summary": source_gap_summary,
+        "edge_summary": edge_summary,
+        "tournament_summary": tournament_summary,
+        "bias_guard_summary": bias_guard_summary,
+        "non_goal_flags": _non_goal_flags(),
+    }
+    return PreActualCashDecisionArtifact(
+        artifact_id=stable_hash(
+            ["crypto-perp-pre-actual-cash-decision", serialize_utc_z(created), payload]
+        ),
+        created_at=created,
+        producer=CryptoPerpProducer(command=PRE_ACTUAL_CASH_PACK_COMMAND),
+        source_refs=source_refs,
+        decision=decision,
+        reason_codes=list(reason_codes),
+        event_count=len(pairs),
+        outcome_count=len(pairs),
+        source_gap_summary=source_gap_summary,
+        edge_summary=edge_summary,
+        tournament_summary=tournament_summary,
+        bias_guard_summary=bias_guard_summary,
+        non_goal_flags=_non_goal_flags(),
+    )
+
+
+def build_pre_actual_cash_evidence_pack(
+    *,
+    data_dir: Path,
+    created_at: datetime | str,
+    notional_usd: Decimal,
+    min_events: int = 10,
+    min_events_for_pbo: int = 30,
+    fold_count: int = 0,
+    fee_rate: Decimal = Decimal("0.0006"),
+    funding_rate: Decimal = Decimal("0"),
+    slippage_bps: Decimal = Decimal("0"),
+    operator_time_minutes: Decimal = Decimal("0"),
+    operator_hourly_cost_usd: Decimal = Decimal("0"),
+) -> tuple[dict[str, dict[str, Any]], PreActualCashDecisionArtifact, str]:
+    if min_events <= 0:
+        raise ValueError("min_events must be positive")
+    created = ensure_utc_aware("created_at", created_at)
+    inventory = build_profit_readiness_inventory(data_dir=data_dir, created_at=created)
+    events_by_id = _load_events(inventory)
+    outcomes_by_event = _load_matured_outcomes(inventory)
+    pairs, selection_gaps = _select_pairs(
+        events_by_id=events_by_id, outcomes_by_event=outcomes_by_event
+    )
+    source_artifacts, feature_artifacts, edge_artifacts, per_event_gaps = (
+        _build_per_event_artifacts(
+            pairs=pairs,
+            created=created,
+        )
+    )
+    rows: CryptoPerpTournamentRowsV2 | None = None
+    guard: CryptoPerpBiasGuard | None = None
+    if pairs:
+        rows = build_cost_aware_tournament_rows(
+            outcomes=[pair.outcome for pair in pairs],
+            created_at=created,
+            notional_usd=notional_usd,
+            fee_rate=fee_rate,
+            funding_rate=funding_rate,
+            slippage_bps=slippage_bps,
+            operator_time_minutes=operator_time_minutes,
+            operator_hourly_cost_usd=operator_hourly_cost_usd,
+            source_refs=[
+                _artifact_ref(pair.outcome_path, pair.outcome.schema_version) for pair in pairs
+            ],
+            known_gaps=selection_gaps,
+            producer_command=PRE_ACTUAL_CASH_PACK_COMMAND,
+        )
+        guard = build_bias_guard(
+            rows=rows.rows,
+            created_at=created,
+            min_events_for_pbo=min_events_for_pbo,
+            fold_count=fold_count,
+            source_refs=[
+                {
+                    "path": "tournament_rows_v2_summary.json",
+                    "sha256": rows.artifact_id,
+                    "schema_version": rows.schema_version,
+                }
+            ],
+            known_gaps=rows.known_gaps,
+            producer_command=PRE_ACTUAL_CASH_PACK_COMMAND,
+        )
+    source_matrix = _source_availability_matrix(source_artifacts)
+    known_gaps = _unique([*inventory.known_gaps, *selection_gaps, *per_event_gaps])
+    known_gaps_by_source = _known_gaps_by_source(source_artifacts, known_gaps)
+    feature_summary = _feature_pack_summary(feature_artifacts)
+    edge_summary = _edge_score_summary(edge_artifacts)
+    tournament_summary = _tournament_summary(rows)
+    bias_summary = _bias_guard_summary(guard)
+    summaries = {
+        "events_summary": _events_summary(
+            pairs=pairs,
+            raw_event_count=len(events_by_id),
+            min_events=min_events,
+            selection_gaps=selection_gaps,
+        ),
+        "outcomes_summary": _outcomes_summary(
+            pairs=pairs,
+            raw_matured_outcome_count=sum(len(items) for items in outcomes_by_event.values()),
+            min_events=min_events,
+            selection_gaps=selection_gaps,
+        ),
+        "source_availability_matrix": source_matrix,
+        "known_gaps_by_source": known_gaps_by_source,
+        "feature_pack_summary": feature_summary,
+        "edge_score_summary": edge_summary,
+        "tournament_rows_v2_summary": tournament_summary,
+        "bias_guard_summary": bias_summary,
+    }
+    decision, reason_codes = _decide(
+        event_count=len(pairs),
+        outcome_count=len(pairs),
+        min_events=min_events,
+        source_matrix=source_matrix,
+        feature_summary=feature_summary,
+        edge_summary=edge_summary,
+        tournament_summary=tournament_summary,
+        bias_guard_summary=bias_summary,
+    )
+    run_manifest_summary = {
+        "status": "blocked" if decision == "COLLECT_MORE_SOURCES" else "complete",
+        "known_gap_count": len(_unique([*known_gaps, *reason_codes])),
+        "reason_code_count": len(reason_codes),
+        "artifact_count": len(summaries) + 2,
+    }
+    summaries["events_summary"]["run_manifest"] = run_manifest_summary
+    summaries["known_gaps_by_source"]["run_manifest"] = run_manifest_summary
+    artifact = _decision_artifact(
+        created=created,
+        pairs=pairs,
+        decision=decision,
+        reason_codes=reason_codes,
+        source_gap_summary=known_gaps_by_source,
+        edge_summary=edge_summary,
+        tournament_summary=tournament_summary,
+        bias_guard_summary=bias_summary,
+    )
+    return summaries, artifact, render_pre_actual_cash_decision_markdown(artifact)
+
+
+def _next_action(decision: PreActualCashDecisionName) -> str:
+    if decision == "KILL":
+        return "同じ event definition では actual cash へ進めず、候補を棄却する。"
+    if decision == "REVISE_EVENT_DEFINITION":
+        return "event id、cutoff、feature baseline、outcome window、比較 action set を見直す。"
+    if decision == "COLLECT_MORE_SOURCES":
+        return (
+            "trades、books、ticker、funding、replay、cost inputs など不足 source を追加収集する。"
+        )
+    return "今は actual cash を実装せず、将来の actual cash evidence loop まで候補を保留する。"
+
+
+def render_pre_actual_cash_decision_markdown(
+    artifact: PreActualCashDecisionArtifact,
+) -> str:
+    source_gap_sources = artifact.source_gap_summary.get("sources", {})
+    main_source_gaps = [
+        f"{source}:{payload.get('missing_event_count', 0)}"
+        for source, payload in sorted(source_gap_sources.items())
+        if int(payload.get("missing_event_count", 0)) > 0
+    ]
+    selected_counts = artifact.edge_summary.get("selected_action_counts", {})
+    return "\n".join(
+        [
+            "# Pre Actual Cash Evidence Decision",
+            "",
+            f"- created_at: `{serialize_utc_z(artifact.created_at)}`",
+            f"- event_count: `{artifact.event_count}`",
+            f"- outcome_count: `{artifact.outcome_count}`",
+            f"- main_source_gaps: `{', '.join(main_source_gaps) if main_source_gaps else 'none'}`",
+            f"- selected_action_counts: `{selected_counts}`",
+            f"- leader_action: `{artifact.tournament_summary.get('leader_action')}`",
+            f"- leader_beats_no_trade: `{artifact.tournament_summary.get('leader_beats_no_trade')}`",
+            f"- bias_guard_status: `{artifact.bias_guard_summary.get('guard_status')}`",
+            f"- pbo_status: `{artifact.bias_guard_summary.get('pbo_status')}`",
+            "- actual_cash_used: `false`",
+            "- profit_proven: `false`",
+            "- actual_cash_readiness_claimed: `false`",
+            "- tiny_live_readiness_claimed: `false`",
+            "- live_trading_readiness_claimed: `false`",
+            f"- decision: `{artifact.decision}`",
+            f"- reason_codes: `{', '.join(artifact.reason_codes)}`",
+            f"- next_action: {_next_action(artifact.decision)}",
+            "",
+            "This pack is a pre-actual-cash candidate handling gate only. It does not prove profit, actual cash readiness, tiny-live readiness, or live trading readiness.",
+        ]
+    )

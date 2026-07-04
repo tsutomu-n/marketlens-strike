@@ -325,3 +325,105 @@ def test_report_gate_and_review_packet_keep_live_permissions_false(tmp_path: Pat
     Draft202012Validator(_schema("crypto_perp_tiny_live_review_packet.v1.schema.json")).validate(
         packet
     )
+
+
+def _write_event_outcome_pairs(root: Path, count: int) -> None:
+    template_event = _event()
+    for index in range(count):
+        event_id = f"event-{index:02d}"
+        event = template_event.model_copy(
+            update={"event_id": event_id, "artifact_id": f"event-artifact-{index:02d}"}
+        )
+        _write_json(root / f"events/event-{index:02d}.json", event)
+        _write_json(root / f"outcomes/outcome-{index:02d}.json", _outcome(event_id))
+
+
+def test_pre_actual_cash_pack_cli_writes_required_outputs_for_ten_pairs(tmp_path: Path) -> None:
+    _write_event_outcome_pairs(tmp_path / "inputs", 10)
+    out = tmp_path / "pack"
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-pre-actual-cash-evidence-pack",
+            "--data-dir",
+            str(tmp_path / "inputs"),
+            "--out",
+            str(out),
+            "--notional-usd",
+            "100",
+            "--min-events",
+            "10",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "status=pass" in result.stdout
+    assert "actual_cash_used=false" in result.stdout
+    assert "profit_proven=false" in result.stdout
+    expected_files = {
+        "events_summary.json",
+        "outcomes_summary.json",
+        "source_availability_matrix.json",
+        "known_gaps_by_source.json",
+        "feature_pack_summary.json",
+        "edge_score_summary.json",
+        "tournament_rows_v2_summary.json",
+        "bias_guard_summary.json",
+        "decision.json",
+        "decision.md",
+    }
+    assert {path.name for path in out.iterdir()} == expected_files
+    decision = json.loads((out / "decision.json").read_text(encoding="utf-8"))
+    Draft202012Validator(_schema("crypto_perp_pre_actual_cash_decision.v1.schema.json")).validate(
+        decision
+    )
+    assert decision["event_count"] == 10
+    assert decision["outcome_count"] == 10
+    assert decision["decision"] in {
+        "KILL",
+        "REVISE_EVENT_DEFINITION",
+        "COLLECT_MORE_SOURCES",
+        "HOLD_FOR_FUTURE_ACTUAL_CASH",
+    }
+    assert decision["non_goal_flags"]["actual_cash_used"] is False
+    assert decision["non_goal_flags"]["profit_proven"] is False
+    assert decision["non_goal_flags"]["tiny_live_readiness_claimed"] is False
+    assert decision["tournament_summary"]["actual_cash_result_null_count"] == 30
+    assert decision["source_gap_summary"]["run_manifest"]["status"] == "blocked"
+    assert decision["source_gap_summary"]["run_manifest"]["known_gap_count"] > 0
+    events_summary = json.loads((out / "events_summary.json").read_text(encoding="utf-8"))
+    assert events_summary["run_manifest"]["status"] == "blocked"
+    decision_md = (out / "decision.md").read_text(encoding="utf-8")
+    assert "actual_cash_used: `false`" in decision_md
+    assert "profit_proven: `false`" in decision_md
+
+
+def test_pre_actual_cash_pack_blocks_small_sample_without_profit_claim(tmp_path: Path) -> None:
+    _write_event_outcome_pairs(tmp_path / "inputs", 1)
+    out = tmp_path / "pack"
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-pre-actual-cash-evidence-pack",
+            "--data-dir",
+            str(tmp_path / "inputs"),
+            "--out",
+            str(out),
+            "--notional-usd",
+            "100",
+            "--min-events",
+            "10",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    assert "status=blocked" in result.stdout
+    decision = json.loads((out / "decision.json").read_text(encoding="utf-8"))
+    assert decision["decision"] == "COLLECT_MORE_SOURCES"
+    assert "MIN_EVENT_OUTCOME_SAMPLE_NOT_MET" in decision["reason_codes"]
+    assert decision["event_count"] == 1
+    assert decision["source_gap_summary"]["run_manifest"]["status"] == "blocked"
+    assert decision["non_goal_flags"]["actual_cash_used"] is False
+    assert decision["non_goal_flags"]["public_candle_outcome_is_profit_evidence"] is False

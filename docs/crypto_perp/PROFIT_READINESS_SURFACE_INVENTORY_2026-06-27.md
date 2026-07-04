@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_19:01 JST
-更新日: 2026-07-04_16:00 JST
+更新日: 2026-07-04_17:16 JST
 -->
 
 # Crypto Perp Profit-Readiness Surface Inventory
@@ -29,6 +29,7 @@
 | `crypto_perp_edge_score.v1` | deterministic ruleで行動候補を比較する | ML/prediction claimではない |
 | `crypto_perp_tournament_rows.v2` | fee/funding/slippage/operator cost込みのestimate rowsを作る | estimate fields are not actual cash |
 | `crypto_perp_bias_guard.v1` | sample不足、lookahead、recursive warmup、concentrationを止める | `NOT_ESTIMABLE` is a valid result |
+| `crypto_perp_pre_actual_cash_decision.v1` | 複数event/outcomeのpre-actual-cash evidenceを4択decisionへ集約する | decision is not profit proof, actual cash readiness, or live permission |
 | `crypto_perp_tiny_live_shadow.v1` | tiny-live前の非発注shadow preflightを記録する | exchange write and live order are always false |
 
 ## 入口
