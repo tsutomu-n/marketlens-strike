@@ -1,9 +1,69 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-04_21:53 JST
+更新日: 2026-07-04_22:15 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Pre Actual Cash Existing Artifact Read Scope
+
+Completed on branch `ai/pre-actual-cash-existing-artifacts-20260704-2208`.
+
+Goal:
+
+- Clarify and implement the evidence read scope for `build_pre_actual_cash_evidence_pack()`.
+- If existing `source_availability.json`, `replay_slice.json`, `feature_pack.json`, `edge_score.json`, `tournament_rows_v2.json`, and `bias_guard.json` are readable under `data_dir`, reflect them in pack summaries instead of silently recomputing everything.
+- Keep actual cash, cash ledger, actual-cash rows, tiny-live, live orders, exchange writes, wallet/signing, and ML/LLM trade decisions out of scope.
+
+Achieved:
+
+- `build_pre_actual_cash_evidence_pack()` now reads existing profit-readiness artifacts from the existing inventory surface.
+- Per-event artifacts are matched by `event_id`: `source_availability`, `replay_slice`, `feature_pack`, and `edge_score`.
+- `tournament_rows_v2` is matched by the selected event set.
+- `bias_guard` is matched by event count and explicitly marks that the current bias guard schema has no event ids.
+- Each affected summary now exposes `artifact_origin`, `artifact_path`, `artifact_gap_origin`, and aggregate `artifact_origin_counts`.
+- `decision.source_gap_summary.artifact_usage` records whether gaps came from an existing artifact payload or from `minimal recomputed from event/outcome only`.
+- Missing existing artifacts still fall back to the previous minimal recomputation path.
+- The existing run manifest read path remains in place and is now tested together with existing source artifacts.
+- `non_goal_flags` remain all `false`, and no public pre-actual-cash CLI was added.
+
+Changed files:
+
+- `src/sis/crypto_perp/pre_actual_cash.py`
+- `tests/crypto_perp/test_profit_readiness_local_automation.py`
+- `docs/crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md`
+- `docs/plans/pre-actual-cash-existing-artifact-read-2026-07-04.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/crypto_perp/test_profit_readiness_local_automation.py -q` -> 12 passed.
+- `uv run ruff check src/sis/crypto_perp/pre_actual_cash.py tests/crypto_perp/test_profit_readiness_local_automation.py` -> passed.
+- `uv run ruff format --check src/sis/crypto_perp/pre_actual_cash.py tests/crypto_perp/test_profit_readiness_local_automation.py` -> 2 files already formatted.
+
+Remaining work:
+
+- None for this writer read-scope correction.
+
+Usable scope:
+
+- Internal builder/writer only. This does not expose a public CLI and does not prove actual cash profit, actual cash readiness, tiny-live readiness, live trading readiness, wallet/signing readiness, or exchange-write readiness.
+
+Destructive change:
+
+No. This is additive behavior and test/docs coverage.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+- Revert the five changed files listed above.
 
 ## Latest Addendum: 10 Event / 10 Outcome Writer Dogfood
 
