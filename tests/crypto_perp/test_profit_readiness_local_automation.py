@@ -64,6 +64,23 @@ def _outcome(event_id: str):
     )
 
 
+def _flat_outcome(event_id: str):
+    return build_outcome(
+        event_id=event_id,
+        settled_at="2026-06-21T06:00:00Z",
+        horizons=[
+            OutcomePriceWindow(
+                horizon_minutes=60,
+                matured=True,
+                reference_price=Decimal("100"),
+                close_price=Decimal("100"),
+                high_price=Decimal("100"),
+                low_price=Decimal("100"),
+            )
+        ],
+    )
+
+
 def _write_json(path: Path, payload: object) -> Path:
     path.parent.mkdir(parents=True, exist_ok=True)
     if hasattr(payload, "model_dump"):
@@ -477,7 +494,9 @@ def test_pre_actual_cash_pack_builder_returns_required_summaries_for_ten_pairs(
 def test_pre_actual_cash_pack_writer_blocks_small_sample_without_profit_claim(
     tmp_path: Path,
 ) -> None:
-    _write_event_outcome_pairs(tmp_path / "inputs", 1)
+    event = _event().model_copy(update={"event_id": "event-flat", "artifact_id": "event-flat"})
+    _write_json(tmp_path / "inputs/events/event.json", event)
+    _write_json(tmp_path / "inputs/outcomes/outcome.json", _flat_outcome(event.event_id))
     paths = write_pre_actual_cash_evidence_pack(
         data_dir=tmp_path / "inputs",
         out_dir=tmp_path / "pack",
@@ -532,6 +551,7 @@ def test_pre_actual_cash_pack_writer_blocks_small_sample_without_profit_claim(
     assert "outcome_count: `1`" in decision_md
     assert "selected_action_counts: `{'UNKNOWN': 1}`" in decision_md
     assert "leader_action: `NO_TRADE`" in decision_md
+    assert "leader_beats_no_trade: `False`" in decision_md
     assert "bias_guard_status: `BLOCKED`" in decision_md
     assert "pbo_status: `NOT_ESTIMABLE`" in decision_md
     assert "actual_cash_readiness_claimed: `false`" in decision_md
