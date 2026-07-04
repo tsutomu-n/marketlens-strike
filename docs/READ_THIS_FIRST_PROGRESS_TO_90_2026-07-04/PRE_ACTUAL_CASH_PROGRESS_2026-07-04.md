@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-04_13:08 JST
-更新日: 2026-07-04_13:57 JST
+更新日: 2026-07-04_16:29 JST
 -->
 
 # Pre Actual Cash Progress
@@ -17,7 +17,7 @@ actual cash以前の状態だけを見ると、実務評価の進捗は **60%前
 
 ## この文書の範囲
 
-この文書は、actual cash evidence を入れる前の進捗だけを扱う。
+この文書は、actual cash evidence を入れる前の進捗だけを扱う。当面 actual cash を実装しない場合の候補判断は、[../crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md](../crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md) を優先して読む。
 
 扱うもの:
 
@@ -308,7 +308,9 @@ actual cashへ進む前に、まず次をやる。
 7. `leader_action=NO_TRADE` から抜けない限り、取引候補として扱わない。
 8. それでも勝ち筋がないなら actual cash へ進まず kill / revise する。
 
-## actual cashへ進んでよい条件
+## 将来 actual cashへ進む前提条件
+
+当面 actual cash を実装しない方針では、ここは即時の実装開始条件ではない。将来 `HOLD_FOR_FUTURE_ACTUAL_CASH` から再開する時に、最低限満たすべき前提として読む。
 
 最低条件:
 
@@ -322,7 +324,7 @@ actual cashへ進む前に、まず次をやる。
 - bias guard が sample不足だけで止まっていない、または sample不足を明示したまま小額検証に進む理由がある。
 - human review が「actual cashへ進む理由」と「進まない条件」を明記している。
 
-これを満たさないなら、actual cash に進むより、event/source/evidence を増やす方が実務的。
+これを満たさないなら、actual cash に進むより、event/source/evidence を増やすか、候補を `KILL` / `REVISE_EVENT_DEFINITION` / `COLLECT_MORE_SOURCES` / `HOLD_FOR_FUTURE_ACTUAL_CASH` のどれかに落とす方が実務的。
 
 ## やらないこと
 
@@ -349,8 +351,8 @@ actual cash以前の進捗をよく見せるために、次はやらない。
 4. known gaps を source type 別に集計する。
 5. rows-v2 / bias guard を複数 event で回す。
 6. `edge_score.selected_action` と `tournament_rows_v2.leader_action` を必ず読む。
-7. 結論を `KILL`、`REVISE_EVENT_DEFINITION`、`COLLECT_MORE_SOURCES`、`READY_TO_DESIGN_ACTUAL_CASH_SOURCE` のどれかに落とす。
+7. 結論を `KILL`、`REVISE_EVENT_DEFINITION`、`COLLECT_MORE_SOURCES`、`HOLD_FOR_FUTURE_ACTUAL_CASH` のどれかに落とす。
 
 この1本が通れば、actual cash以前の進捗は 60%前後から 70%台へ上がる。
 
-actual cash source を入れるのは、その後でよい。
+actual cash source を入れるのは、その後でよい。当面は、actual cash 実装ではなく候補の棄却・再定義・追加収集・将来保留までに限定する。

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-04_10:30 JST
-更新日: 2026-07-04_12:34 JST
+更新日: 2026-07-04_16:29 JST
 -->
 
 # Final State Progress Assessment
@@ -117,9 +117,11 @@ Research / backtest platform としてなら 75%前後でよい。理由は、pu
 
 ## 次に進めるなら何をするか
 
-最短の次手は、actual cash source を安全に入れるための入力仕様を決めること。
+最終形へ近づく最短の長期手は、actual cash source を安全に入れるための入力仕様を決めること。
 
-優先順:
+ただし、当面 actual cash を実装しない方針では、次手は actual cash source ではない。短期では [../crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md](../crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md) に従い、pre-actual-cash の候補を `KILL` / `REVISE_EVENT_DEFINITION` / `COLLECT_MORE_SOURCES` / `HOLD_FOR_FUTURE_ACTUAL_CASH` に分類する。
+
+将来 actual cash を再開する場合の優先順:
 
 1. actual cash source を、manual cash ledger plus explicit assignment で入れるか、live measurement artifact で入れるかを決める。
 2. credential / exchange write なしで済むなら、まず manual cash ledger plus explicit assignment を優先する。
@@ -128,7 +130,7 @@ Research / backtest platform としてなら 75%前後でよい。理由は、pu
 5. `profit-core-reality-check` の blocker が `ACTUAL_CASH_SOURCE_MISSING` から次へ進むか確認する。
 6. その後に risk-taker review、tiny-live shadow、human review を読む。
 
-この順序なら、credential、exchange write、live order を使わずに、現在の最大 blocker を一段だけ進められる。
+この順序なら、credential、exchange write、live order を使わずに、現在の最大 blocker を一段だけ進められる。当面はこの順序を実装計画として扱わない。
 
 ## やらないこと
 
