@@ -51,9 +51,16 @@ REAL_SCHEMA_CATEGORIES: dict[str, str] = {
     "crypto_perp_event.v1": "event",
     "crypto_perp_outcome.v1": "outcome",
     "crypto_perp_source_availability.v1": "source_availability",
+    "crypto_perp_replay_slice.v1": "replay_slice",
+    "crypto_perp_feature_pack.v1": "feature_pack",
+    "crypto_perp_edge_score.v1": "edge_score",
     "crypto_perp_tournament_rows.v2": "rows_v2",
+    "crypto_perp_bias_guard.v1": "bias_guard",
     "crypto_perp_cash_ledger.v1": "cash_ledger",
     "crypto_perp_live_measurement.v1": "live_measurement",
+    INVENTORY_SCHEMA_VERSION: "profit_readiness_inventory",
+    PLAN_SCHEMA_VERSION: "profit_readiness_plan",
+    RUN_SCHEMA_VERSION: "profit_readiness_run",
 }
 DOGFOOD_SCHEMA_MARKERS = ("status", "viewer", "dogfood", "daily_brief", "workbench")
 
@@ -67,9 +74,16 @@ class ProfitReadinessInventoryItem(BaseModel):
         "event",
         "outcome",
         "source_availability",
+        "replay_slice",
+        "feature_pack",
+        "edge_score",
         "rows_v2",
+        "bias_guard",
         "cash_ledger",
         "live_measurement",
+        "profit_readiness_inventory",
+        "profit_readiness_plan",
+        "profit_readiness_run",
         "dogfood_status_viewer",
         "unknown",
         "invalid_json",
@@ -345,6 +359,26 @@ def _sha_ref(path: Path, schema_version: str | None = None) -> dict[str, str]:
     return ref
 
 
+def _known_artifact_id(payload: dict[str, Any]) -> str | None:
+    for key in (
+        "artifact_id",
+        "inventory_id",
+        "plan_id",
+        "run_id",
+        "slice_id",
+        "feature_pack_id",
+        "score_id",
+        "rows_id",
+        "guard_id",
+        "ledger_id",
+        "measurement_id",
+    ):
+        value = payload.get(key)
+        if value:
+            return str(value)
+    return None
+
+
 def _classify_json(path: Path, payload: Any) -> ProfitReadinessInventoryItem:
     if not isinstance(payload, dict):
         return ProfitReadinessInventoryItem(
@@ -377,6 +411,16 @@ def _classify_json(path: Path, payload: Any) -> ProfitReadinessInventoryItem:
             matured_outcome=matured,
             reason=None if matured else "OUTCOME_NOT_MATURED",
         )
+    if category == "profit_readiness_run":
+        run = ProfitReadinessRunManifest.model_validate(payload)
+        return ProfitReadinessInventoryItem(
+            path=path.as_posix(),
+            schema_version=schema_version,
+            category="profit_readiness_run",
+            artifact_id=run.run_id,
+            event_id=run.event_id,
+            reason=None,
+        )
     if category is not None:
         return ProfitReadinessInventoryItem(
             path=path.as_posix(),
@@ -384,13 +428,20 @@ def _classify_json(path: Path, payload: Any) -> ProfitReadinessInventoryItem:
             category=cast(
                 Literal[
                     "source_availability",
+                    "replay_slice",
+                    "feature_pack",
+                    "edge_score",
                     "rows_v2",
+                    "bias_guard",
                     "cash_ledger",
                     "live_measurement",
+                    "profit_readiness_inventory",
+                    "profit_readiness_plan",
+                    "profit_readiness_run",
                 ],
                 category,
             ),
-            artifact_id=str(payload.get("artifact_id")) if payload.get("artifact_id") else None,
+            artifact_id=_known_artifact_id(payload),
             event_id=str(payload.get("event_id")) if payload.get("event_id") else None,
         )
     lowered = f"{schema_version or ''} {path.as_posix()}".lower()
@@ -455,9 +506,22 @@ def build_profit_readiness_inventory(
         "source_availability_count": sum(
             1 for item in items if item.category == "source_availability"
         ),
+        "replay_slice_count": sum(1 for item in items if item.category == "replay_slice"),
+        "feature_pack_count": sum(1 for item in items if item.category == "feature_pack"),
+        "edge_score_count": sum(1 for item in items if item.category == "edge_score"),
         "rows_v2_count": sum(1 for item in items if item.category == "rows_v2"),
+        "bias_guard_count": sum(1 for item in items if item.category == "bias_guard"),
         "cash_ledger_count": sum(1 for item in items if item.category == "cash_ledger"),
         "live_measurement_count": sum(1 for item in items if item.category == "live_measurement"),
+        "profit_readiness_inventory_count": sum(
+            1 for item in items if item.category == "profit_readiness_inventory"
+        ),
+        "profit_readiness_plan_count": sum(
+            1 for item in items if item.category == "profit_readiness_plan"
+        ),
+        "profit_readiness_run_count": sum(
+            1 for item in items if item.category == "profit_readiness_run"
+        ),
         "dogfood_status_viewer_count": sum(
             1 for item in items if item.category == "dogfood_status_viewer"
         ),

@@ -12,6 +12,7 @@ from sis.crypto_perp.cash_ledger import CashLedgerEntry, build_cash_ledger
 from sis.crypto_perp.events import detect_event
 from sis.crypto_perp.features import EventDetectorConfig
 from sis.crypto_perp.outcomes import OutcomePriceWindow, build_outcome
+from sis.crypto_perp.pre_actual_cash import build_pre_actual_cash_evidence_pack
 from sis.crypto_perp.profit_readiness import (
     build_profit_readiness_inventory,
     build_profit_readiness_plan,
@@ -117,6 +118,72 @@ def test_inventory_and_plan_emit_single_candidate_command(tmp_path: Path) -> Non
     schema = _schema("crypto_perp_profit_readiness_plan.v1.schema.json")
     Draft202012Validator.check_schema(schema)
     Draft202012Validator(schema).validate(plan.model_dump(mode="json"))
+
+
+def test_inventory_classifies_profit_readiness_run_manifest(tmp_path: Path) -> None:
+    event = _event()
+    outcome = _outcome(event.event_id)
+    event_path = _write_json(tmp_path / "event.json", event)
+    outcome_path = _write_json(tmp_path / "outcome.json", outcome)
+    manifest = build_profit_readiness_run(
+        event=event,
+        outcome=outcome,
+        created_at="2026-06-21T07:00:00Z",
+        out=tmp_path / "run",
+        event_path=event_path,
+        outcome_path=outcome_path,
+        notional_usd=Decimal("100"),
+    )
+    _write_json(tmp_path / "run/manifest.json", manifest)
+
+    inventory = build_profit_readiness_inventory(
+        data_dir=tmp_path, created_at="2026-06-21T07:00:00Z"
+    )
+
+    assert inventory.inventory_status == "READY_FOR_LOCAL_PLAN"
+    assert inventory.summary["profit_readiness_run_count"] == 1
+    assert "UNKNOWN_SCHEMA_VERSION" not in inventory.known_gaps
+    run_items = [item for item in inventory.items if item.category == "profit_readiness_run"]
+    assert len(run_items) == 1
+    assert run_items[0].artifact_id == manifest.run_id
+    assert run_items[0].event_id == event.event_id
+
+
+def test_inventory_classifies_known_profit_readiness_artifacts_without_unknown_gap(
+    tmp_path: Path,
+) -> None:
+    event = _event()
+    _write_json(tmp_path / "event.json", event)
+    _write_json(tmp_path / "outcome.json", _outcome(event.event_id))
+    known_artifacts = [
+        ("inventory.json", "crypto_perp_profit_readiness_inventory.v1", "artifact_id"),
+        ("plan.json", "crypto_perp_profit_readiness_plan.v1", "artifact_id"),
+        ("replay_slice.json", "crypto_perp_replay_slice.v1", "slice_id"),
+        ("feature_pack.json", "crypto_perp_feature_pack.v1", "feature_pack_id"),
+        ("edge_score.json", "crypto_perp_edge_score.v1", "score_id"),
+        ("bias_guard.json", "crypto_perp_bias_guard.v1", "guard_id"),
+    ]
+    for file_name, schema_version, id_key in known_artifacts:
+        _write_json(
+            tmp_path / "artifacts" / file_name,
+            {
+                "schema_version": schema_version,
+                id_key: f"{file_name}-id",
+                "event_id": event.event_id,
+            },
+        )
+
+    inventory = build_profit_readiness_inventory(
+        data_dir=tmp_path, created_at="2026-06-21T07:00:00Z"
+    )
+
+    assert "UNKNOWN_SCHEMA_VERSION" not in inventory.known_gaps
+    assert inventory.summary["profit_readiness_inventory_count"] == 1
+    assert inventory.summary["profit_readiness_plan_count"] == 1
+    assert inventory.summary["replay_slice_count"] == 1
+    assert inventory.summary["feature_pack_count"] == 1
+    assert inventory.summary["edge_score_count"] == 1
+    assert inventory.summary["bias_guard_count"] == 1
 
 
 def test_plan_blocks_multiple_candidates(tmp_path: Path) -> None:
@@ -339,99 +406,76 @@ def _write_event_outcome_pairs(root: Path, count: int) -> None:
         _write_json(root / f"outcomes/outcome-{index:02d}.json", _outcome(event_id))
 
 
-def test_pre_actual_cash_pack_cli_writes_required_outputs_for_ten_pairs(tmp_path: Path) -> None:
+def test_pre_actual_cash_pack_is_not_public_cli() -> None:
+    result = runner.invoke(app, ["crypto-perp-pre-actual-cash-evidence-pack", "--help"])
+
+    assert result.exit_code != 0
+
+
+def test_pre_actual_cash_pack_builder_returns_required_summaries_for_ten_pairs(
+    tmp_path: Path,
+) -> None:
     _write_event_outcome_pairs(tmp_path / "inputs", 10)
-    out = tmp_path / "pack"
-
-    result = runner.invoke(
-        app,
-        [
-            "crypto-perp-pre-actual-cash-evidence-pack",
-            "--data-dir",
-            str(tmp_path / "inputs"),
-            "--out",
-            str(out),
-            "--notional-usd",
-            "100",
-            "--min-events",
-            "10",
-        ],
+    summaries, decision, decision_md = build_pre_actual_cash_evidence_pack(
+        data_dir=tmp_path / "inputs",
+        created_at="2026-06-21T07:00:00Z",
+        notional_usd=Decimal("100"),
+        min_events=10,
     )
 
-    assert result.exit_code == 0, result.stdout
-    assert "status=pass" in result.stdout
-    assert "actual_cash_used=false" in result.stdout
-    assert "profit_proven=false" in result.stdout
-    expected_files = {
-        "events_summary.json",
-        "outcomes_summary.json",
-        "source_availability_matrix.json",
-        "known_gaps_by_source.json",
-        "replay_slice_summary.json",
-        "feature_pack_summary.json",
-        "edge_score_summary.json",
-        "tournament_rows_v2_summary.json",
-        "bias_guard_summary.json",
-        "decision.json",
-        "decision.md",
+    assert set(summaries) == {
+        "events_summary",
+        "outcomes_summary",
+        "source_availability_matrix",
+        "known_gaps_by_source",
+        "replay_slice_summary",
+        "feature_pack_summary",
+        "edge_score_summary",
+        "tournament_rows_v2_summary",
+        "bias_guard_summary",
     }
-    assert {path.name for path in out.iterdir()} == expected_files
-    decision = json.loads((out / "decision.json").read_text(encoding="utf-8"))
+    decision_payload = decision.model_dump(mode="json")
     Draft202012Validator(_schema("crypto_perp_pre_actual_cash_decision.v1.schema.json")).validate(
-        decision
+        decision_payload
     )
-    assert decision["event_count"] == 10
-    assert decision["outcome_count"] == 10
-    assert decision["decision"] in {
+    assert decision.event_count == 10
+    assert decision.outcome_count == 10
+    assert decision.decision in {
         "KILL",
         "REVISE_EVENT_DEFINITION",
         "COLLECT_MORE_SOURCES",
         "HOLD_FOR_FUTURE_ACTUAL_CASH",
     }
-    assert decision["non_goal_flags"]["actual_cash_used"] is False
-    assert decision["non_goal_flags"]["profit_proven"] is False
-    assert decision["non_goal_flags"]["tiny_live_readiness_claimed"] is False
-    assert decision["tournament_summary"]["actual_cash_result_null_count"] == 30
-    assert decision["source_gap_summary"]["run_manifest"]["status"] == "missing"
-    assert decision["source_gap_summary"]["run_manifest"]["known_gap_count"] > 0
-    replay_summary = json.loads((out / "replay_slice_summary.json").read_text(encoding="utf-8"))
+    assert decision.non_goal_flags["actual_cash_used"] is False
+    assert decision.non_goal_flags["profit_proven"] is False
+    assert decision.non_goal_flags["tiny_live_readiness_claimed"] is False
+    assert decision.tournament_summary["actual_cash_result_null_count"] == 30
+    assert decision.source_gap_summary["run_manifest"]["status"] == "missing"
+    assert decision.source_gap_summary["run_manifest"]["known_gap_count"] > 0
+    replay_summary = summaries["replay_slice_summary"]
     assert replay_summary["event_count"] == 10
     assert replay_summary["future_data_included"] is False
-    events_summary = json.loads((out / "events_summary.json").read_text(encoding="utf-8"))
+    events_summary = summaries["events_summary"]
     assert events_summary["run_manifest"]["status"] == "missing"
-    decision_md = (out / "decision.md").read_text(encoding="utf-8")
     assert "actual_cash_used: `false`" in decision_md
     assert "profit_proven: `false`" in decision_md
 
 
 def test_pre_actual_cash_pack_blocks_small_sample_without_profit_claim(tmp_path: Path) -> None:
     _write_event_outcome_pairs(tmp_path / "inputs", 1)
-    out = tmp_path / "pack"
-
-    result = runner.invoke(
-        app,
-        [
-            "crypto-perp-pre-actual-cash-evidence-pack",
-            "--data-dir",
-            str(tmp_path / "inputs"),
-            "--out",
-            str(out),
-            "--notional-usd",
-            "100",
-            "--min-events",
-            "10",
-        ],
+    _, decision, _ = build_pre_actual_cash_evidence_pack(
+        data_dir=tmp_path / "inputs",
+        created_at="2026-06-21T07:00:00Z",
+        notional_usd=Decimal("100"),
+        min_events=10,
     )
 
-    assert result.exit_code == 0, result.stdout
-    assert "status=blocked" in result.stdout
-    decision = json.loads((out / "decision.json").read_text(encoding="utf-8"))
-    assert decision["decision"] == "COLLECT_MORE_SOURCES"
-    assert "MIN_EVENT_OUTCOME_SAMPLE_NOT_MET" in decision["reason_codes"]
-    assert decision["event_count"] == 1
-    assert decision["source_gap_summary"]["run_manifest"]["status"] == "missing"
-    assert decision["non_goal_flags"]["actual_cash_used"] is False
-    assert decision["non_goal_flags"]["public_candle_outcome_is_profit_evidence"] is False
+    assert decision.decision == "COLLECT_MORE_SOURCES"
+    assert "MIN_EVENT_OUTCOME_SAMPLE_NOT_MET" in decision.reason_codes
+    assert decision.event_count == 1
+    assert decision.source_gap_summary["run_manifest"]["status"] == "missing"
+    assert decision.non_goal_flags["actual_cash_used"] is False
+    assert decision.non_goal_flags["public_candle_outcome_is_profit_evidence"] is False
 
 
 def test_pre_actual_cash_pack_reads_existing_run_manifest(tmp_path: Path) -> None:
@@ -452,24 +496,14 @@ def test_pre_actual_cash_pack_reads_existing_run_manifest(tmp_path: Path) -> Non
     )
     _write_json(tmp_path / "inputs/run/manifest.json", manifest)
 
-    result = runner.invoke(
-        app,
-        [
-            "crypto-perp-pre-actual-cash-evidence-pack",
-            "--data-dir",
-            str(tmp_path / "inputs"),
-            "--out",
-            str(tmp_path / "pack"),
-            "--notional-usd",
-            "100",
-            "--min-events",
-            "1",
-        ],
+    _, decision, _ = build_pre_actual_cash_evidence_pack(
+        data_dir=tmp_path / "inputs",
+        created_at="2026-06-21T07:00:00Z",
+        notional_usd=Decimal("100"),
+        min_events=1,
     )
 
-    assert result.exit_code == 0, result.stdout
-    decision = json.loads((tmp_path / "pack/decision.json").read_text(encoding="utf-8"))
-    run_manifest = decision["source_gap_summary"]["run_manifest"]
+    run_manifest = decision.source_gap_summary["run_manifest"]
     assert run_manifest["status"] == "blocked"
     assert run_manifest["existing_manifest_count"] == 1
     assert run_manifest["matched_manifest_count"] == 1

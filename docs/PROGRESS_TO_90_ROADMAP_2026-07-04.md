@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-04_10:47 JST
-更新日: 2026-07-04_17:16 JST
+更新日: 2026-07-04_18:00 JST
 -->
 
 # Progress To 90 Roadmap
@@ -13,7 +13,7 @@ Research / backtest / docs / CLI / schema / tests はすでに厚い。ここか
 
 ただし、これは「少し actual cash rows を作れば90%」という意味ではない。1 event の actual cash rows は疎通確認であり、実務上の利益判断には足りない。90%に近いと言えるのは、複数 event、同一 event set の3 action比較、non-actual混入拒否、sample不足やNO_TRADE leaderを正しく blocker として出せる状態になってからである。
 
-当面 actual cash を実装しない方針では、この文書の actual cash evidence loop は実行対象ではなく長期ロードマップとして読む。短期の実行対象は [crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md](crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md) と `crypto-perp-pre-actual-cash-evidence-pack` に従い、pre-actual-cash の候補を `KILL` / `REVISE_EVENT_DEFINITION` / `COLLECT_MORE_SOURCES` / `HOLD_FOR_FUTURE_ACTUAL_CASH` に落とすことだけに限定する。
+当面 actual cash を実装しない方針では、この文書の actual cash evidence loop は実行対象ではなく長期ロードマップとして読む。短期の実行対象は [crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md](crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md) に従い、pre-actual-cash の候補を `KILL` / `REVISE_EVENT_DEFINITION` / `COLLECT_MORE_SOURCES` / `HOLD_FOR_FUTURE_ACTUAL_CASH` に落とすことだけに限定する。
 
 長期ルートは次の順番。
 
@@ -268,7 +268,7 @@ actual cash evidence loop が通った後に、小額実測や production 境界
 
 90%へ近づける長期作業で厳密に必要なのは **Actual Cash Evidence chunk** である。
 
-ただし、当面 actual cash を実装しない方針では、これを次の実装対象にしない。短期の実装対象は actual cash source ではなく、実装済みの `crypto-perp-pre-actual-cash-evidence-pack` で候補を4択 decision に落とすことである。
+ただし、当面 actual cash を実装しない方針では、これを次の実装対象にしない。短期の実装対象は actual cash source ではなく、内部 builder / schema surface で候補を4択 decision に落とすことである。
 
 将来 actual cash を再開する場合は、次の1本だけを実装対象にする。
 

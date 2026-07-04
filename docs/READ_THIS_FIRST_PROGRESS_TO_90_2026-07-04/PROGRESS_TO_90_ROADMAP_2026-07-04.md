@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-04_10:47 JST
-更新日: 2026-07-04_17:16 JST
+更新日: 2026-07-04_18:00 JST
 -->
 
 # Progress To 90 Roadmap
@@ -268,7 +268,7 @@ actual cash evidence loop が通った後に、小額実測や production 境界
 
 90%へ近づける長期作業で厳密に必要なのは **Actual Cash Evidence chunk** である。
 
-ただし、当面 actual cash を実装しない方針では、これを次の実装対象にしない。短期の実装対象は actual cash source ではなく、実装済みの `crypto-perp-pre-actual-cash-evidence-pack` で既存 artifact を読んで候補を4択 decision に落とす運用境界である。
+ただし、当面 actual cash を実装しない方針では、これを次の実装対象にしない。短期の実装対象は actual cash source ではなく、内部 builder / schema surface で既存 artifact を読んで候補を4択 decision に落とす運用境界である。
 
 将来 actual cash を再開する場合は、次の1本だけを実装対象にする。
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from decimal import Decimal
@@ -36,7 +36,7 @@ from sis.crypto_perp.tournament_rows import (
 
 
 PRE_ACTUAL_CASH_DECISION_SCHEMA_VERSION = "crypto_perp_pre_actual_cash_decision.v1"
-PRE_ACTUAL_CASH_PACK_COMMAND = "crypto-perp-pre-actual-cash-evidence-pack"
+PRE_ACTUAL_CASH_PACK_PRODUCER = "pre_actual_cash_evidence_pack_v1"
 PreActualCashDecisionName = Literal[
     "KILL",
     "REVISE_EVENT_DEFINITION",
@@ -209,7 +209,7 @@ def _build_per_event_artifacts(
             available_sources={"outcome": True},
             row_counts={"outcome": 1},
             source_refs=[_artifact_ref(pair.outcome_path, pair.outcome.schema_version)],
-            producer_command=PRE_ACTUAL_CASH_PACK_COMMAND,
+            producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
         )
         replay = build_replay_slice(
             event=pair.event,
@@ -217,19 +217,19 @@ def _build_per_event_artifacts(
             included_sources=["event", "outcome"],
             row_counts={"event": 1, "outcome": 1},
             source_refs=[_artifact_ref(pair.outcome_path, pair.outcome.schema_version)],
-            producer_command=PRE_ACTUAL_CASH_PACK_COMMAND,
+            producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
         )
         feature = build_feature_pack(
             event=pair.event,
             source_availability=source,
             created_at=created,
-            producer_command=PRE_ACTUAL_CASH_PACK_COMMAND,
+            producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
         )
         edge = build_edge_score(
             feature_pack=feature,
             source_availability=source,
             created_at=created,
-            producer_command=PRE_ACTUAL_CASH_PACK_COMMAND,
+            producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
         )
         source_artifacts.append(source)
         replay_artifacts.append(replay)
@@ -408,13 +408,24 @@ def _feature_pack_summary(features: Sequence[CryptoPerpFeaturePack]) -> dict[str
     }
 
 
+def _summary_int(summary: Mapping[str, Any], key: str, default: int = 0) -> int:
+    value = summary.get(key, default)
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, int | float | str):
+        return int(value)
+    return default
+
+
 def _replay_slice_summary(replays: Sequence[CryptoPerpReplaySlice]) -> dict[str, Any]:
     return {
         "event_count": len(replays),
         "future_data_included": any(
             bool(replay.summary.get("future_data_included")) for replay in replays
         ),
-        "row_count_total": sum(int(replay.summary.get("row_count_total", 0)) for replay in replays),
+        "row_count_total": sum(
+            _summary_int(replay.summary, "row_count_total") for replay in replays
+        ),
         "known_gap_count": sum(len(replay.known_gaps) for replay in replays),
         "events": [
             {
@@ -646,7 +657,7 @@ def _decision_artifact(
             ["crypto-perp-pre-actual-cash-decision", serialize_utc_z(created), payload]
         ),
         created_at=created,
-        producer=CryptoPerpProducer(command=PRE_ACTUAL_CASH_PACK_COMMAND),
+        producer=CryptoPerpProducer(command=PRE_ACTUAL_CASH_PACK_PRODUCER),
         source_refs=source_refs,
         decision=decision,
         reason_codes=list(reason_codes),
@@ -706,7 +717,7 @@ def build_pre_actual_cash_evidence_pack(
                 _artifact_ref(pair.outcome_path, pair.outcome.schema_version) for pair in pairs
             ],
             known_gaps=selection_gaps,
-            producer_command=PRE_ACTUAL_CASH_PACK_COMMAND,
+            producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
         )
         guard = build_bias_guard(
             rows=rows.rows,
@@ -721,7 +732,7 @@ def build_pre_actual_cash_evidence_pack(
                 }
             ],
             known_gaps=rows.known_gaps,
-            producer_command=PRE_ACTUAL_CASH_PACK_COMMAND,
+            producer_command=PRE_ACTUAL_CASH_PACK_PRODUCER,
         )
     source_matrix = _source_availability_matrix(source_artifacts)
     known_gaps = _unique([*inventory.known_gaps, *selection_gaps, *per_event_gaps])

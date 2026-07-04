@@ -15,7 +15,6 @@ from sis.crypto_perp.io import write_json_artifact
 from sis.crypto_perp.io import write_text_artifact
 from sis.crypto_perp.models import stable_hash
 from sis.crypto_perp.order_preview import CryptoPerpOrderPreview
-from sis.crypto_perp.pre_actual_cash import build_pre_actual_cash_evidence_pack
 from sis.crypto_perp.profit_readiness import (
     ProfitReadinessInventory,
     TinyLiveReviewPacket,
@@ -264,60 +263,6 @@ def register_crypto_perp_profit_readiness_commands(app: typer.Typer) -> None:
         typer.echo(f"run_status={manifest.status}")
         typer.echo(f"known_gap_count={len(manifest.known_gaps)}")
         typer.echo(f"manifest_path={(out / 'manifest.json').as_posix()}")
-
-    @app.command("crypto-perp-pre-actual-cash-evidence-pack")
-    def crypto_perp_pre_actual_cash_evidence_pack_cmd(
-        data_dir: Path = typer.Option(Path("data/crypto_perp"), "--data-dir"),
-        out: Path = typer.Option(
-            Path("data/crypto_perp/pre_actual_cash_evidence_pack/latest"), "--out"
-        ),
-        notional_usd: str = typer.Option("100", "--notional-usd"),
-        min_events: int = typer.Option(10, "--min-events", min=1),
-        min_events_for_pbo: int = typer.Option(30, "--min-events-for-pbo", min=1),
-        fold_count: int = typer.Option(0, "--fold-count", min=0),
-        fee_rate: str = typer.Option("0.0006", "--fee-rate"),
-        funding_rate: str = typer.Option("0", "--funding-rate"),
-        slippage_bps: str = typer.Option("0", "--slippage-bps"),
-        operator_time_minutes: str = typer.Option("0", "--operator-time-minutes"),
-        operator_hourly_cost_usd: str = typer.Option("0", "--operator-hourly-cost-usd"),
-    ) -> None:
-        try:
-            summaries, decision, decision_markdown = build_pre_actual_cash_evidence_pack(
-                data_dir=data_dir,
-                created_at=_utc_now(),
-                notional_usd=Decimal(notional_usd),
-                min_events=min_events,
-                min_events_for_pbo=min_events_for_pbo,
-                fold_count=fold_count,
-                fee_rate=Decimal(fee_rate),
-                funding_rate=Decimal(funding_rate),
-                slippage_bps=Decimal(slippage_bps),
-                operator_time_minutes=Decimal(operator_time_minutes),
-                operator_hourly_cost_usd=Decimal(operator_hourly_cost_usd),
-            )
-        except Exception as exc:
-            typer.echo("status=fail")
-            typer.echo(f"error={exc}")
-            raise typer.Exit(2) from exc
-        for name, payload in summaries.items():
-            write_json_artifact(out / f"{name}.json", payload)
-        write_json_artifact(out / "decision.json", decision.model_dump(mode="json"))
-        write_text_artifact(out / "decision.md", decision_markdown)
-        enough_sample = decision.event_count >= min_events and decision.outcome_count >= min_events
-        typer.echo("network_attempted=false")
-        typer.echo("exchange_write_used=false")
-        typer.echo("live_order_submitted=false")
-        typer.echo("actual_cash_used=false")
-        typer.echo("profit_proven=false")
-        typer.echo("status=pass" if enough_sample else "status=blocked")
-        typer.echo(
-            "pack_status=complete" if enough_sample else "pack_status=blocked_sample_insufficient"
-        )
-        typer.echo(f"decision={decision.decision}")
-        typer.echo(f"event_count={decision.event_count}")
-        typer.echo(f"outcome_count={decision.outcome_count}")
-        typer.echo(f"reason_code_count={len(decision.reason_codes)}")
-        typer.echo(f"decision_path={(out / 'decision.json').as_posix()}")
 
     @app.command("crypto-perp-cash-ledger")
     def crypto_perp_cash_ledger_cmd(
