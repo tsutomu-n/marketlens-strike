@@ -102,6 +102,13 @@ def _parse_source_refs(values: list[str] | None) -> list[dict[str, str]]:
     return refs
 
 
+def _string_list(payload: dict[str, object], key: str, path: Path) -> list[str]:
+    value = payload.get(key, [])
+    if not isinstance(value, list):
+        raise ValueError(f"ticker manifest {key} must be a list: {path}")
+    return [str(item) for item in value]
+
+
 def _parse_ticker_manifests(
     paths: list[Path] | None,
 ) -> tuple[list[dict[str, str]], dict[str, int], dict[str, dict[str, Any]]]:
@@ -127,7 +134,7 @@ def _parse_ticker_manifests(
         if count <= 0:
             raise ValueError(f"ticker manifest row_count_after_dedupe must be positive: {path}")
         row_count += count
-        fields_present = [str(field) for field in payload.get("fields_present", [])]
+        fields_present = _string_list(payload, "fields_present", path)
         window = payload.get("window", {})
         window_values = window if isinstance(window, dict) else {}
         ticker_metadata = {
@@ -140,11 +147,11 @@ def _parse_ticker_manifests(
             "missing_fields": sorted(
                 field for field in TICKER_REQUIRED_METADATA_FIELDS if field not in fields_present
             ),
-            "raw_inputs": [str(item) for item in payload.get("raw_inputs", [])],
+            "raw_inputs": _string_list(payload, "raw_inputs", path),
             "supports_cost_adjusted_estimate": payload.get("supports_cost_adjusted_estimate"),
             "supports_edge_action": payload.get("supports_edge_action"),
-            "symbols": [str(symbol) for symbol in payload.get("symbols", [])],
-            "warnings": [str(warning) for warning in payload.get("warnings", [])],
+            "symbols": _string_list(payload, "symbols", path),
+            "warnings": _string_list(payload, "warnings", path),
         }
         refs.append(_local_file_source_ref(path, schema_version))
     return (
