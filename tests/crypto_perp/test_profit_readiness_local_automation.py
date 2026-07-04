@@ -887,3 +887,77 @@ def test_profit_readiness_run_local_accepts_explicit_ticker_source_ref(
     edge = json.loads((tmp_path / "run/edge_score.json").read_text(encoding="utf-8"))
     assert edge["selected_action"] != "UNKNOWN"
     assert "EDGE_SCORE_UNKNOWN_COST_ADJUSTED_INPUTS_MISSING" not in edge["known_gaps"]
+
+
+def test_profit_readiness_run_local_accepts_ticker_manifest_row_count(
+    tmp_path: Path,
+) -> None:
+    event = _event().model_copy(
+        update={
+            "source_refs": [
+                EventSourceRef(
+                    path="local/BTCUSDT_5m_candles.csv",
+                    sha256="sha256:" + "c" * 64,
+                    schema_version="bitget_public_candles_5m.input_projection.v1",
+                )
+            ]
+        }
+    )
+    outcome = _outcome(event.event_id)
+    event_path = _write_json(tmp_path / "inputs/events/event.json", event)
+    outcome_path = _write_json(tmp_path / "inputs/outcomes/outcome.json", outcome)
+    ticker_manifest_path = _write_json(
+        tmp_path / "inputs/ticker_manifest.json",
+        {
+            "schema_version": "crypto_perp_ticker_manifest.v1",
+            "manifest_id": "ticker-manifest-1",
+            "created_at": "2026-06-21T04:00:00Z",
+            "artifact": "ticker_rows",
+            "version": 1,
+            "exchange": "bitget",
+            "market_type": "perp_linear",
+            "symbols": ["BTCUSDT"],
+            "capture_mode": "rest_ticker",
+            "coverage_class": "native",
+            "supports_cost_adjusted_estimate": True,
+            "supports_edge_action": True,
+            "window": {"start_ms": 1710000000000, "end_ms": 1710000300000},
+            "row_count_total": 3,
+            "row_count_after_dedupe": 2,
+            "fields_present": ["last_px", "bid_px", "ask_px", "funding_rate"],
+            "warnings": [],
+            "raw_inputs": ["bitget.mix.market.tickers"],
+            "network_attempted": True,
+            "credentials_used": False,
+            "exchange_write_used": False,
+            "live_order_submitted": False,
+        },
+    )
+
+    run_result = runner.invoke(
+        app,
+        [
+            "crypto-perp-profit-readiness-run-local",
+            "--event",
+            str(event_path),
+            "--outcome",
+            str(outcome_path),
+            "--out",
+            str(tmp_path / "run"),
+            "--notional-usd",
+            "100",
+            "--ticker-manifest",
+            str(ticker_manifest_path),
+        ],
+    )
+
+    assert run_result.exit_code == 0, run_result.stdout
+    source = json.loads((tmp_path / "run/source_availability.json").read_text(encoding="utf-8"))
+    by_source = {item["source_id"]: item for item in source["source_statuses"]}
+    assert by_source["ticker"]["available"] is True
+    assert by_source["ticker"]["row_count"] == 2
+    assert by_source["ticker"]["source_refs"][0]["schema_version"] == (
+        "crypto_perp_ticker_manifest.v1"
+    )
+    assert source["can_compute_cost_adjusted_estimate"] is True
+    assert source["can_compute_actual_cash"] is False
