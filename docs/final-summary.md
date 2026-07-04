@@ -1,9 +1,106 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-04_07:44 JST
+更新日: 2026-07-04_18:05 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Pre Actual Cash Evidence Pack v1
+
+Completed on branch `ai/pre-actual-cash-evidence-pack-20260704-1709`.
+
+Goal:
+
+- Define the next Crypto Perp completion state as a pre-actual-cash candidate decision gate, not profit proof.
+- Build a local `pre_actual_cash_evidence_pack_v1` surface that aggregates multiple event/outcome artifacts into source, feature, edge, tournament, bias, and final decision outputs.
+- Keep actual cash source, cash ledger, actual cash rows, actual-cash gate, live measurement, tiny-live execution, wallet/signing, exchange write, credentials, and live orders out of scope.
+
+Achieved:
+
+- Added an internal pre-actual-cash evidence pack builder without adding a new public CLI.
+- Added `src/sis/crypto_perp/pre_actual_cash.py` as the pack builder and decision renderer.
+- Added `crypto_perp_pre_actual_cash_decision.v1` schema for `decision.json`.
+- The internal builder returns these summary payloads:
+  - `events_summary.json`
+  - `outcomes_summary.json`
+  - `source_availability_matrix.json`
+  - `known_gaps_by_source.json`
+  - `replay_slice_summary.json`
+  - `feature_pack_summary.json`
+  - `edge_score_summary.json`
+  - `tournament_rows_v2_summary.json`
+  - `bias_guard_summary.json`
+  - `decision.json`
+  - `decision.md`
+- `decision` is restricted to:
+  - `KILL`
+  - `REVISE_EVENT_DEFINITION`
+  - `COLLECT_MORE_SOURCES`
+  - `HOLD_FOR_FUTURE_ACTUAL_CASH`
+- `decision.md` explicitly states `actual_cash_used=false`, `profit_proven=false`, `actual_cash_readiness_claimed=false`, `tiny_live_readiness_claimed=false`, and `live_trading_readiness_claimed=false`.
+- `decision.source_gap_summary.run_manifest` and `events_summary.run_manifest` include `status` and `known_gap_count`. Existing `crypto_perp_profit_readiness_run.v1` manifests are read when present; missing manifests are reported as missing.
+- Profit-readiness inventory now classifies its known local chain artifacts, including inventory, plan, replay, feature, edge, bias, and run manifest artifacts, so they do not create false `UNKNOWN_SCHEMA_VERSION` gaps.
+- A 10 event / 10 outcome focused test proves the v1 pack path and required outputs.
+- A 1 event focused test proves small samples stop at `COLLECT_MORE_SOURCES` and do not claim profit or actual cash.
+- Current runtime data under `data/crypto_perp` still produces `decision=COLLECT_MORE_SOURCES`, `status=blocked`, `run_manifest.status=blocked`, `run_manifest.known_gap_count=26`, `event_count=1`, `outcome_count=1`, `leader_action=NO_TRADE`, `selected_action_counts={'UNKNOWN': 1}`, and `pbo_status=NOT_ESTIMABLE`.
+
+Changed files:
+
+- `src/sis/crypto_perp/pre_actual_cash.py`
+- `src/sis/crypto_perp/profit_readiness.py`
+- `src/sis/commands/crypto_perp_profit_readiness.py`
+- `schemas/crypto_perp_pre_actual_cash_decision.v1.schema.json`
+- `tests/crypto_perp/test_profit_readiness_local_automation.py`
+- `docs/plans/pre-actual-cash-evidence-pack-v1-2026-07-04.md`
+- `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
+- `docs/IMPLEMENTED_SURFACES.md`
+- `docs/crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md`
+- `docs/crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md`
+- `docs/PROGRESS_TO_90_ROADMAP_2026-07-04.md`
+- `docs/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04/PROGRESS_TO_90_ROADMAP_2026-07-04.md`
+- `docs/final-summary.md`
+
+Verification:
+
+- `uv run pytest tests/crypto_perp/test_profit_readiness_local_automation.py -q` -> 11 passed.
+- `uv run sis --help` / `uv run python scripts/check_cli_catalog.py` -> `crypto-perp-pre-actual-cash-evidence-pack` is not exposed as a public CLI.
+- `uv run python scripts/check_cli_catalog.py` -> checked 233 public CLI commands.
+- `uv run python scripts/check_current_docs.py` -> checked 213 current docs.
+- `uv run ruff check src/sis/crypto_perp/pre_actual_cash.py src/sis/crypto_perp/profit_readiness.py src/sis/commands/crypto_perp_profit_readiness.py tests/crypto_perp/test_profit_readiness_local_automation.py` -> passed.
+- Direct builder run over `data/crypto_perp` -> produced blocked current-data pack with `decision=COLLECT_MORE_SOURCES`, `run_manifest.status=blocked`, `run_manifest.known_gap_count=26`, and no `UNKNOWN_SCHEMA_VERSION` pack gap.
+- `uv run sis crypto-perp-profit-readiness-inventory --data-dir data/crypto_perp --out .tmp/profit_readiness_inventory_current` -> produced `unknown_count=0`; remaining inventory known gap is `DOGFOOD_STATUS_VIEWER_NOT_PROFIT_EVIDENCE`.
+- `./scripts/check` -> passed, including `2879 passed`.
+
+Remaining work:
+
+- The current real artifact set is still only 1 event / 1 outcome. It is usable to prove the gate blocks correctly, not to prove candidate quality.
+- To move from v1 toward v2, collect at least 30 event/outcome pairs and richer source availability so bias guard and NO_TRADE comparison are less sample-limited.
+- Actual cash remains out of scope for this implementation.
+
+User judgment required:
+
+- None for this implementation. Future actual cash source / cash ledger design remains a separate decision.
+
+Destructive change:
+
+No. This is additive.
+
+Reason destructive change was not needed:
+
+- The existing source / feature / edge / tournament / bias builders were sufficient; no schema migration or existing API replacement was required.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required. Existing commands continue to work. The new pre-actual-cash pack is an internal builder/schema surface and does not add a public CLI.
+
+Rollback:
+
+- Revert `src/sis/crypto_perp/pre_actual_cash.py`, the decision schema, focused tests, docs updates, and this addendum.
+- Remove any generated runtime pack output under `.tmp/pre_actual_cash_pack_current/` if desired; generated runtime output is not tracked source.
 
 ## Latest Addendum: Event Outcome Inputs
 
