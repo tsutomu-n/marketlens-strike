@@ -7,7 +7,7 @@ from datetime import datetime
 from decimal import Decimal
 import json
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
@@ -55,6 +55,7 @@ PreActualCashDecisionName = Literal[
     "COLLECT_MORE_SOURCES",
     "HOLD_FOR_FUTURE_ACTUAL_CASH",
 ]
+ModelT = TypeVar("ModelT", bound=BaseModel)
 
 
 class PreActualCashDecisionArtifact(BaseModel):
@@ -100,6 +101,25 @@ class _EventOutcomePair:
 class _RunManifestRecord:
     path: Path
     manifest: ProfitReadinessRunManifest
+
+
+@dataclass(frozen=True)
+class _ArtifactOrigin:
+    origin: Literal["existing", "recomputed_minimal", "not_run"]
+    path: str | None
+    gap_origin: str
+    match_note: str
+
+
+@dataclass(frozen=True)
+class _ExistingArtifacts:
+    source_availability: dict[str, tuple[Path, CryptoPerpSourceAvailability]]
+    replay_slice: dict[str, tuple[Path, CryptoPerpReplaySlice]]
+    feature_pack: dict[str, tuple[Path, CryptoPerpFeaturePack]]
+    edge_score: dict[str, tuple[Path, CryptoPerpEdgeScore]]
+    rows_v2: tuple[Path, CryptoPerpTournamentRowsV2] | None
+    bias_guard: tuple[Path, CryptoPerpBiasGuard] | None
+    known_gaps: list[str]
 
 
 def _load_json_object(path: Path) -> dict[str, Any]:
@@ -166,6 +186,204 @@ def _load_run_manifests(data_dir: Path) -> list[_RunManifestRecord]:
             )
         )
     return records
+
+
+def _existing_origin(path: Path, match_note: str) -> _ArtifactOrigin:
+    return _ArtifactOrigin(
+        origin="existing",
+        path=path.as_posix(),
+        gap_origin="existing artifact payload",
+        match_note=match_note,
+    )
+
+
+def _recomputed_origin(reason: str) -> _ArtifactOrigin:
+    return _ArtifactOrigin(
+        origin="recomputed_minimal",
+        path=None,
+        gap_origin="minimal recomputed from event/outcome only",
+        match_note=reason,
+    )
+
+
+def _not_run_origin(reason: str) -> _ArtifactOrigin:
+    return _ArtifactOrigin(
+        origin="not_run",
+        path=None,
+        gap_origin="not run",
+        match_note=reason,
+    )
+
+
+def _origin_payload(origin: _ArtifactOrigin) -> dict[str, str | None]:
+    return {
+        "artifact_origin": origin.origin,
+        "artifact_path": origin.path,
+        "artifact_gap_origin": origin.gap_origin,
+        "artifact_match_note": origin.match_note,
+    }
+
+
+def _origin_counts(origins: Sequence[_ArtifactOrigin]) -> dict[str, int]:
+    return dict(sorted(Counter(origin.origin for origin in origins).items()))
+
+
+def _origin_for_event(
+    origins: Mapping[str, _ArtifactOrigin] | None,
+    event_id: str,
+) -> dict[str, str | None]:
+    if origins is None or event_id not in origins:
+        return {}
+    return _origin_payload(origins[event_id])
+
+
+def _load_existing_per_event_artifacts(
+    *,
+    inventory: ProfitReadinessInventory,
+    category: str,
+    model_type: type[ModelT],
+) -> tuple[dict[str, tuple[Path, ModelT]], list[str]]:
+    candidates: dict[str, list[tuple[Path, ModelT]]] = {}
+    known_gaps: list[str] = []
+    category_token = category.upper()
+    for item in inventory.items:
+        if item.category != category:
+            continue
+        path = Path(item.path)
+        try:
+            artifact = model_type.model_validate(_load_json_object(path))
+        except Exception:
+            known_gaps.append(f"EXISTING_{category_token}_INVALID")
+            continue
+        event_id = getattr(artifact, "event_id", None)
+        if not isinstance(event_id, str) or not event_id:
+            known_gaps.append(f"EXISTING_{category_token}_MISSING_EVENT_ID")
+            continue
+        candidates.setdefault(event_id, []).append((path, artifact))
+
+    selected: dict[str, tuple[Path, ModelT]] = {}
+    for event_id, artifacts in sorted(candidates.items()):
+        artifacts.sort(key=lambda pair: pair[0].as_posix())
+        if len(artifacts) > 1:
+            known_gaps.append(f"MULTIPLE_EXISTING_{category_token}_FOR_EVENT_COLLAPSED_TO_FIRST")
+        selected[event_id] = artifacts[0]
+    return selected, _unique(known_gaps)
+
+
+def _load_existing_rows_v2(
+    *,
+    inventory: ProfitReadinessInventory,
+    event_ids: Sequence[str],
+) -> tuple[tuple[Path, CryptoPerpTournamentRowsV2] | None, list[str]]:
+    expected_event_set = sorted(set(event_ids))
+    known_gaps: list[str] = []
+    candidates: list[tuple[Path, CryptoPerpTournamentRowsV2]] = []
+    mismatch_count = 0
+    for item in inventory.items:
+        if item.category != "rows_v2":
+            continue
+        path = Path(item.path)
+        try:
+            rows = CryptoPerpTournamentRowsV2.model_validate(_load_json_object(path))
+        except Exception:
+            known_gaps.append("EXISTING_ROWS_V2_INVALID")
+            continue
+        if sorted(rows.event_set) == expected_event_set:
+            candidates.append((path, rows))
+        else:
+            mismatch_count += 1
+    if mismatch_count:
+        known_gaps.append("EXISTING_ROWS_V2_EVENT_SET_MISMATCH")
+    if not candidates:
+        return None, _unique(known_gaps)
+    candidates.sort(key=lambda pair: pair[0].as_posix())
+    if len(candidates) > 1:
+        known_gaps.append("MULTIPLE_EXISTING_ROWS_V2_FOR_EVENT_SET_COLLAPSED_TO_FIRST")
+    return candidates[0], _unique(known_gaps)
+
+
+def _load_existing_bias_guard(
+    *,
+    inventory: ProfitReadinessInventory,
+    event_count: int,
+) -> tuple[tuple[Path, CryptoPerpBiasGuard] | None, list[str]]:
+    if event_count <= 0:
+        return None, []
+    known_gaps: list[str] = []
+    candidates: list[tuple[Path, CryptoPerpBiasGuard]] = []
+    mismatch_count = 0
+    for item in inventory.items:
+        if item.category != "bias_guard":
+            continue
+        path = Path(item.path)
+        try:
+            guard = CryptoPerpBiasGuard.model_validate(_load_json_object(path))
+        except Exception:
+            known_gaps.append("EXISTING_BIAS_GUARD_INVALID")
+            continue
+        if guard.event_count == event_count:
+            candidates.append((path, guard))
+        else:
+            mismatch_count += 1
+    if mismatch_count:
+        known_gaps.append("EXISTING_BIAS_GUARD_EVENT_COUNT_MISMATCH")
+    if not candidates:
+        return None, _unique(known_gaps)
+    candidates.sort(key=lambda pair: pair[0].as_posix())
+    if len(candidates) > 1:
+        known_gaps.append("MULTIPLE_EXISTING_BIAS_GUARD_FOR_EVENT_COUNT_COLLAPSED_TO_FIRST")
+    return candidates[0], _unique(known_gaps)
+
+
+def _load_existing_artifacts(
+    *,
+    inventory: ProfitReadinessInventory,
+    pairs: Sequence[_EventOutcomePair],
+) -> _ExistingArtifacts:
+    source_artifacts, source_gaps = _load_existing_per_event_artifacts(
+        inventory=inventory,
+        category="source_availability",
+        model_type=CryptoPerpSourceAvailability,
+    )
+    replay_artifacts, replay_gaps = _load_existing_per_event_artifacts(
+        inventory=inventory,
+        category="replay_slice",
+        model_type=CryptoPerpReplaySlice,
+    )
+    feature_artifacts, feature_gaps = _load_existing_per_event_artifacts(
+        inventory=inventory,
+        category="feature_pack",
+        model_type=CryptoPerpFeaturePack,
+    )
+    edge_artifacts, edge_gaps = _load_existing_per_event_artifacts(
+        inventory=inventory,
+        category="edge_score",
+        model_type=CryptoPerpEdgeScore,
+    )
+    event_ids = [pair.event.event_id for pair in pairs]
+    rows, rows_gaps = _load_existing_rows_v2(inventory=inventory, event_ids=event_ids)
+    guard, guard_gaps = _load_existing_bias_guard(
+        inventory=inventory,
+        event_count=len(set(event_ids)),
+    )
+    return _ExistingArtifacts(
+        source_availability=source_artifacts,
+        replay_slice=replay_artifacts,
+        feature_pack=feature_artifacts,
+        edge_score=edge_artifacts,
+        rows_v2=rows,
+        bias_guard=guard,
+        known_gaps=_unique(
+            [
+                *source_gaps,
+                *replay_gaps,
+                *feature_gaps,
+                *edge_gaps,
+                *rows_gaps,
+                *guard_gaps,
+            ]
+        ),
+    )
 
 
 def _select_pairs(
