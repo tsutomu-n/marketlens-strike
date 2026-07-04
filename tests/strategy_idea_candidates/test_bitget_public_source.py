@@ -194,9 +194,9 @@ def test_refresh_generates_prep_watchdeck_compatible_source_root(tmp_path: Path)
     assert ticker_manifest["live_order_submitted"] is False
 
     ticker_parquet = next(
-        (
-            result.source_root / "data/ticker_rows"
-        ).glob("exchange=bitget/symbol=BTCUSDT/date=*/ticker_rows.parquet")
+        (result.source_root / "data/ticker_rows").glob(
+            "exchange=bitget/symbol=BTCUSDT/date=*/ticker_rows.parquet"
+        )
     )
     ticker_rows = pl.read_parquet(ticker_parquet)
     assert ticker_rows.height == 1

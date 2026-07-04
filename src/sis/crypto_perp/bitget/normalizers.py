@@ -115,12 +115,19 @@ def normalize_mix_tickers(payload: Mapping[str, Any]) -> list[dict[str, str | No
                 "last_price": _first_text(row, ("lastPr", "lastPrice")),
                 "bid_price": _first_text(row, ("bidPr", "bid1Price")),
                 "ask_price": _first_text(row, ("askPr", "ask1Price")),
+                "bid_size": _first_text(row, ("bidSz", "bid1Size")),
+                "ask_size": _first_text(row, ("askSz", "ask1Size")),
                 "change_24h": _first_text(row, ("change24h", "price24hPcnt")),
+                "base_volume_24h": _first_text(row, ("baseVolume", "volume24h")),
+                "quote_volume_24h": _first_text(row, ("quoteVolume", "turnover24h")),
                 "usdt_volume_24h": _first_text(
                     row,
                     ("usdtVolume", "quoteVolume", "turnover24h"),
                 ),
+                "index_price": _optional_text(row, "indexPrice"),
+                "mark_price": _optional_text(row, "markPrice"),
                 "funding_rate": _optional_text(row, "fundingRate"),
+                "next_funding_time_ms": _first_text(row, ("nextFundingTime", "fundingTime")),
                 "holding_amount": _first_text(row, ("holdingAmount", "openInterest")),
             }
         )

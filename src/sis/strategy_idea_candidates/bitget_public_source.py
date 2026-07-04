@@ -23,6 +23,7 @@ from sis.strategy_inputs.io import write_json_artifact
 
 
 BITGET_PUBLIC_SOURCE_SCHEMA_VERSION = "strategy_idea_candidates_bitget_public_source.v1"
+TICKER_MANIFEST_SCHEMA_VERSION = "crypto_perp_ticker_manifest.v1"
 BITGET_PUBLIC_BASE_URL = "https://api.bitget.com"
 BITGET_HISTORY_CANDLES_LIMIT = 200
 SUPPORTED_PRODUCT_TYPE = "USDT-FUTURES"
@@ -240,6 +241,20 @@ def _write_source_root(
         scanner_rows=scanner_rows,
     )
     _write_candles_parquet(data_dir / "candles_5m", candle_rows)
+    ticker_rows = _ticker_rows(
+        run_id=run_id,
+        generated_at_ms=generated_at_ms,
+        product_type=product_type,
+        tickers=tickers,
+    )
+    _write_ticker_rows_parquet(data_dir / "ticker_rows", ticker_rows)
+    _write_ticker_manifest(
+        data_dir / "ticker_manifest.json",
+        run_id=run_id,
+        generated_at_ms=generated_at_ms,
+        product_type=product_type,
+        ticker_rows=ticker_rows,
+    )
     _write_latest_snapshot(
         snapshot_dir / "latest.json",
         run_id=run_id,
@@ -251,9 +266,168 @@ def _write_source_root(
     return {
         "contracts": len(contracts),
         "tickers_snapshot": len(tickers),
+        "ticker_rows": len(ticker_rows),
         "candles_5m": len(candle_rows),
         "scanner_rows": len(scanner_rows),
     }
+
+
+def _ticker_rows(
+    *,
+    run_id: str,
+    generated_at_ms: int,
+    product_type: str,
+    tickers: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for ticker in tickers:
+        bid_px = _float_or_none(ticker.get("bid_price"))
+        ask_px = _float_or_none(ticker.get("ask_price"))
+        mid_px = (bid_px + ask_px) / 2 if bid_px is not None and ask_px is not None else None
+        symbol = str(ticker["symbol"]).upper()
+        rows.append(
+            {
+                "exchange": "bitget",
+                "market_type": "perp_linear" if product_type == "USDT-FUTURES" else product_type,
+                "symbol_native": symbol,
+                "symbol_canonical": symbol,
+                "ts_exchange_ms": _int_or_default(ticker.get("ts"), generated_at_ms),
+                "ts_received_ms": generated_at_ms,
+                "source_channel": "rest_ticker",
+                "last_px": _float_or_none(ticker.get("last_price")),
+                "bid_px": bid_px,
+                "ask_px": ask_px,
+                "bid_sz": _float_or_none(ticker.get("bid_size")),
+                "ask_sz": _float_or_none(ticker.get("ask_size")),
+                "mid_px": mid_px,
+                "mark_px": _float_or_none(ticker.get("mark_price")),
+                "index_px": _float_or_none(ticker.get("index_price")),
+                "funding_rate": _float_or_none(ticker.get("funding_rate")),
+                "next_funding_time_ms": _int_or_none(ticker.get("next_funding_time_ms")),
+                "open_interest": _float_or_none(ticker.get("holding_amount")),
+                "volume_24h_base": _float_or_none(ticker.get("base_volume_24h")),
+                "volume_24h_quote": _float_or_none(ticker.get("usdt_volume_24h"))
+                or _float_or_none(ticker.get("quote_volume_24h")),
+                "coverage_class": "native",
+                "is_snapshot": True,
+                "raw_ref": "bitget.mix.market.tickers",
+                "ingested_at_ms": generated_at_ms,
+                "run_id": run_id,
+            }
+        )
+    return rows
+
+
+def _write_ticker_rows_parquet(base_dir: Path, ticker_rows: list[dict[str, Any]]) -> None:
+    if not ticker_rows:
+        return
+    frame = pl.DataFrame(ticker_rows).with_columns(
+        pl.from_epoch("ts_exchange_ms", time_unit="ms").dt.strftime("%Y-%m-%d").alias("date")
+    )
+    for keys, group in frame.partition_by(
+        ["exchange", "symbol_canonical", "date"],
+        as_dict=True,
+    ).items():
+        exchange, symbol, date = keys
+        out_dir = base_dir / f"exchange={exchange}" / f"symbol={symbol}" / f"date={date}"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        group.drop("date").write_parquet(out_dir / "ticker_rows.parquet")
+
+
+def _write_ticker_manifest(
+    path: Path,
+    *,
+    run_id: str,
+    generated_at_ms: int,
+    product_type: str,
+    ticker_rows: list[dict[str, Any]],
+) -> None:
+    fields_present = _fields_present(ticker_rows)
+    supports_edge_action = {"bid_px", "ask_px"}.issubset(fields_present)
+    supports_cost_adjusted_estimate = {
+        "last_px",
+        "bid_px",
+        "ask_px",
+        "funding_rate",
+    }.issubset(fields_present)
+    timestamp_values = [int(row["ts_exchange_ms"]) for row in ticker_rows]
+    write_json_artifact(
+        path,
+        {
+            "schema_version": TICKER_MANIFEST_SCHEMA_VERSION,
+            "manifest_id": f"{run_id}-bitget-ticker-rows",
+            "created_at": _serialize_datetime(
+                datetime.fromtimestamp(generated_at_ms / 1000, tz=timezone.utc)
+            ),
+            "artifact": "ticker_rows",
+            "version": 1,
+            "exchange": "bitget",
+            "market_type": "perp_linear" if product_type == "USDT-FUTURES" else product_type,
+            "symbols": sorted({str(row["symbol_canonical"]) for row in ticker_rows}),
+            "capture_mode": "rest_ticker",
+            "coverage_class": "native" if ticker_rows else "absent",
+            "supports_cost_adjusted_estimate": bool(
+                ticker_rows and supports_cost_adjusted_estimate
+            ),
+            "supports_edge_action": bool(ticker_rows and supports_edge_action),
+            "window": {
+                "start_ms": min(timestamp_values) if timestamp_values else None,
+                "end_ms": max(timestamp_values) if timestamp_values else None,
+            },
+            "row_count_total": len(ticker_rows),
+            "row_count_after_dedupe": len(_dedupe_ticker_rows(ticker_rows)),
+            "fields_present": sorted(fields_present),
+            "warnings": _ticker_manifest_warnings(ticker_rows, fields_present),
+            "raw_inputs": ["bitget.mix.market.tickers"],
+            "network_attempted": True,
+            "credentials_used": False,
+            "exchange_write_used": False,
+            "live_order_submitted": False,
+        },
+    )
+
+
+def _fields_present(rows: list[dict[str, Any]]) -> set[str]:
+    candidate_fields = {
+        "last_px",
+        "bid_px",
+        "ask_px",
+        "bid_sz",
+        "ask_sz",
+        "mid_px",
+        "mark_px",
+        "index_px",
+        "funding_rate",
+        "next_funding_time_ms",
+        "open_interest",
+        "volume_24h_base",
+        "volume_24h_quote",
+    }
+    return {field for field in candidate_fields if any(row.get(field) is not None for row in rows)}
+
+
+def _dedupe_ticker_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    deduped: dict[tuple[str, str, int, str], dict[str, Any]] = {}
+    for row in rows:
+        key = (
+            str(row["exchange"]),
+            str(row["symbol_canonical"]),
+            int(row["ts_exchange_ms"]),
+            str(row["source_channel"]),
+        )
+        deduped[key] = row
+    return list(deduped.values())
+
+
+def _ticker_manifest_warnings(rows: list[dict[str, Any]], fields_present: set[str]) -> list[str]:
+    warnings: list[str] = []
+    if rows and not {"bid_px", "ask_px"}.issubset(fields_present):
+        warnings.append("BID_ASK_MISSING")
+    if rows and "funding_rate" not in fields_present:
+        warnings.append("FUNDING_RATE_MISSING")
+    if not rows:
+        warnings.append("TICKER_ROWS_EMPTY")
+    return warnings
 
 
 def _write_scanner_duckdb(
@@ -597,6 +771,13 @@ def _prepare_output(
             scanner_db.unlink()
         for path in (source_root / "data/candles_5m").glob("date=*/candles.parquet"):
             path.unlink()
+        for path in (source_root / "data/ticker_rows").glob(
+            "exchange=*/symbol=*/date=*/ticker_rows.parquet"
+        ):
+            path.unlink()
+        ticker_manifest = source_root / "data/ticker_manifest.json"
+        if ticker_manifest.exists():
+            ticker_manifest.unlink()
 
 
 def _validate_request(
@@ -656,6 +837,12 @@ def _float_or_none(value: Any) -> float | None:
 def _int_or_default(value: Any, default: int) -> int:
     if value is None or isinstance(value, bool):
         return default
+    return int(value)
+
+
+def _int_or_none(value: Any) -> int | None:
+    if value is None or isinstance(value, bool):
+        return None
     return int(value)
 
 
