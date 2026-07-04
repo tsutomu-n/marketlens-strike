@@ -110,7 +110,10 @@ def _parse_ticker_manifests(
         for field in ("credentials_used", "exchange_write_used", "live_order_submitted"):
             if payload.get(field) is not False:
                 raise ValueError(f"ticker manifest {field} must be false: {path}")
-        count = int(payload.get("row_count_after_dedupe", 0))
+        raw_count = payload.get("row_count_after_dedupe")
+        if isinstance(raw_count, bool) or not isinstance(raw_count, int):
+            raise ValueError(f"ticker manifest row_count_after_dedupe must be an integer: {path}")
+        count = raw_count
         if count <= 0:
             raise ValueError(f"ticker manifest row_count_after_dedupe must be positive: {path}")
         row_count += count
