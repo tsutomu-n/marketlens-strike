@@ -1,0 +1,34 @@
+{
+  "row_set_id": "4fc7c9769ac8693aded53d9705ce6035c80daad71461d6716f53bc48425ea25a",
+  "event_count": 10,
+  "row_count": 30,
+  "leader_action": "REVERSAL_SHORT",
+  "leader_cost_adjusted_cash_estimate_usd": "3.635998071258068634191449818",
+  "no_trade_cost_adjusted_cash_estimate_usd": "0",
+  "leader_beats_no_trade": true,
+  "known_gap_count": 3,
+  "status": "BUILT",
+  "primary_metric": "cost_adjusted_cash_estimate_usd",
+  "outcome_ids": [
+    "c8268a6e31d6e10162dbd593b393e06d5bb441f96fa115cc3877f03cbc7af4e5",
+    "7b2cb0b29d6059ddf40a5650ea126e00d84a6aed882263100456b3d35fb3a54a",
+    "7d40798300906dace1fa53835613937bc1b531761fa6dfd3604a7660bfd9fcef",
+    "46480dfb37b7461be6c64cd6c866d2632d9d45297f35682ab61e0c1a34fe69e6",
+    "3e8fa9981516ad979ec00ff869b33dbff62a9019043aef5478306371bd75d804",
+    "643aa6099cdfbf9269764a8581f3daaf50284a105eb831c83492c64fa8aa46b3",
+    "dc0e8a152f04b84c95ff57033a7c03480235c71875eb2f4ce015f41491484ab5",
+    "463922b3891c5432fc432df0027075c5eb789230131f2cefc777086f167cca5f",
+    "f3858ad75a8de12907538245d53a49910cca7f93c21cf4d1fcc996d2ac526312",
+    "ce638a8bbc26b57857deb79086f49871dbdfff957bccb895a8f6b26cf4b54cd7"
+  ],
+  "action_totals_cost_adjusted_cash_estimate_usd": {
+    "CONTINUATION_LONG": "-6.035998071258068634191449818",
+    "NO_TRADE": "0",
+    "REVERSAL_SHORT": "3.635998071258068634191449818"
+  },
+  "actual_cash_result_null_count": 30,
+  "artifact_origin": "existing",
+  "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/aggregate/tournament_rows_v2.json",
+  "artifact_gap_origin": "existing artifact payload",
+  "artifact_match_note": "matched_by_event_set"
+}

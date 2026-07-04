@@ -1,0 +1,634 @@
+{
+  "schema_version": "crypto_perp_pre_actual_cash_decision.v1",
+  "artifact_id": "ca2b51b3e20bc521f6cd6750276f7386d2d9c71f3a7de2f4d898d069c7c21037",
+  "created_at": "2026-07-04T13:52:00Z",
+  "producer": {
+    "tool": "sis",
+    "command": "pre_actual_cash_evidence_pack_v1"
+  },
+  "source_refs": [
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/events/event_09.json",
+      "sha256": "sha256:4c55edd7153f082547984686feafa4ed7c73803d0839b0183707b26e874fcbbb",
+      "schema_version": "crypto_perp_event.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/events/event_05.json",
+      "sha256": "sha256:281529b5e373a3486f3b4a95b9aa5d8d5e651bc593589b8589414e6e5e35c26d",
+      "schema_version": "crypto_perp_event.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/events/event_02.json",
+      "sha256": "sha256:56f2aac67ff912dbbbe55cc9ef5d894bb7c4cac4b260552dda35f8b8949cff35",
+      "schema_version": "crypto_perp_event.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/events/event_06.json",
+      "sha256": "sha256:0a8e21850aec7632b0ba7dc66417c4b78c3bf58711038befc1edf3d353f9f432",
+      "schema_version": "crypto_perp_event.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/events/event_00.json",
+      "sha256": "sha256:17882941a5c3d6a1c9451b37dd0ad440a5f1135c4d859168a2aae802eff67ab8",
+      "schema_version": "crypto_perp_event.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/events/event_07.json",
+      "sha256": "sha256:e20d0a350cdcaed8b5d2ca4de089d42abda5c3bc8f379939ba6a7e61dd1492ce",
+      "schema_version": "crypto_perp_event.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/events/event_03.json",
+      "sha256": "sha256:07815b57f3c9f41f621f9b0eda2d14441182af51ed881846f229c2cec35d365b",
+      "schema_version": "crypto_perp_event.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/events/event_08.json",
+      "sha256": "sha256:14d3fb564d06fdfe241fa0f206c582a7c9bb4c66f422fd3508f92b8c86e9e522",
+      "schema_version": "crypto_perp_event.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/events/event_04.json",
+      "sha256": "sha256:b9f48b3cab26ded7d5d33dd47e174ffc1d592d8e70dbbc08c86b68b78609f840",
+      "schema_version": "crypto_perp_event.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/events/event_01.json",
+      "sha256": "sha256:eba431f577a55fed4306a3376a12202213452e73b4cb2209e16f8d97944c59ac",
+      "schema_version": "crypto_perp_event.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/outcomes/outcome_09.json",
+      "sha256": "sha256:4e9739890e0fa192eb8b6d3c1a50b3a69dae032c108208ce2fbadbccee1f12d6",
+      "schema_version": "crypto_perp_outcome.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/outcomes/outcome_05.json",
+      "sha256": "sha256:8d707af14ebf36094b50e80d6a1ea5e813161a19657124775b6238e5103aaf27",
+      "schema_version": "crypto_perp_outcome.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/outcomes/outcome_02.json",
+      "sha256": "sha256:fa06e95e3d6cc83097419daf6ea5d37e16d26a3ddad92b163bb89c4d8106c19c",
+      "schema_version": "crypto_perp_outcome.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/outcomes/outcome_06.json",
+      "sha256": "sha256:45e5dcd4caa86f607f5e069aca380e2a91dd226b0fde3255702accf34731cd3c",
+      "schema_version": "crypto_perp_outcome.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/outcomes/outcome_00.json",
+      "sha256": "sha256:6b397709e701cb34b380730bc25ab418274825dc61e3b7812aef8445e56dfbf5",
+      "schema_version": "crypto_perp_outcome.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/outcomes/outcome_07.json",
+      "sha256": "sha256:3433cf962d70e76d58008fd931e6f67115e1425c3c5e36821d98a2434d8864c5",
+      "schema_version": "crypto_perp_outcome.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/outcomes/outcome_03.json",
+      "sha256": "sha256:d81fa7a15051c9e4b39b91ed3335a5a62be69acd8dc334d199114ffa7ec50fb0",
+      "schema_version": "crypto_perp_outcome.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/outcomes/outcome_08.json",
+      "sha256": "sha256:a96d9380524a3d236c57157504d5c0cfd79a8ac2eb06bc28accabb74af49da85",
+      "schema_version": "crypto_perp_outcome.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/outcomes/outcome_04.json",
+      "sha256": "sha256:55b4879fdbf46e1864251ebc02adef540a3fde7ff79a5228ed7b7926bc83e51e",
+      "schema_version": "crypto_perp_outcome.v1"
+    },
+    {
+      "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/outcomes/outcome_01.json",
+      "sha256": "sha256:4e1f054187f1f8a8178a47b194c41faa33a69019c7502962e5d22724b8ea892a",
+      "schema_version": "crypto_perp_outcome.v1"
+    }
+  ],
+  "boundary": {
+    "permits_live_order": false,
+    "live_conversion_allowed": false,
+    "wallet_used": false,
+    "signing_used": false,
+    "exchange_write_used": false,
+    "live_order_submitted": false
+  },
+  "decision": "COLLECT_MORE_SOURCES",
+  "reason_codes": [
+    "COST_ADJUSTED_INPUTS_MISSING",
+    "DEPTH_SOURCE_MISSING",
+    "OPTIONAL_FEATURES_MISSING",
+    "EDGE_SELECTED_ACTION_UNKNOWN",
+    "BIAS_GUARD_SAMPLE_INSUFFICIENT_OR_NOT_ESTIMABLE",
+    "BIAS_GUARD_NOT_PASSING"
+  ],
+  "event_count": 10,
+  "outcome_count": 10,
+  "source_gap_summary": {
+    "sources": {
+      "event": {
+        "missing_event_count": 0,
+        "reason_codes": []
+      },
+      "bars": {
+        "missing_event_count": 0,
+        "reason_codes": []
+      },
+      "ticker": {
+        "missing_event_count": 10,
+        "reason_codes": [
+          "TICKER_SOURCE_MISSING"
+        ]
+      },
+      "funding": {
+        "missing_event_count": 0,
+        "reason_codes": []
+      },
+      "trades": {
+        "missing_event_count": 10,
+        "reason_codes": [
+          "TRADES_SOURCE_MISSING"
+        ]
+      },
+      "books": {
+        "missing_event_count": 10,
+        "reason_codes": [
+          "BOOKS_SOURCE_MISSING"
+        ]
+      },
+      "outcome": {
+        "missing_event_count": 0,
+        "reason_codes": []
+      },
+      "replay": {
+        "missing_event_count": 10,
+        "reason_codes": [
+          "REPLAY_SOURCE_MISSING"
+        ]
+      },
+      "cash_ledger": {
+        "missing_event_count": 10,
+        "reason_codes": [
+          "CASH_LEDGER_SOURCE_MISSING"
+        ]
+      },
+      "live_measurement": {
+        "missing_event_count": 10,
+        "reason_codes": [
+          "LIVE_MEASUREMENT_SOURCE_MISSING"
+        ]
+      }
+    },
+    "global_known_gaps": [
+      "ACTUAL_CASH_SOURCE_MISSING",
+      "BOOKS_SOURCE_MISSING",
+      "CASH_LEDGER_SOURCE_MISSING",
+      "DEPTH_10BPS_SOURCE_MISSING",
+      "DOGFOOD_STATUS_VIEWER_NOT_PROFIT_EVIDENCE",
+      "EDGE_SCORE_UNKNOWN_COST_ADJUSTED_INPUTS_MISSING",
+      "EXISTING_BIAS_GUARD_EVENT_COUNT_MISMATCH",
+      "EXISTING_ROWS_V2_EVENT_SET_MISMATCH",
+      "LIVE_MEASUREMENT_SOURCE_MISSING",
+      "OFI_SOURCE_MISSING",
+      "REPLAY_SOURCE_MISSING",
+      "TRADES_SOURCE_MISSING",
+      "TRADE_SIGN_IMBALANCE_SOURCE_MISSING"
+    ],
+    "artifact_usage": {
+      "per_event_artifacts": {
+        "edge_score": {
+          "existing": 10
+        },
+        "feature_pack": {
+          "existing": 10
+        },
+        "replay_slice": {
+          "existing": 10
+        },
+        "source_availability": {
+          "existing": 10
+        }
+      },
+      "tournament_rows_v2": {
+        "artifact_origin": "existing",
+        "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/aggregate/tournament_rows_v2.json",
+        "artifact_gap_origin": "existing artifact payload",
+        "artifact_match_note": "matched_by_event_set"
+      },
+      "bias_guard": {
+        "artifact_origin": "existing",
+        "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/aggregate/bias_guard.json",
+        "artifact_gap_origin": "existing artifact payload",
+        "artifact_match_note": "matched_by_event_count; bias_guard schema has no event ids"
+      },
+      "event_outcome_pairs": [
+        {
+          "event_id": "1fc7eaed5f3299432f3979bdb5db62897c0967230796233a4e0055a4723d755a",
+          "outcome_id": "c8268a6e31d6e10162dbd593b393e06d5bb441f96fa115cc3877f03cbc7af4e5"
+        },
+        {
+          "event_id": "22ef7416c3f105e26d3353b4345c2b60db4fdf0003a84b5734bc89ffa9ee837e",
+          "outcome_id": "7b2cb0b29d6059ddf40a5650ea126e00d84a6aed882263100456b3d35fb3a54a"
+        },
+        {
+          "event_id": "7f0c9a6f9be54b364631cfabf3d7a4bdc169353e46d5353ac7e8ff627144ef8e",
+          "outcome_id": "7d40798300906dace1fa53835613937bc1b531761fa6dfd3604a7660bfd9fcef"
+        },
+        {
+          "event_id": "8c12c3e75494cfab964f97cabae141f5182d3c3dc929d2a2365f79c9c5b027de",
+          "outcome_id": "46480dfb37b7461be6c64cd6c866d2632d9d45297f35682ab61e0c1a34fe69e6"
+        },
+        {
+          "event_id": "9ed7a715a42fab7dbbb1b80be5680b567d3becf5a20ef2a145e7b884fb28b556",
+          "outcome_id": "3e8fa9981516ad979ec00ff869b33dbff62a9019043aef5478306371bd75d804"
+        },
+        {
+          "event_id": "c07c92077899c68358cade21d613843b5e4d5bac89167b84262f1e8149171b10",
+          "outcome_id": "643aa6099cdfbf9269764a8581f3daaf50284a105eb831c83492c64fa8aa46b3"
+        },
+        {
+          "event_id": "d5f11ebae4f04e4b263242cc338fe941882dd5b76d51241b8d45abb29a298aeb",
+          "outcome_id": "dc0e8a152f04b84c95ff57033a7c03480235c71875eb2f4ce015f41491484ab5"
+        },
+        {
+          "event_id": "e7fbd5d4ed013f4a93299889a0e73473230cdf70c682299fb00b3e8e6e3249da",
+          "outcome_id": "463922b3891c5432fc432df0027075c5eb789230131f2cefc777086f167cca5f"
+        },
+        {
+          "event_id": "e9e75d6fd74a8178af923b6bf86a1b7a468904357a86374420e8106421069f02",
+          "outcome_id": "f3858ad75a8de12907538245d53a49910cca7f93c21cf4d1fcc996d2ac526312"
+        },
+        {
+          "event_id": "f97225d80ab3525e8c97c9279e656a22c7df37fc9f7a462faff082e869ba23cd",
+          "outcome_id": "ce638a8bbc26b57857deb79086f49871dbdfff957bccb895a8f6b26cf4b54cd7"
+        }
+      ],
+      "existing_artifact_known_gaps": [
+        "EXISTING_ROWS_V2_EVENT_SET_MISMATCH",
+        "EXISTING_BIAS_GUARD_EVENT_COUNT_MISMATCH"
+      ],
+      "existing_artifact_known_gap_count": 2
+    },
+    "run_manifest": {
+      "status": "blocked",
+      "known_gap_count": 23,
+      "existing_manifest_count": 10,
+      "matched_manifest_count": 10,
+      "missing_pair_count": 0,
+      "status_counts": {
+        "blocked": 10
+      },
+      "existing_manifest_known_gap_count": 14,
+      "computed_reason_code_count": 6,
+      "manifests": [
+        {
+          "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_09/manifest.json",
+          "run_id": "d0355e2f66c5259cbd87d65d4609fa00cbf63dfb6094c8fe8327f9fa78b36459",
+          "event_id": "1fc7eaed5f3299432f3979bdb5db62897c0967230796233a4e0055a4723d755a",
+          "outcome_id": "c8268a6e31d6e10162dbd593b393e06d5bb441f96fa115cc3877f03cbc7af4e5",
+          "status": "blocked",
+          "known_gap_count": 14
+        },
+        {
+          "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_05/manifest.json",
+          "run_id": "07ae857a8b94ecb1d63c76e15ef2cea084b9d892f12aed60007d69ca84cd2dea",
+          "event_id": "22ef7416c3f105e26d3353b4345c2b60db4fdf0003a84b5734bc89ffa9ee837e",
+          "outcome_id": "7b2cb0b29d6059ddf40a5650ea126e00d84a6aed882263100456b3d35fb3a54a",
+          "status": "blocked",
+          "known_gap_count": 14
+        },
+        {
+          "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_02/manifest.json",
+          "run_id": "4f81337084406e4b4df18be470a2b37abb59f9dc05e4ee90145889af68b62f01",
+          "event_id": "7f0c9a6f9be54b364631cfabf3d7a4bdc169353e46d5353ac7e8ff627144ef8e",
+          "outcome_id": "7d40798300906dace1fa53835613937bc1b531761fa6dfd3604a7660bfd9fcef",
+          "status": "blocked",
+          "known_gap_count": 14
+        },
+        {
+          "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_06/manifest.json",
+          "run_id": "cd5891fb6e347f42c1b31535dfda01445e3900daf35acac36ff56bbf0f3aa62d",
+          "event_id": "8c12c3e75494cfab964f97cabae141f5182d3c3dc929d2a2365f79c9c5b027de",
+          "outcome_id": "46480dfb37b7461be6c64cd6c866d2632d9d45297f35682ab61e0c1a34fe69e6",
+          "status": "blocked",
+          "known_gap_count": 14
+        },
+        {
+          "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_00/manifest.json",
+          "run_id": "61fa2910561d43f1725b30a4e6075c5b9fd5bce5efe0cb0fcaea88673efee9bf",
+          "event_id": "9ed7a715a42fab7dbbb1b80be5680b567d3becf5a20ef2a145e7b884fb28b556",
+          "outcome_id": "3e8fa9981516ad979ec00ff869b33dbff62a9019043aef5478306371bd75d804",
+          "status": "blocked",
+          "known_gap_count": 14
+        },
+        {
+          "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_07/manifest.json",
+          "run_id": "129b26294bb6a721223f3c5b594d0438f33440469dce8635ee03776cf5066702",
+          "event_id": "c07c92077899c68358cade21d613843b5e4d5bac89167b84262f1e8149171b10",
+          "outcome_id": "643aa6099cdfbf9269764a8581f3daaf50284a105eb831c83492c64fa8aa46b3",
+          "status": "blocked",
+          "known_gap_count": 14
+        },
+        {
+          "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_03/manifest.json",
+          "run_id": "b6d10c48cf71f5869935f67821136e838cf54e296f8626c61921bfa60dbcbaab",
+          "event_id": "d5f11ebae4f04e4b263242cc338fe941882dd5b76d51241b8d45abb29a298aeb",
+          "outcome_id": "dc0e8a152f04b84c95ff57033a7c03480235c71875eb2f4ce015f41491484ab5",
+          "status": "blocked",
+          "known_gap_count": 14
+        },
+        {
+          "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_08/manifest.json",
+          "run_id": "9abceae497bb2ece39ffce63cbbb80a0545f27b2a9005caf90bc6041680d5ba7",
+          "event_id": "e7fbd5d4ed013f4a93299889a0e73473230cdf70c682299fb00b3e8e6e3249da",
+          "outcome_id": "463922b3891c5432fc432df0027075c5eb789230131f2cefc777086f167cca5f",
+          "status": "blocked",
+          "known_gap_count": 14
+        },
+        {
+          "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_04/manifest.json",
+          "run_id": "7b69436cea7d9604808a119239574bcb097af6c8d14082b895477aba0a004f57",
+          "event_id": "e9e75d6fd74a8178af923b6bf86a1b7a468904357a86374420e8106421069f02",
+          "outcome_id": "f3858ad75a8de12907538245d53a49910cca7f93c21cf4d1fcc996d2ac526312",
+          "status": "blocked",
+          "known_gap_count": 14
+        },
+        {
+          "path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_01/manifest.json",
+          "run_id": "652693923220d1d7e0c2f02faee30bacaef30a74b4bfe5922a8f0dd428206a09",
+          "event_id": "f97225d80ab3525e8c97c9279e656a22c7df37fc9f7a462faff082e869ba23cd",
+          "outcome_id": "ce638a8bbc26b57857deb79086f49871dbdfff957bccb895a8f6b26cf4b54cd7",
+          "status": "blocked",
+          "known_gap_count": 14
+        }
+      ],
+      "artifact_count": 11
+    }
+  },
+  "edge_summary": {
+    "event_count": 10,
+    "artifact_origin_counts": {
+      "existing": 10
+    },
+    "selected_action_counts": {
+      "UNKNOWN": 10
+    },
+    "unknown_selected_action_count": 10,
+    "no_trade_selected_action_count": 0,
+    "known_gap_count": 100,
+    "events": [
+      {
+        "event_id": "1fc7eaed5f3299432f3979bdb5db62897c0967230796233a4e0055a4723d755a",
+        "selected_action": "UNKNOWN",
+        "why_no_trade": [
+          "COST_ADJUSTED_INPUTS_MISSING"
+        ],
+        "known_gap_count": 10,
+        "outcome_id": "c8268a6e31d6e10162dbd593b393e06d5bb441f96fa115cc3877f03cbc7af4e5",
+        "artifact_origin": "existing",
+        "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_09/edge_score.json",
+        "artifact_gap_origin": "existing artifact payload",
+        "artifact_match_note": "matched_by_event_id"
+      },
+      {
+        "event_id": "22ef7416c3f105e26d3353b4345c2b60db4fdf0003a84b5734bc89ffa9ee837e",
+        "selected_action": "UNKNOWN",
+        "why_no_trade": [
+          "COST_ADJUSTED_INPUTS_MISSING"
+        ],
+        "known_gap_count": 10,
+        "outcome_id": "7b2cb0b29d6059ddf40a5650ea126e00d84a6aed882263100456b3d35fb3a54a",
+        "artifact_origin": "existing",
+        "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_05/edge_score.json",
+        "artifact_gap_origin": "existing artifact payload",
+        "artifact_match_note": "matched_by_event_id"
+      },
+      {
+        "event_id": "7f0c9a6f9be54b364631cfabf3d7a4bdc169353e46d5353ac7e8ff627144ef8e",
+        "selected_action": "UNKNOWN",
+        "why_no_trade": [
+          "COST_ADJUSTED_INPUTS_MISSING"
+        ],
+        "known_gap_count": 10,
+        "outcome_id": "7d40798300906dace1fa53835613937bc1b531761fa6dfd3604a7660bfd9fcef",
+        "artifact_origin": "existing",
+        "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_02/edge_score.json",
+        "artifact_gap_origin": "existing artifact payload",
+        "artifact_match_note": "matched_by_event_id"
+      },
+      {
+        "event_id": "8c12c3e75494cfab964f97cabae141f5182d3c3dc929d2a2365f79c9c5b027de",
+        "selected_action": "UNKNOWN",
+        "why_no_trade": [
+          "COST_ADJUSTED_INPUTS_MISSING"
+        ],
+        "known_gap_count": 10,
+        "outcome_id": "46480dfb37b7461be6c64cd6c866d2632d9d45297f35682ab61e0c1a34fe69e6",
+        "artifact_origin": "existing",
+        "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_06/edge_score.json",
+        "artifact_gap_origin": "existing artifact payload",
+        "artifact_match_note": "matched_by_event_id"
+      },
+      {
+        "event_id": "9ed7a715a42fab7dbbb1b80be5680b567d3becf5a20ef2a145e7b884fb28b556",
+        "selected_action": "UNKNOWN",
+        "why_no_trade": [
+          "COST_ADJUSTED_INPUTS_MISSING"
+        ],
+        "known_gap_count": 10,
+        "outcome_id": "3e8fa9981516ad979ec00ff869b33dbff62a9019043aef5478306371bd75d804",
+        "artifact_origin": "existing",
+        "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_00/edge_score.json",
+        "artifact_gap_origin": "existing artifact payload",
+        "artifact_match_note": "matched_by_event_id"
+      },
+      {
+        "event_id": "c07c92077899c68358cade21d613843b5e4d5bac89167b84262f1e8149171b10",
+        "selected_action": "UNKNOWN",
+        "why_no_trade": [
+          "COST_ADJUSTED_INPUTS_MISSING"
+        ],
+        "known_gap_count": 10,
+        "outcome_id": "643aa6099cdfbf9269764a8581f3daaf50284a105eb831c83492c64fa8aa46b3",
+        "artifact_origin": "existing",
+        "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_07/edge_score.json",
+        "artifact_gap_origin": "existing artifact payload",
+        "artifact_match_note": "matched_by_event_id"
+      },
+      {
+        "event_id": "d5f11ebae4f04e4b263242cc338fe941882dd5b76d51241b8d45abb29a298aeb",
+        "selected_action": "UNKNOWN",
+        "why_no_trade": [
+          "COST_ADJUSTED_INPUTS_MISSING"
+        ],
+        "known_gap_count": 10,
+        "outcome_id": "dc0e8a152f04b84c95ff57033a7c03480235c71875eb2f4ce015f41491484ab5",
+        "artifact_origin": "existing",
+        "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_03/edge_score.json",
+        "artifact_gap_origin": "existing artifact payload",
+        "artifact_match_note": "matched_by_event_id"
+      },
+      {
+        "event_id": "e7fbd5d4ed013f4a93299889a0e73473230cdf70c682299fb00b3e8e6e3249da",
+        "selected_action": "UNKNOWN",
+        "why_no_trade": [
+          "COST_ADJUSTED_INPUTS_MISSING"
+        ],
+        "known_gap_count": 10,
+        "outcome_id": "463922b3891c5432fc432df0027075c5eb789230131f2cefc777086f167cca5f",
+        "artifact_origin": "existing",
+        "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_08/edge_score.json",
+        "artifact_gap_origin": "existing artifact payload",
+        "artifact_match_note": "matched_by_event_id"
+      },
+      {
+        "event_id": "e9e75d6fd74a8178af923b6bf86a1b7a468904357a86374420e8106421069f02",
+        "selected_action": "UNKNOWN",
+        "why_no_trade": [
+          "COST_ADJUSTED_INPUTS_MISSING"
+        ],
+        "known_gap_count": 10,
+        "outcome_id": "f3858ad75a8de12907538245d53a49910cca7f93c21cf4d1fcc996d2ac526312",
+        "artifact_origin": "existing",
+        "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_04/edge_score.json",
+        "artifact_gap_origin": "existing artifact payload",
+        "artifact_match_note": "matched_by_event_id"
+      },
+      {
+        "event_id": "f97225d80ab3525e8c97c9279e656a22c7df37fc9f7a462faff082e869ba23cd",
+        "selected_action": "UNKNOWN",
+        "why_no_trade": [
+          "COST_ADJUSTED_INPUTS_MISSING"
+        ],
+        "known_gap_count": 10,
+        "outcome_id": "ce638a8bbc26b57857deb79086f49871dbdfff957bccb895a8f6b26cf4b54cd7",
+        "artifact_origin": "existing",
+        "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_01/edge_score.json",
+        "artifact_gap_origin": "existing artifact payload",
+        "artifact_match_note": "matched_by_event_id"
+      }
+    ]
+  },
+  "tournament_summary": {
+    "row_set_id": "4fc7c9769ac8693aded53d9705ce6035c80daad71461d6716f53bc48425ea25a",
+    "event_count": 10,
+    "row_count": 30,
+    "leader_action": "REVERSAL_SHORT",
+    "leader_cost_adjusted_cash_estimate_usd": "3.635998071258068634191449818",
+    "no_trade_cost_adjusted_cash_estimate_usd": "0",
+    "leader_beats_no_trade": true,
+    "known_gap_count": 3,
+    "status": "BUILT",
+    "primary_metric": "cost_adjusted_cash_estimate_usd",
+    "outcome_ids": [
+      "c8268a6e31d6e10162dbd593b393e06d5bb441f96fa115cc3877f03cbc7af4e5",
+      "7b2cb0b29d6059ddf40a5650ea126e00d84a6aed882263100456b3d35fb3a54a",
+      "7d40798300906dace1fa53835613937bc1b531761fa6dfd3604a7660bfd9fcef",
+      "46480dfb37b7461be6c64cd6c866d2632d9d45297f35682ab61e0c1a34fe69e6",
+      "3e8fa9981516ad979ec00ff869b33dbff62a9019043aef5478306371bd75d804",
+      "643aa6099cdfbf9269764a8581f3daaf50284a105eb831c83492c64fa8aa46b3",
+      "dc0e8a152f04b84c95ff57033a7c03480235c71875eb2f4ce015f41491484ab5",
+      "463922b3891c5432fc432df0027075c5eb789230131f2cefc777086f167cca5f",
+      "f3858ad75a8de12907538245d53a49910cca7f93c21cf4d1fcc996d2ac526312",
+      "ce638a8bbc26b57857deb79086f49871dbdfff957bccb895a8f6b26cf4b54cd7"
+    ],
+    "action_totals_cost_adjusted_cash_estimate_usd": {
+      "CONTINUATION_LONG": "-6.035998071258068634191449818",
+      "NO_TRADE": "0",
+      "REVERSAL_SHORT": "3.635998071258068634191449818"
+    },
+    "actual_cash_result_null_count": 30,
+    "artifact_origin": "existing",
+    "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/aggregate/tournament_rows_v2.json",
+    "artifact_gap_origin": "existing artifact payload",
+    "artifact_match_note": "matched_by_event_set"
+  },
+  "bias_guard_summary": {
+    "guard_status": "BLOCKED",
+    "pbo_status": "NOT_ESTIMABLE",
+    "event_count": 10,
+    "min_events_for_pbo": 30,
+    "fold_count": 0,
+    "stop_reasons": [
+      "BIAS_GUARD_FAILED_sample_sufficient_for_pbo",
+      "BIAS_GUARD_FAILED_stress_cash_non_negative"
+    ],
+    "known_gaps": [
+      "PUBLIC_5M_CANDLE_OUTCOME_NOT_ACTUAL_CASH",
+      "ACTUAL_CASH_RESULT_NOT_AVAILABLE",
+      "ESTIMATE_NOT_ACTUAL_CASH",
+      "PBO_NOT_ESTIMABLE_SAMPLE_INSUFFICIENT"
+    ],
+    "summary": {
+      "guard_status": "BLOCKED",
+      "pbo_status": "NOT_ESTIMABLE",
+      "event_count": 10,
+      "failed_check_count": 2,
+      "min_stress_cash_estimate_usd": "-1.131330787594210719415346496",
+      "max_profit_concentration_observed": "0.2223243599483549375865329672"
+    },
+    "event_outcome_pairs": [
+      {
+        "event_id": "1fc7eaed5f3299432f3979bdb5db62897c0967230796233a4e0055a4723d755a",
+        "outcome_id": "c8268a6e31d6e10162dbd593b393e06d5bb441f96fa115cc3877f03cbc7af4e5"
+      },
+      {
+        "event_id": "22ef7416c3f105e26d3353b4345c2b60db4fdf0003a84b5734bc89ffa9ee837e",
+        "outcome_id": "7b2cb0b29d6059ddf40a5650ea126e00d84a6aed882263100456b3d35fb3a54a"
+      },
+      {
+        "event_id": "7f0c9a6f9be54b364631cfabf3d7a4bdc169353e46d5353ac7e8ff627144ef8e",
+        "outcome_id": "7d40798300906dace1fa53835613937bc1b531761fa6dfd3604a7660bfd9fcef"
+      },
+      {
+        "event_id": "8c12c3e75494cfab964f97cabae141f5182d3c3dc929d2a2365f79c9c5b027de",
+        "outcome_id": "46480dfb37b7461be6c64cd6c866d2632d9d45297f35682ab61e0c1a34fe69e6"
+      },
+      {
+        "event_id": "9ed7a715a42fab7dbbb1b80be5680b567d3becf5a20ef2a145e7b884fb28b556",
+        "outcome_id": "3e8fa9981516ad979ec00ff869b33dbff62a9019043aef5478306371bd75d804"
+      },
+      {
+        "event_id": "c07c92077899c68358cade21d613843b5e4d5bac89167b84262f1e8149171b10",
+        "outcome_id": "643aa6099cdfbf9269764a8581f3daaf50284a105eb831c83492c64fa8aa46b3"
+      },
+      {
+        "event_id": "d5f11ebae4f04e4b263242cc338fe941882dd5b76d51241b8d45abb29a298aeb",
+        "outcome_id": "dc0e8a152f04b84c95ff57033a7c03480235c71875eb2f4ce015f41491484ab5"
+      },
+      {
+        "event_id": "e7fbd5d4ed013f4a93299889a0e73473230cdf70c682299fb00b3e8e6e3249da",
+        "outcome_id": "463922b3891c5432fc432df0027075c5eb789230131f2cefc777086f167cca5f"
+      },
+      {
+        "event_id": "e9e75d6fd74a8178af923b6bf86a1b7a468904357a86374420e8106421069f02",
+        "outcome_id": "f3858ad75a8de12907538245d53a49910cca7f93c21cf4d1fcc996d2ac526312"
+      },
+      {
+        "event_id": "f97225d80ab3525e8c97c9279e656a22c7df37fc9f7a462faff082e869ba23cd",
+        "outcome_id": "ce638a8bbc26b57857deb79086f49871dbdfff957bccb895a8f6b26cf4b54cd7"
+      }
+    ],
+    "artifact_origin": "existing",
+    "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/aggregate/bias_guard.json",
+    "artifact_gap_origin": "existing artifact payload",
+    "artifact_match_note": "matched_by_event_count; bias_guard schema has no event ids"
+  },
+  "non_goal_flags": {
+    "actual_cash_used": false,
+    "profit_proven": false,
+    "actual_cash_readiness_claimed": false,
+    "tiny_live_readiness_claimed": false,
+    "live_trading_readiness_claimed": false,
+    "wallet_or_signing_used": false,
+    "exchange_write_used": false,
+    "live_order_submitted": false,
+    "public_candle_outcome_is_profit_evidence": false,
+    "cost_adjusted_estimate_is_actual_cash": false,
+    "bias_guard_sample_insufficient_is_robustness_pass": false,
+    "llm_trade_decision_used": false
+  }
+}

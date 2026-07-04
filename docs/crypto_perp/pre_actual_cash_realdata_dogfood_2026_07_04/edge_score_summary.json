@@ -1,0 +1,144 @@
+{
+  "event_count": 10,
+  "artifact_origin_counts": {
+    "existing": 10
+  },
+  "selected_action_counts": {
+    "UNKNOWN": 10
+  },
+  "unknown_selected_action_count": 10,
+  "no_trade_selected_action_count": 0,
+  "known_gap_count": 100,
+  "events": [
+    {
+      "event_id": "1fc7eaed5f3299432f3979bdb5db62897c0967230796233a4e0055a4723d755a",
+      "selected_action": "UNKNOWN",
+      "why_no_trade": [
+        "COST_ADJUSTED_INPUTS_MISSING"
+      ],
+      "known_gap_count": 10,
+      "outcome_id": "c8268a6e31d6e10162dbd593b393e06d5bb441f96fa115cc3877f03cbc7af4e5",
+      "artifact_origin": "existing",
+      "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_09/edge_score.json",
+      "artifact_gap_origin": "existing artifact payload",
+      "artifact_match_note": "matched_by_event_id"
+    },
+    {
+      "event_id": "22ef7416c3f105e26d3353b4345c2b60db4fdf0003a84b5734bc89ffa9ee837e",
+      "selected_action": "UNKNOWN",
+      "why_no_trade": [
+        "COST_ADJUSTED_INPUTS_MISSING"
+      ],
+      "known_gap_count": 10,
+      "outcome_id": "7b2cb0b29d6059ddf40a5650ea126e00d84a6aed882263100456b3d35fb3a54a",
+      "artifact_origin": "existing",
+      "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_05/edge_score.json",
+      "artifact_gap_origin": "existing artifact payload",
+      "artifact_match_note": "matched_by_event_id"
+    },
+    {
+      "event_id": "7f0c9a6f9be54b364631cfabf3d7a4bdc169353e46d5353ac7e8ff627144ef8e",
+      "selected_action": "UNKNOWN",
+      "why_no_trade": [
+        "COST_ADJUSTED_INPUTS_MISSING"
+      ],
+      "known_gap_count": 10,
+      "outcome_id": "7d40798300906dace1fa53835613937bc1b531761fa6dfd3604a7660bfd9fcef",
+      "artifact_origin": "existing",
+      "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_02/edge_score.json",
+      "artifact_gap_origin": "existing artifact payload",
+      "artifact_match_note": "matched_by_event_id"
+    },
+    {
+      "event_id": "8c12c3e75494cfab964f97cabae141f5182d3c3dc929d2a2365f79c9c5b027de",
+      "selected_action": "UNKNOWN",
+      "why_no_trade": [
+        "COST_ADJUSTED_INPUTS_MISSING"
+      ],
+      "known_gap_count": 10,
+      "outcome_id": "46480dfb37b7461be6c64cd6c866d2632d9d45297f35682ab61e0c1a34fe69e6",
+      "artifact_origin": "existing",
+      "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_06/edge_score.json",
+      "artifact_gap_origin": "existing artifact payload",
+      "artifact_match_note": "matched_by_event_id"
+    },
+    {
+      "event_id": "9ed7a715a42fab7dbbb1b80be5680b567d3becf5a20ef2a145e7b884fb28b556",
+      "selected_action": "UNKNOWN",
+      "why_no_trade": [
+        "COST_ADJUSTED_INPUTS_MISSING"
+      ],
+      "known_gap_count": 10,
+      "outcome_id": "3e8fa9981516ad979ec00ff869b33dbff62a9019043aef5478306371bd75d804",
+      "artifact_origin": "existing",
+      "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_00/edge_score.json",
+      "artifact_gap_origin": "existing artifact payload",
+      "artifact_match_note": "matched_by_event_id"
+    },
+    {
+      "event_id": "c07c92077899c68358cade21d613843b5e4d5bac89167b84262f1e8149171b10",
+      "selected_action": "UNKNOWN",
+      "why_no_trade": [
+        "COST_ADJUSTED_INPUTS_MISSING"
+      ],
+      "known_gap_count": 10,
+      "outcome_id": "643aa6099cdfbf9269764a8581f3daaf50284a105eb831c83492c64fa8aa46b3",
+      "artifact_origin": "existing",
+      "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_07/edge_score.json",
+      "artifact_gap_origin": "existing artifact payload",
+      "artifact_match_note": "matched_by_event_id"
+    },
+    {
+      "event_id": "d5f11ebae4f04e4b263242cc338fe941882dd5b76d51241b8d45abb29a298aeb",
+      "selected_action": "UNKNOWN",
+      "why_no_trade": [
+        "COST_ADJUSTED_INPUTS_MISSING"
+      ],
+      "known_gap_count": 10,
+      "outcome_id": "dc0e8a152f04b84c95ff57033a7c03480235c71875eb2f4ce015f41491484ab5",
+      "artifact_origin": "existing",
+      "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_03/edge_score.json",
+      "artifact_gap_origin": "existing artifact payload",
+      "artifact_match_note": "matched_by_event_id"
+    },
+    {
+      "event_id": "e7fbd5d4ed013f4a93299889a0e73473230cdf70c682299fb00b3e8e6e3249da",
+      "selected_action": "UNKNOWN",
+      "why_no_trade": [
+        "COST_ADJUSTED_INPUTS_MISSING"
+      ],
+      "known_gap_count": 10,
+      "outcome_id": "463922b3891c5432fc432df0027075c5eb789230131f2cefc777086f167cca5f",
+      "artifact_origin": "existing",
+      "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_08/edge_score.json",
+      "artifact_gap_origin": "existing artifact payload",
+      "artifact_match_note": "matched_by_event_id"
+    },
+    {
+      "event_id": "e9e75d6fd74a8178af923b6bf86a1b7a468904357a86374420e8106421069f02",
+      "selected_action": "UNKNOWN",
+      "why_no_trade": [
+        "COST_ADJUSTED_INPUTS_MISSING"
+      ],
+      "known_gap_count": 10,
+      "outcome_id": "f3858ad75a8de12907538245d53a49910cca7f93c21cf4d1fcc996d2ac526312",
+      "artifact_origin": "existing",
+      "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_04/edge_score.json",
+      "artifact_gap_origin": "existing artifact payload",
+      "artifact_match_note": "matched_by_event_id"
+    },
+    {
+      "event_id": "f97225d80ab3525e8c97c9279e656a22c7df37fc9f7a462faff082e869ba23cd",
+      "selected_action": "UNKNOWN",
+      "why_no_trade": [
+        "COST_ADJUSTED_INPUTS_MISSING"
+      ],
+      "known_gap_count": 10,
+      "outcome_id": "ce638a8bbc26b57857deb79086f49871dbdfff957bccb895a8f6b26cf4b54cd7",
+      "artifact_origin": "existing",
+      "artifact_path": "data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/event_01/edge_score.json",
+      "artifact_gap_origin": "existing artifact payload",
+      "artifact_match_note": "matched_by_event_id"
+    }
+  ]
+}

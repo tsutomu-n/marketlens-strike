@@ -1,9 +1,117 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-04_22:40 JST
+更新日: 2026-07-04_22:57 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Real Data Adjacent 10 Event Pre Actual Cash Dogfood
+
+Completed on branch `ai/pre-actual-cash-realdata-dogfood-20260704-2252`.
+
+Goal:
+
+- Use the existing internal `write_pre_actual_cash_evidence_pack()` helper.
+- Dogfood a pre-actual-cash evidence pack with 10 BTCUSDT public-candle event / outcome pairs generated from the existing validated local CSV.
+- Make the writer read existing per-event and aggregate artifacts instead of relying on writer-only recomputation.
+- Record `decision.json`, `decision.md`, the selected blocker, and this final summary.
+- Do not add a public CLI, actual cash source, cash ledger, actual-cash rows, actual-cash gate, tiny-live behavior, live orders, exchange writes, wallet/signing, or ML/LLM trade decisions.
+
+Input:
+
+- Source CSV: `data/strategy_idea_candidates/c9-btcusdt-realdata-20260628T045945Z/input/BTCUSDT_5m_input.csv`
+- CSV shape: 200 BTCUSDT public 5m candle rows from `2026-06-27T12:20:00Z` through `2026-06-28T04:55:00Z`.
+- Selection policy: hourly cutoffs from `2026-06-27T13:50:00Z` through `2026-06-27T22:50:00Z`, each with a 60-minute lookback and 360-minute future outcome horizon.
+- This is real-data-adjacent public candle evidence, not actual cash, fill, fee, funding measurement, slippage, trade tape, or order book evidence.
+
+Achieved:
+
+- Generated 10 `market_window_v1` event artifacts under `data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/events/`.
+- Generated 10 matured outcome artifacts under `data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/outcomes/`.
+- Generated 10 per-event run-local artifact sets under `data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/runs/`.
+- Generated aggregate `tournament_rows_v2.json` and `bias_guard.json` for the full 10-event set under `data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/aggregate/`.
+- Ran the existing writer over that runtime directory and wrote 11 pack artifacts.
+- The writer read existing artifacts:
+  - `source_availability`: `{'existing': 10}`
+  - `replay_slice`: `{'existing': 10}`
+  - `feature_pack`: `{'existing': 10}`
+  - `edge_score`: `{'existing': 10}`
+  - `tournament_rows_v2`: `artifact_origin=existing`
+  - `bias_guard`: `artifact_origin=existing`
+- Recorded durable outputs under `docs/crypto_perp/pre_actual_cash_realdata_dogfood_2026_07_04/`.
+- Generated decision:
+  - `decision=COLLECT_MORE_SOURCES`
+  - `event_count=10`
+  - `outcome_count=10`
+  - `selected_action_counts={'UNKNOWN': 10}`
+  - `leader_action=REVERSAL_SHORT`
+  - `leader_beats_no_trade=True`
+  - `bias_guard_status=BLOCKED`
+  - `pbo_status=NOT_ESTIMABLE`
+  - all `non_goal_flags=false`
+- Selected exactly one next blocker:
+  - `TICKER_SOURCE_MISSING_BLOCKS_COST_ADJUSTED_ESTIMATE_AND_EDGE_ACTION`
+
+Result artifacts:
+
+- `docs/crypto_perp/pre_actual_cash_realdata_dogfood_2026_07_04/decision.json`
+- `docs/crypto_perp/pre_actual_cash_realdata_dogfood_2026_07_04/decision.md`
+- `docs/crypto_perp/pre_actual_cash_realdata_dogfood_2026_07_04/blocker.md`
+- `docs/crypto_perp/pre_actual_cash_realdata_dogfood_2026_07_04/selection_manifest.json`
+- Supporting pack summaries are in the same directory.
+- Implementation plan and two critique passes are recorded in `docs/plans/pre-actual-cash-realdata-dogfood-2026-07-04.md`.
+
+Selected blocker rationale:
+
+- `known_gaps_by_source.json` shows `ticker.missing_event_count=10`.
+- `source_availability_matrix.json` shows `can_compute_cost_adjusted_estimate=true` for 0 of 10 events.
+- `edge_score_summary.json` shows `selected_action_counts={'UNKNOWN': 10}`.
+- This is lighter and more diagnostic than jumping to trades, books, replay, actual cash, or event-definition changes.
+- Residual caution: current source availability treats `funding_rate="0"` in the event features as funding available, even though this dogfood did not add a measured funding source. If ticker alone does not change the blocker, funding semantics should be the next light check, not trades/books/replay.
+
+Changed files:
+
+- `docs/plans/pre-actual-cash-realdata-dogfood-2026-07-04.md`
+- `docs/crypto_perp/pre_actual_cash_realdata_dogfood_2026_07_04/`
+- `docs/final-summary.md`
+
+Runtime artifacts:
+
+- `data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/`
+
+Verification:
+
+- Direct generation from the existing BTCUSDT 5m CSV -> produced 10 event artifacts, 10 outcome artifacts, 10 per-event run-local artifact sets, aggregate rows/bias artifacts, and 11 writer pack artifacts.
+- `decision.json` validates against `crypto_perp_pre_actual_cash_decision.v1.schema.json`.
+- `uv run python scripts/check_current_docs.py` -> passed.
+- `uv run python scripts/check_cli_catalog.py` -> passed.
+- `uv run sis --help | rg "pre-actual-cash|pre_actual_cash|evidence-pack" || true` -> no output; no pre-actual-cash public CLI is exposed.
+- `./scripts/check` -> passed.
+
+Remaining work:
+
+- Next G3 should address one blocker only: ticker source availability for these 10 event windows. Do not fix trades, books, replay, event definition, and bias sample size in the same step.
+
+Usable scope:
+
+- Internal writer/helper and local dogfood artifacts only. This does not prove actual cash profit, actual cash readiness, tiny-live readiness, live trading readiness, wallet/signing readiness, or exchange-write readiness.
+
+Destructive change:
+
+No. The change is additive and reversible.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No migration is required.
+
+Rollback:
+
+- Revert the new plan, this final-summary addendum, and `docs/crypto_perp/pre_actual_cash_realdata_dogfood_2026_07_04/`.
+- Remove runtime artifacts under `data/crypto_perp/pre_actual_cash_realdata_dogfood_20260704/` only if local cleanup is desired.
 
 ## Latest Addendum: Varied 10 Event / 10 Outcome Pre Actual Cash Writer Dogfood
 
