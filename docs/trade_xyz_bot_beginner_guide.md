@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:53 JST
-更新日: 2026-06-18_03:02 JST
+更新日: 2026-07-05_12:35 JST
 -->
 
 # Trade[XYZ] Bot 準備ガイド Markdown 正本
@@ -240,6 +240,7 @@ NDX / QQQ の研究 gate が進んだら Trade[XYZ] も本番 OK か:
 ## 関連資料
 
 - [CURRENT_STATE.md](CURRENT_STATE.md): repo 全体の現在地を読む入口。
+- [CURRENT_GOAL_AND_DIRECTION_2026-07-05.md](CURRENT_GOAL_AND_DIRECTION_2026-07-05.md): 現在の実務的な次方向を読む入口。
 - [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md): できること / できないことを専門用語少なめで説明する文書。
 - [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md): 外部入力が来た時の再確認 checklist。
 - [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md): 運用手順の入口。

@@ -241,6 +241,7 @@ def test_current_direction_routing_uses_goal_doc_not_compat_redirect() -> None:
         "docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md",
         "docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md",
         "docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md",
+        "docs/runbooks/README.md",
         "docs/strategy_lifecycle/README.md",
     ]
     stale_direction_phrases = [
@@ -319,9 +320,16 @@ def test_human_facing_html_guides_have_markdown_sources() -> None:
     strategy_short = _read("docs/strategy_research_lab/08_CURRENT_CAPABILITIES.md")
     strategy_html = _read("docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html")
     beginner = _read("docs/trade_xyz_bot_beginner_guide.md")
+    beginner_html = _read("docs/trade_xyz_bot_beginner_guide.html")
 
     assert "docs/trade_xyz_bot_beginner_guide.md" in readme
     assert "trade_xyz_bot_beginner_guide.html" in beginner
+    assert "CURRENT_GOAL_AND_DIRECTION_2026-07-05.md" in beginner
+    assert "CURRENT_GOAL_AND_DIRECTION_2026-07-05.md" in beginner_html
+    assert "署名や exchange write は使わない" in beginner
+    assert "署名や exchange write は使わない" in beginner_html
+    assert "READ_ONLY_GO" in beginner
+    assert "READ_ONLY_GO" in beginner_html
     assert "STRATEGY_FACTORY_OPERATOR_GUIDE.md" in readme
     assert "STRATEGY_FACTORY_OPERATOR_GUIDE.md" in algo_readme
     assert "STRATEGY_FACTORY_OPERATOR_GUIDE.md" in strategy_factory_readme

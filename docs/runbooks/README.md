@@ -1,11 +1,13 @@
 <!--
 作成日: 2026-06-17_21:52 JST
-更新日: 2026-06-21_18:29 JST
+更新日: 2026-07-05_12:35 JST
 -->
 
 # Domain Runbooks
 
 `docs/OPERATIONS_RUNBOOK.md` は再開用の root index です。個別の再生成手順、長い command list、境界条件はこの directory の domain runbook に分けます。
+
+通常時の現在方向は [../CURRENT_GOAL_AND_DIRECTION_2026-07-05.md](../CURRENT_GOAL_AND_DIRECTION_2026-07-05.md) を読む。domain runbook は個別手順であり、全体の次方向や profit / live readiness の証明ではありません。
 
 外部入力が来た場合は、先に [../NEXT_DIRECTION_CURRENT.md](../NEXT_DIRECTION_CURRENT.md) の `External Input Restart Checklist` を読む。対象は Trade[XYZ] public user address、Bitget demo credentials、新しい通常 paper observation evidence です。ここでの再確認は read-only / observation であり、paper / live 実行許可ではありません。
 

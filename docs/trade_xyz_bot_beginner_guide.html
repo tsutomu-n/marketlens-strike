@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:53 JST
-更新日: 2026-06-18_03:09 JST
+更新日: 2026-07-05_12:35 JST
 -->
 <!doctype html>
 <html lang="ja">
@@ -721,19 +721,21 @@ data/reports/bot_orders_preview.md</code></pre>
 
     <section>
       <div class="big-note">
-        <h2>13. 絶対に誤解しないこと</h2>
+        <h2>14. 絶対に誤解しないこと</h2>
         <ul class="clean">
           <li>この段階では、本物のお金で自動売買しない。</li>
           <li>秘密鍵やwalletは使わない。</li>
+          <li>署名や exchange write は使わない。</li>
           <li>micro live は安全確認用のコードで、普通のBotとして公開されていない。</li>
           <li>Strategy Lab の出力や PaperIntentPreview を、本番注文や本番準備完了と勘違いしない。</li>
           <li>古い gTrade / Ostium 用の判定を、Trade[XYZ] の準備完了と勘違いしない。</li>
+          <li><code>READ_ONLY_GO</code> は読み取り専用・paper gate の結果であり、live trading 許可ではない。</li>
         </ul>
       </div>
     </section>
 
     <footer>
-      <p>関連資料: <a href="CURRENT_STATE.md">CURRENT_STATE.md</a> / <a href="REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md">REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md</a> / <a href="NEXT_DIRECTION_CURRENT.md">NEXT_DIRECTION_CURRENT.md</a> / <a href="OPERATIONS_RUNBOOK.md">OPERATIONS_RUNBOOK.md</a> / <a href="runbooks/TRADE_XYZ_RUNBOOK.md">runbooks/TRADE_XYZ_RUNBOOK.md</a></p>
+      <p>関連資料: <a href="CURRENT_STATE.md">CURRENT_STATE.md</a> / <a href="CURRENT_GOAL_AND_DIRECTION_2026-07-05.md">CURRENT_GOAL_AND_DIRECTION_2026-07-05.md</a> / <a href="REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md">REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md</a> / <a href="NEXT_DIRECTION_CURRENT.md">NEXT_DIRECTION_CURRENT.md</a> / <a href="OPERATIONS_RUNBOOK.md">OPERATIONS_RUNBOOK.md</a> / <a href="runbooks/TRADE_XYZ_RUNBOOK.md">runbooks/TRADE_XYZ_RUNBOOK.md</a></p>
       <p class="small">Generated guide target: beginners. Implementation code and generated data artifacts are not changed by this document.</p>
     </footer>
   </main>
