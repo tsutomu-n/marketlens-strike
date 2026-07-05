@@ -32,6 +32,15 @@ Use these instead of old final-summary addenda:
 
 ## Verification Commands
 
+Current-only docs refresh でこちらが確認済み:
+
+- `uv run python scripts/check_current_docs.py`
+- `uv run python scripts/check_cli_catalog.py`
+- `git diff --check`
+- `uv run sis --help`
+
+再確認する時の command:
+
 ```bash
 uv run python scripts/check_current_docs.py
 uv run python scripts/check_cli_catalog.py

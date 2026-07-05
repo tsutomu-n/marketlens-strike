@@ -216,7 +216,9 @@ def _optional_int(value: object) -> int | None:
         return None
     if isinstance(value, int):
         return value
-    return int(value)
+    if isinstance(value, (float, str)):
+        return int(value)
+    return None
 
 
 def _optional_str(value: object) -> str | None:

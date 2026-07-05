@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-07-05_11:35 JST
+更新日: 2026-07-05_11:55 JST
 -->
 
 # Documentation Archive
@@ -164,5 +164,18 @@ Current replacements:
 - `docs/APP_TERMS_GLOSSARY_2026-07-05.md`
 - `docs/CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md`
 - short `docs/final-summary.md`
+
+Current-only docs refresh on 2026-07-05:
+
+- old standalone `docs/REALISTIC_ROADMAP_CURRENT_2026-06-28.md` -> `docs/archive/2026-07-05-current-only-docs-refresh/roadmap/REALISTIC_ROADMAP_CURRENT_2026-06-28.md`
+- completed docs refresh plan -> `docs/archive/2026-07-05-current-only-docs-refresh/plans/current-only-docs-refresh-2026-07-05.md`
+- old active `plan/2026-06-22-strategy-feedback-case-index/00_READ_ME_FIRST.md` through `33_USER_ACTION_FREE_NEXT_WORK_PLAN.md` and `TASK_CHAIN.yaml` -> `plan/archive/2026-07-05-strategy-feedback-case-index-history/`
+
+Current replacements:
+
+- `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md`
+- `docs/CURRENT_DOCS_INDEX_2026-07-05.md`
+- compatibility `docs/NEXT_DIRECTION_CURRENT.md`
+- summary-only `plan/2026-06-22-strategy-feedback-case-index/README.md`
 
 Do not treat archived documents as current requirements.

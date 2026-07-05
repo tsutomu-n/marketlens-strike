@@ -42,11 +42,13 @@ def _write_ticker_source_root(
         exchange = str(row.get("exchange", "bitget"))
         symbol = str(row.get("symbol_canonical", "BTCUSDT")).upper()
         ts_exchange_ms = int(row["ts_exchange_ms"])
-        date = datetime.fromtimestamp(ts_exchange_ms / 1000, tz=timezone.utc).strftime(
-            "%Y-%m-%d"
-        )
-        out_dir = data_dir / "ticker_rows" / f"exchange={exchange}" / f"symbol={symbol}" / (
-            f"date={date}"
+        date = datetime.fromtimestamp(ts_exchange_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
+        out_dir = (
+            data_dir
+            / "ticker_rows"
+            / f"exchange={exchange}"
+            / f"symbol={symbol}"
+            / (f"date={date}")
         )
         rows_by_path.setdefault(out_dir / "ticker_rows.parquet", []).append(row)
     for parquet_path, partition_rows in rows_by_path.items():

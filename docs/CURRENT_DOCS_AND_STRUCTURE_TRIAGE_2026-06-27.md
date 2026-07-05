@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_07:30 JST
-更新日: 2026-07-05_10:24 JST
+更新日: 2026-07-05_11:55 JST
 -->
 
 # Current Docs And Structure Triage 2026-06-27
@@ -14,6 +14,8 @@
 現在の docs は機械検証上は壊れていない。件数、pass count、CLI count は現時点の固定仕様ではないため、判断時は `uv run python scripts/check_current_docs.py` と `uv run python scripts/check_cli_catalog.py` の再実行結果を正とする。
 
 ただし、古い棚卸し文書、完了済み作業ブランチ名、当時の HEAD、当時の件数、runtime artifact snapshot は current proof ではない。2026-07-04 時点の progress-to-90 pack、pre-actual-cash gate doc、pre-actual-cash dogfood snapshots、完了済み `docs/plans/*.md` は `docs/archive/2026-07-05-docs-code-truth-cleanup/` へ移動済み。現在の Crypto Perp actual-cashなし短期入口は `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md`。
+
+2026-07-05 の current-only refresh で、現在の方向性は `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md` に統合し、docs routing は `docs/CURRENT_DOCS_INDEX_2026-07-05.md` に分けた。`docs/NEXT_DIRECTION_CURRENT.md` は互換 redirect に降格し、旧 `docs/REALISTIC_ROADMAP_CURRENT_2026-06-28.md` は archive へ移動した。`plan/2026-06-22-strategy-feedback-case-index/` は短い current summary だけを残し、00-33 dogfood logs と `TASK_CHAIN.yaml` は `plan/archive/2026-07-05-strategy-feedback-case-index-history/` へ移動した。
 
 ただし、目的別 docs を全部読んでも「コード全体を漏れなく説明している」とは言い切らない。現行 docs は入口、operator guide、surface map としては使えるが、`src/sis/reports/`、`src/sis/commands/`、低層 helper、template、tools、sidecar、runtime data までを 1 つずつ説明する完全索引ではない。完全性が必要な作業では、この文書の read order の後に `rg`, `find`, CLI help、schema、tests を直接確認する。
 
@@ -80,7 +82,9 @@
 | `docs/CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md` | surface / artifact から code/schema/tests へ進む参照表。 |
 | `docs/CODE_STATUS.md` | code/status の誤読防止。 |
 | `docs/IMPLEMENTED_SURFACES.md` | 実装済み surface map。 |
-| `docs/NEXT_DIRECTION_CURRENT.md` | 次方向と外部入力時の再確認入口。 |
+| `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md` | 現在の次方向と stop condition の入口。 |
+| `docs/CURRENT_DOCS_INDEX_2026-07-05.md` | current docs の目的別入口。 |
+| `docs/NEXT_DIRECTION_CURRENT.md` | 旧リンク互換用の redirect と外部入力時 checklist。 |
 | `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` | 技術向け capability index。 |
 | `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md` | 平易な capability 説明。 |
 | `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` | public CLI catalog。CLI 変更時に更新する。 |
@@ -95,8 +99,10 @@
 | `docs/archive/` | historical docs。current proof として読まない。 |
 | `docs/archive/2026-07-04-docs-plans/` | 2026-07-04 時点で root-level `docs/plans/` に残っていた implementation plans。current proof として読まない。 |
 | `docs/archive/2026-07-05-docs-code-truth-cleanup/` | 2026-07-05 時点で current path から外した progress-to-90、pre-actual-cash gate、pre-actual-cash dogfood snapshot、完了済み docs/plans。current proof として読まない。 |
+| `docs/archive/2026-07-05-current-only-docs-refresh/` | 旧 standalone roadmap と今回の docs refresh plan。current proof として読まない。 |
 | `docs/archive/2026-07-05-residual-risk-doc-split/` | 旧 app detailed guide と旧 final-summary ledger。current proof として読まない。 |
-| `plan/2026-06-22-strategy-feedback-case-index/` | 現在 allowlist された active plan package。 |
+| `plan/2026-06-22-strategy-feedback-case-index/README.md` | 旧 active plan package の短い互換 summary。current proof ではない。 |
+| `plan/archive/2026-07-05-strategy-feedback-case-index-history/` | 旧 active package の 00-33 dogfood logs と `TASK_CHAIN.yaml`。current proof として読まない。 |
 | `plan/archive/` | historical plans。current proof として読まない。 |
 
 ## 判定基準
@@ -123,7 +129,9 @@
 | `docs/final-summary.md` | 最新完了状態の短い入口として維持。旧 addendum ledger は archive 済み。 | 最新 checkpoint の完了要約、verification、archive ledger が変わった時。 |
 | `docs/CODE_STATUS.md` | safety/readiness の誤読防止として維持。 | readiness boundary や exposed operator path が変わった時。 |
 | `docs/IMPLEMENTED_SURFACES.md` | 実装済み surface map として維持。 | CLI、schema、tests、domain surface が増減した時。 |
-| `docs/NEXT_DIRECTION_CURRENT.md` | 次方向の入口として維持。 | 次に進める作業や外部入力 checklist が変わった時。 |
+| `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md` | 次方向の入口として維持。 | 次に進める作業、stop condition、evidence quality boundary が変わった時。 |
+| `docs/CURRENT_DOCS_INDEX_2026-07-05.md` | current docs index として維持。 | primary/domain/historical routing が変わった時。 |
+| `docs/NEXT_DIRECTION_CURRENT.md` | 互換 redirect と外部入力 checklist として維持。 | 外部入力 checklist が変わった時。 |
 | `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` | CLI catalog として維持。 | `scripts/check_cli_catalog.py` の照合結果が変わる CLI 追加/削除時。 |
 | `docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md` | docs / directory 現在地として維持。 | ディレクトリ構造、read order、分類が変わった時。 |
 | `docs/runbooks/README.md` | operator route table として維持。 | runbook が増減した時。 |
@@ -156,11 +164,12 @@
 | `docs/archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md` | run plan。`ai/crypto-perp-profit-readiness-20260627-1901` など作業当時の branch 前提を含む。 | archive 済み。現在の branch 状態や artifact 状態は code/CLI/artifact inventory で確認する。 |
 | `docs/archive/2026-06-28-merged-plans/AI_IN_THE_LOOP_CONTROL_LAYER_IMPLEMENTATION_PLAN_2026-06-27.md` | 完了済み implementation plan。`context_sections`、structured findings、note recording は code/schema/tests/README 側で実装済み。 | archive 済み。current guide として読まない。 |
 | `docs/STRATEGY_IDEA_GENERATION_RESEARCH_2026-06-27.md` と関連 research/checkpoint docs | 調査・設計時点の判断補助。外部調査と計画境界を含む。 | 残す場合は research note として読む。current implementation は `docs/strategy_idea_candidates/README.md`、schema、tests を見る。 |
+| `docs/REALISTIC_ROADMAP_CURRENT_2026-06-28.md` | C9 bridge / Bitget public source / risk-taker roadmap を含む旧 standalone roadmap。 | `docs/archive/2026-07-05-current-only-docs-refresh/roadmap/` へ移動済み。current direction は `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md` を読む。 |
 | `docs/archive/2026-06-27-merged-plans/*.md` | 完了済み作業の implementation plan。多くが削除済み branch 名を含む。 | archive 済み。current proof として読まない。 |
 | `docs/archive/2026-06-28-merged-plans/*.md` | 完了済み作業の implementation plan。Crypto Perp cash metric、local automation、docs triage の作業履歴を含む。 | archive 済み。current proof として読まない。 |
 | `docs/archive/**` | historical context。 | current proof として読まない。 |
 | `plan/archive/**` | historical implementation plan。 | current proof として読まない。 |
-| `plan/2026-06-22-strategy-feedback-case-index/` | allowlist された plan package。 | current proof ではなく、必要時だけ implementation context として読む。 |
+| `plan/2026-06-22-strategy-feedback-case-index/` 旧 package | 00-33 dogfood logs と completion audit を含んでいた旧 active package。 | summary だけ current path に残し、詳細は `plan/archive/2026-07-05-strategy-feedback-case-index-history/` へ移動済み。 |
 
 ## 作り直したほうがいいドキュメント
 
@@ -234,6 +243,7 @@
 - 2026-06-28 の完了済み `docs/plans/` 5 件は、`docs/archive/2026-06-28-merged-plans/` へ移動済み。
 - 2026-07-04 時点で残っていた root-level `docs/plans/` tree は、`docs/archive/2026-07-04-docs-plans/` へ移動済み。current proof として読まない。
 - 2026-07-05 時点で current path に残っていた 2026-07-04/07-05 完了済み `docs/plans/*.md`、progress-to-90 pack、pre-actual-cash gate、dogfood snapshots は、`docs/archive/2026-07-05-docs-code-truth-cleanup/` へ移動済み。current Crypto Perp short-term endpoint は `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md`。
+- 2026-07-05 の current-only refresh で、旧 roadmap は `docs/archive/2026-07-05-current-only-docs-refresh/roadmap/` へ、旧 active plan package の詳細は `plan/archive/2026-07-05-strategy-feedback-case-index-history/` へ移動済み。current direction は `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md`、current docs routing は `docs/CURRENT_DOCS_INDEX_2026-07-05.md` を読む。
 - 2026-06-28_08:21 JST に、`docs/strategy_ai_review/AI_IN_THE_LOOP_CONTROL_LAYER_IMPLEMENTATION_PLAN_2026-06-27.md` は完了済み plan として `docs/archive/2026-06-28-merged-plans/` へ移動済み。code/schema/tests/README に実装後の入口があるため、current guide として読まない。
 - Crypto Perp の `PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md` と `PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md` は `docs/archive/2026-06-28-merged-plans/` へ移動済み。現行判断では `crypto-perp-profit-readiness-*` CLI と runtime artifact inventory を再実行する。
 - `scripts/check_current_docs.py` が通ることは archive 判定を自動化しない。完了済み plan が current docs dir に残っていても、metadata/link/semantic marker に引っかからなければ通るため、人間の triage が必要。
@@ -244,7 +254,7 @@
 2. `docs/CURRENT_STATE.md`
 3. `docs/CODE_STATUS.md`
 4. `docs/IMPLEMENTED_SURFACES.md`
-5. `docs/NEXT_DIRECTION_CURRENT.md`
+5. `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md`
 6. `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
 7. 作業領域別 docs:
    - Backtest: `docs/backtest/README.md`

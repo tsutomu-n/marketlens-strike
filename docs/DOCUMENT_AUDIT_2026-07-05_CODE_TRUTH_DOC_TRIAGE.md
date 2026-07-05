@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-05_10:08 JST
-更新日: 2026-07-05_10:24 JST
+更新日: 2026-07-05_11:55 JST
 -->
 
 # Document Audit 2026-07-05 Code Truth Doc Triage
@@ -90,3 +90,20 @@
 - `docs/archive/**` は historical context なので、本文内の古い path、branch、pass count、decision は現在値ではない。
 - Backtest Candidate Pack の `BACKTEST_COLLECT_MORE_DATA` は利益証明ではない。PBO と rolling stability が sample insufficient なので、current local data は候補保留ではなく追加データ収集に分類される。
 - `APP_CURRENT_STATE_DETAILED` と `final-summary` の旧長文は `docs/archive/2026-07-05-residual-risk-doc-split/` に退避済み。current path は短い入口として維持する。
+
+## Current-Only Docs Refresh 2026-07-05
+
+今回の追加 refresh では、current entry を次に統合した。
+
+| doc | 判定 | 処置 |
+|---|---|---|
+| `README.md` | primary current entry | short read order に作り直し、旧 audit / roadmap / archive 直リンクを primary read order から外した |
+| `docs/CURRENT_STATE.md` | primary current entry | 現在地、主要 surface、境界だけの短い入口に作り直した |
+| `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md` | new primary direction | C9 bridge、Bitget public source、ticker-aware source availability、Backtest Candidate Pack、evidence quality 改善を統合した |
+| `docs/CURRENT_DOCS_INDEX_2026-07-05.md` | new current docs index | Primary / Domain current / Decision support / Historical を分けた |
+| `docs/NEXT_DIRECTION_CURRENT.md` | compatibility redirect | 旧リンク互換と external input checklist だけを残した |
+| `docs/REALISTIC_ROADMAP_CURRENT_2026-06-28.md` | old standalone roadmap | `docs/archive/2026-07-05-current-only-docs-refresh/roadmap/` へ移動した |
+| `plan/2026-06-22-strategy-feedback-case-index/` | old active plan package | `README.md` summary だけを current path に残し、00-33 dogfood logs と `TASK_CHAIN.yaml` を `plan/archive/2026-07-05-strategy-feedback-case-index-history/` へ移動した |
+| `scripts/check_current_docs.py` | current-doc checker | new goal/index/plan summary を対象に入れ、old roadmap と detailed plan logs を current scope から外した |
+
+この refresh でも code、schema、CLI behavior、runtime artifact は変更していない。

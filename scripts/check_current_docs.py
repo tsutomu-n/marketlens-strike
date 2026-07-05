@@ -97,9 +97,7 @@ PLAN_ROUTING_ALLOWED_FILES = (
     "plan/2026-06-22-strategy-feedback-case-index/README.md",
 )
 
-PLAN_ROUTING_ALLOWED_PREFIXES = (
-    "plan/archive/",
-)
+PLAN_ROUTING_ALLOWED_PREFIXES = ("plan/archive/",)
 
 EXCLUDED_DOC_PREFIXES = (
     "docs/archive/",
