@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_11:36 JST
-更新日: 2026-06-23_22:44 JST
+更新日: 2026-07-05_12:17 JST
 -->
 
 # Code Status
@@ -14,6 +14,7 @@
 - PR-00 から PR-12 までの移行・復旧履歴は [MIGRATION_HISTORY.md](MIGRATION_HISTORY.md) を読む。
 - 専門用語を減らして「いま何ができるか / できないか」を読む場合は [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md) を読む。
 - 現在コードで使える主要 surface と境界は [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) を読む。
+- 現在の実務的な次方向は [CURRENT_GOAL_AND_DIRECTION_2026-07-05.md](CURRENT_GOAL_AND_DIRECTION_2026-07-05.md) を読む。
 - runtime artifact の鮮度や readiness は [CURRENT_STATE.md](CURRENT_STATE.md)、`uv run sis --help`、`uv run python scripts/check_current_docs.py`、`./scripts/check` で確認する。
 - 外部入力が来た時の read-only / observation 再確認手順は [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md) の `External Input Restart Checklist` を読む。
 
@@ -27,7 +28,8 @@
 | 実装済み surface を見る | [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) |
 | PR migration 履歴を見る | [MIGRATION_HISTORY.md](MIGRATION_HISTORY.md) |
 | runtime artifact / readiness を見る | [CURRENT_STATE.md](CURRENT_STATE.md) |
-| 次に進む方向や外部入力時の再確認を見る | [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md) |
+| 次に進む方向を見る | [CURRENT_GOAL_AND_DIRECTION_2026-07-05.md](CURRENT_GOAL_AND_DIRECTION_2026-07-05.md) |
+| 外部入力時の再確認を見る | [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md) |
 | operator 手順を見る | [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md) |
 | Strategy Review を使う | [strategy_review/README.md](strategy_review/README.md) |
 | venue capability boundary を見る | [venues/read_only_capability_probe.md](venues/read_only_capability_probe.md) |

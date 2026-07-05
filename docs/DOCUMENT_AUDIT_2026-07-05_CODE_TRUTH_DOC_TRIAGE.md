@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-05_10:08 JST
-更新日: 2026-07-05_11:55 JST
+更新日: 2026-07-05_12:17 JST
 -->
 
 # Document Audit 2026-07-05 Code Truth Doc Triage
@@ -107,3 +107,5 @@
 | `scripts/check_current_docs.py` | current-doc checker | new goal/index/plan summary を対象に入れ、old roadmap と detailed plan logs を current scope から外した |
 
 この refresh でも code、schema、CLI behavior、runtime artifact は変更していない。
+
+追加の現実性 pass で、current docs に残っていた「実務的な次方向として `NEXT_DIRECTION_CURRENT.md` を読む」導線を `CURRENT_GOAL_AND_DIRECTION_2026-07-05.md` へ修正した。`NEXT_DIRECTION_CURRENT.md` へのリンクは、旧リンク互換と `External Input Restart Checklist` 用だけに残す。

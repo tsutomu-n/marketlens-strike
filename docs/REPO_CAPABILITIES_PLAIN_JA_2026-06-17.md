@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_17:50 JST
-更新日: 2026-06-23_22:44 JST
+更新日: 2026-07-05_12:17 JST
 -->
 
 # いまのリポジトリでできること、できないこと
@@ -270,7 +270,8 @@ uv run sis bitget-demo-smoke
 - `README.md`: リポジトリ全体の入口です。セットアップ、主要コマンド、読む順番をまとめています。
 - `docs/CURRENT_STATE.md`: 現在の状態を短く読むための文書です。細かい実装履歴よりも、いまの判断を優先して読む場所です。
 - `docs/IMPLEMENTED_SURFACES.md`: 実装済みの主要機能を一覧で確認する文書です。全体をざっと把握する時に使います。
-- `docs/NEXT_DIRECTION_CURRENT.md`: 次にどの方向へ進むか、外部入力が来た時に何を再確認するかをまとめた文書です。paper / live 許可と read-only 確認を混同しないために使います。
+- `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md`: 現在の実務的な次方向と、進めてはいけない境界をまとめた文書です。
+- `docs/NEXT_DIRECTION_CURRENT.md`: 旧リンク互換と、外部入力が来た時の read-only / observation 再確認 checklist です。
 - `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md`: 技術寄りの capability index です。詳細は各 domain README、`IMPLEMENTED_SURFACES.md`、code / tests / schemas / CLI help で確認します。
 - `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`: 公開 CLI コマンド一覧です。`scripts/check_cli_catalog.py` で実際の登録 command と照合します。
 - `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md`: この文書です。専門用語を減らし、利用者向けに現在の範囲を説明します。
@@ -302,7 +303,7 @@ uv run sis bitget-demo-smoke
 
 ## 次にやるべきこと
 
-現時点の実務的な次アクションは、通常基準の paper observation を続けることです。
+現時点の実務的な次アクションは、`docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md` に従い、C9 bridge、Bitget public source、ticker-aware source availability、Backtest Candidate Pack v1、evidence quality 改善を進めることです。
 
 Trade[XYZ] の public user address、Bitget demo の認証情報、新しい trading day の paper observation 証拠が揃った場合は、`docs/NEXT_DIRECTION_CURRENT.md` の `External Input Restart Checklist` を見て、read-only / observation として再確認します。
 

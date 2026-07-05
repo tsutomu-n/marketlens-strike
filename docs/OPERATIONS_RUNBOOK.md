@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-04_16:48 JST
-更新日: 2026-06-17_21:52 JST
+更新日: 2026-07-05_12:17 JST
 -->
 
 # Operations Runbook
@@ -24,7 +24,7 @@ uv run sis strategy-lifecycle-review --data-dir data --out data/research/strateg
 2. [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md)
 3. [CODE_STATUS.md](CODE_STATUS.md)
 4. [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md)
-5. [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md)
+5. [CURRENT_GOAL_AND_DIRECTION_2026-07-05.md](CURRENT_GOAL_AND_DIRECTION_2026-07-05.md)
 6. [runbooks/README.md](runbooks/README.md)
 7. `data/reports/current_state_index.md`
 8. `data/reports/readiness_snapshot.md`

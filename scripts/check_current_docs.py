@@ -219,6 +219,26 @@ CURRENT_DOC_SEMANTIC_DRIFT_MARKERS = (
         "別の operator review artifact と既存 paper revalidation を通す",
         "old Strategy Review checklist wording; record operator_review.yaml before paper revalidation",
     ),
+    (
+        "実務的な次方向: [NEXT_DIRECTION_CURRENT.md]",
+        "old direction routing; use CURRENT_GOAL_AND_DIRECTION_2026-07-05.md",
+    ),
+    (
+        "| 実務的な次方向 | [NEXT_DIRECTION_CURRENT.md]",
+        "old direction routing; use CURRENT_GOAL_AND_DIRECTION_2026-07-05.md",
+    ),
+    (
+        "| 次に進む方向や外部入力時の再確認を見る | [NEXT_DIRECTION_CURRENT.md]",
+        "old combined routing; split current direction from external input checklist",
+    ),
+    (
+        "`docs/NEXT_DIRECTION_CURRENT.md`: 次にどの方向へ進むか",
+        "old plain-JA routing; use CURRENT_GOAL_AND_DIRECTION_2026-07-05.md for direction",
+    ),
+    (
+        "現時点の実務的な次アクションは、通常基準の paper observation を続けることです。",
+        "old global next-action wording; use CURRENT_GOAL_AND_DIRECTION_2026-07-05.md",
+    ),
 )
 
 CURRENT_STATUS_DOC_FILES = (

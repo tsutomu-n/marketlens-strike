@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-11_21:34 JST
-更新日: 2026-06-18_02:27 JST
+更新日: 2026-07-05_12:17 JST
 -->
 
 # Strategy Lifecycle
@@ -40,7 +40,7 @@ uv run sis strategy-paper-observation-status --data-dir data --out data/research
 1. `TARGET_OPERATING_MODEL.md`
 2. `PAPER_OBSERVATION_CYCLE.md`
 3. `docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md`
-4. `docs/NEXT_DIRECTION_CURRENT.md`
+4. `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md`
 5. `LIVE_CANARY_PLAN_GATE.md`
 6. `docs/backtest/README.md`
 7. `docs/research/ndx/README.md`

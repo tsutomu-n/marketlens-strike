@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-07-05_10:08 JST
+更新日: 2026-07-05_12:17 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -19,7 +19,7 @@ Crypto Perp Truth-Cycle の post-MVP 実務runbookです。目的は、candidate
 - `uv run sis --help`
 - [../CURRENT_STATE.md](../CURRENT_STATE.md)
 - [../IMPLEMENTED_SURFACES.md](../IMPLEMENTED_SURFACES.md)
-- [../NEXT_DIRECTION_CURRENT.md](../NEXT_DIRECTION_CURRENT.md)
+- [../CURRENT_GOAL_AND_DIRECTION_2026-07-05.md](../CURRENT_GOAL_AND_DIRECTION_2026-07-05.md)
 - [../crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](../crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md)
 - [../crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md](../crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md)
 - [../crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md](../crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md)

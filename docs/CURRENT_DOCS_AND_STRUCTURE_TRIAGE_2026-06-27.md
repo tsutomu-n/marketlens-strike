@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_07:30 JST
-更新日: 2026-07-05_11:55 JST
+更新日: 2026-07-05_12:17 JST
 -->
 
 # Current Docs And Structure Triage 2026-06-27
@@ -16,6 +16,8 @@
 ただし、古い棚卸し文書、完了済み作業ブランチ名、当時の HEAD、当時の件数、runtime artifact snapshot は current proof ではない。2026-07-04 時点の progress-to-90 pack、pre-actual-cash gate doc、pre-actual-cash dogfood snapshots、完了済み `docs/plans/*.md` は `docs/archive/2026-07-05-docs-code-truth-cleanup/` へ移動済み。現在の Crypto Perp actual-cashなし短期入口は `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md`。
 
 2026-07-05 の current-only refresh で、現在の方向性は `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md` に統合し、docs routing は `docs/CURRENT_DOCS_INDEX_2026-07-05.md` に分けた。`docs/NEXT_DIRECTION_CURRENT.md` は互換 redirect に降格し、旧 `docs/REALISTIC_ROADMAP_CURRENT_2026-06-28.md` は archive へ移動した。`plan/2026-06-22-strategy-feedback-case-index/` は短い current summary だけを残し、00-33 dogfood logs と `TASK_CHAIN.yaml` は `plan/archive/2026-07-05-strategy-feedback-case-index-history/` へ移動した。
+
+追加の現実性 pass で、いくつかの current docs がまだ `docs/NEXT_DIRECTION_CURRENT.md` を実務的な次方向として読ませていたことを修正した。今後の分担は、次方向は `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md`、外部入力時の checklist は `docs/NEXT_DIRECTION_CURRENT.md` である。
 
 ただし、目的別 docs を全部読んでも「コード全体を漏れなく説明している」とは言い切らない。現行 docs は入口、operator guide、surface map としては使えるが、`src/sis/reports/`、`src/sis/commands/`、低層 helper、template、tools、sidecar、runtime data までを 1 つずつ説明する完全索引ではない。完全性が必要な作業では、この文書の read order の後に `rg`, `find`, CLI help、schema、tests を直接確認する。
 

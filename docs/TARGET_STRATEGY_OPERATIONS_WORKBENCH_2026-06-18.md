@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-18_19:47 JST
-更新日: 2026-06-23_22:39 JST
+更新日: 2026-07-05_12:17 JST
 -->
 
 # Target Strategy Operations Workbench
@@ -29,7 +29,7 @@ MarketLens Strike は、戦略を思いつきや単発 backtest で運用に出�
 | 実装済み surface | [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) |
 | Strategy Operations first slices | [strategy_inputs/README.md](strategy_inputs/README.md), [strategy_stage/README.md](strategy_stage/README.md), [strategy_runtime_observation/README.md](strategy_runtime_observation/README.md), [strategy_learning/README.md](strategy_learning/README.md), [strategy_case_lite/README.md](strategy_case_lite/README.md), [strategy_workbench_viewer/README.md](strategy_workbench_viewer/README.md) |
 | Backtest / Strategy Review | [backtest/README.md](backtest/README.md), [strategy_review/README.md](strategy_review/README.md) |
-| 実務的な次方向 | [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md) |
+| 実務的な次方向 | [CURRENT_GOAL_AND_DIRECTION_2026-07-05.md](CURRENT_GOAL_AND_DIRECTION_2026-07-05.md) |
 
 ## やらないこと
 

@@ -129,6 +129,11 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "unknown critical assumptions: `0`" in script
     assert "次に作る operator review artifact" in script
     assert "別の operator review artifact と既存 paper revalidation を通す" in script
+    assert "実務的な次方向: [NEXT_DIRECTION_CURRENT.md]" in script
+    assert "| 実務的な次方向 | [NEXT_DIRECTION_CURRENT.md]" in script
+    assert "| 次に進む方向や外部入力時の再確認を見る | [NEXT_DIRECTION_CURRENT.md]" in script
+    assert "`docs/NEXT_DIRECTION_CURRENT.md`: 次にどの方向へ進むか" in script
+    assert "old global next-action wording" in script
 
     checker_globals = _checker_globals()
     current_doc_files = set(checker_globals["CURRENT_DOC_FILES"])
@@ -223,6 +228,47 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert (
         "docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md" not in current_status_docs
     )
+
+
+def test_current_direction_routing_uses_goal_doc_not_compat_redirect() -> None:
+    goal_doc = "CURRENT_GOAL_AND_DIRECTION_2026-07-05.md"
+    redirect_doc = "NEXT_DIRECTION_CURRENT.md"
+
+    direction_paths = [
+        "docs/CODE_STATUS.md",
+        "docs/OPERATIONS_RUNBOOK.md",
+        "docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md",
+        "docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md",
+        "docs/TARGET_STRATEGY_OPERATIONS_WORKBENCH_2026-06-18.md",
+        "docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md",
+        "docs/strategy_lifecycle/README.md",
+    ]
+    stale_direction_phrases = [
+        "実務的な次方向: [NEXT_DIRECTION_CURRENT.md]",
+        "| 実務的な次方向 | [NEXT_DIRECTION_CURRENT.md]",
+        "| 次に進む方向や外部入力時の再確認を見る | [NEXT_DIRECTION_CURRENT.md]",
+        "`docs/NEXT_DIRECTION_CURRENT.md`: 次にどの方向へ進むか",
+        "現時点の実務的な次アクションは、通常基準の paper observation を続けることです。",
+    ]
+
+    for path in direction_paths:
+        text = _read(path)
+        assert goal_doc in text
+        for phrase in stale_direction_phrases:
+            assert phrase not in text
+
+    external_checklist_paths = [
+        "docs/CODE_STATUS.md",
+        "docs/CURRENT_STATE.md",
+        "docs/OPERATIONS_RUNBOOK.md",
+        "docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md",
+        "docs/runbooks/README.md",
+        "docs/strategy_lifecycle/README.md",
+    ]
+    for path in external_checklist_paths:
+        text = _read(path)
+        assert redirect_doc in text
+        assert "External Input Restart Checklist" in text
 
 
 def test_plan_routing_keeps_historical_docs_archived() -> None:
