@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-07-05_10:15 JST
+更新日: 2026-07-05_10:35 JST
 -->
 
 # Documentation Archive
@@ -149,5 +149,19 @@ Archived on 2026-07-05:
 - completed 2026-07-04/2026-07-05 `docs/plans/*.md` work plans -> `docs/archive/2026-07-05-docs-code-truth-cleanup/plans/`
 
 The current Crypto Perp no-actual-cash entry is `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md`.
+
+Residual docs risk split on 2026-07-05:
+
+- full 1086-line `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` -> `docs/archive/2026-07-05-residual-risk-doc-split/APP_CURRENT_STATE_DETAILED_2026-06-20_FULL.md`
+- full 2812-line `docs/final-summary.md` addendum ledger -> `docs/archive/2026-07-05-residual-risk-doc-split/final-summary-ledger-before-2026-07-05-split.md`
+- completed `docs/plans/docs-code-truth-cleanup-2026-07-05.md` -> `docs/archive/2026-07-05-residual-risk-doc-split/plans/docs-code-truth-cleanup-2026-07-05.md`
+- completed `docs/plans/crush-doc-residual-risk-2026-07-05.md` -> `docs/archive/2026-07-05-residual-risk-doc-split/plans/crush-doc-residual-risk-2026-07-05.md`
+
+Current replacements:
+
+- `docs/APP_CURRENT_STATE_OVERVIEW_2026-07-05.md`
+- `docs/APP_TERMS_GLOSSARY_2026-07-05.md`
+- `docs/CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md`
+- short `docs/final-summary.md`
 
 Do not treat archived documents as current requirements.

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_07:30 JST
-更新日: 2026-07-05_10:08 JST
+更新日: 2026-07-05_10:24 JST
 -->
 
 # Current Docs And Structure Triage 2026-06-27
@@ -74,7 +74,10 @@
 | `README.md` | repo 入口。主要 docs への read order。 |
 | `docs/CURRENT_STATE.md` | 現在地の短い入口。 |
 | `docs/APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md` | 非技術者向け説明。 |
-| `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` | 詳細説明。大きいため将来の分割候補。 |
+| `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` | 互換用の短い入口。旧詳細本文は archive 済み。 |
+| `docs/APP_CURRENT_STATE_OVERVIEW_2026-07-05.md` | アプリ全体像の current overview。 |
+| `docs/APP_TERMS_GLOSSARY_2026-07-05.md` | current docs を読むための用語集。 |
+| `docs/CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md` | surface / artifact から code/schema/tests へ進む参照表。 |
 | `docs/CODE_STATUS.md` | code/status の誤読防止。 |
 | `docs/IMPLEMENTED_SURFACES.md` | 実装済み surface map。 |
 | `docs/NEXT_DIRECTION_CURRENT.md` | 次方向と外部入力時の再確認入口。 |
@@ -92,6 +95,7 @@
 | `docs/archive/` | historical docs。current proof として読まない。 |
 | `docs/archive/2026-07-04-docs-plans/` | 2026-07-04 時点で root-level `docs/plans/` に残っていた implementation plans。current proof として読まない。 |
 | `docs/archive/2026-07-05-docs-code-truth-cleanup/` | 2026-07-05 時点で current path から外した progress-to-90、pre-actual-cash gate、pre-actual-cash dogfood snapshot、完了済み docs/plans。current proof として読まない。 |
+| `docs/archive/2026-07-05-residual-risk-doc-split/` | 旧 app detailed guide と旧 final-summary ledger。current proof として読まない。 |
 | `plan/2026-06-22-strategy-feedback-case-index/` | 現在 allowlist された active plan package。 |
 | `plan/archive/` | historical plans。current proof として読まない。 |
 
@@ -116,7 +120,7 @@
 | `docs/CURRENT_STATE.md` | 現在地の短い入口として維持。 | product axis、外部入力、主要 surface が変わった時。 |
 | `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md` | actual-cashなしの Crypto Perp 短期終着点として維持。 | Backtest Candidate Pack の artifact set、decision enum、boundary、CLI option が変わった時。 |
 | `docs/action-required.md` | open action の有無と resolved entries の履歴として維持。 | 新しいユーザー判断待ちが発生した時。 |
-| `docs/final-summary.md` | 作業履歴 ledger として維持。 | 実装や docs cleanup の完了要約を追記する時。current proof にはしない。 |
+| `docs/final-summary.md` | 最新完了状態の短い入口として維持。旧 addendum ledger は archive 済み。 | 最新 checkpoint の完了要約、verification、archive ledger が変わった時。 |
 | `docs/CODE_STATUS.md` | safety/readiness の誤読防止として維持。 | readiness boundary や exposed operator path が変わった時。 |
 | `docs/IMPLEMENTED_SURFACES.md` | 実装済み surface map として維持。 | CLI、schema、tests、domain surface が増減した時。 |
 | `docs/NEXT_DIRECTION_CURRENT.md` | 次方向の入口として維持。 | 次に進める作業や外部入力 checklist が変わった時。 |
@@ -146,8 +150,8 @@
 | `docs/archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md` | profit-readiness の historical design plan。実装済み surface と未完の実 evidence collection が混ざる。 | archive 済み。current plan として読まない。 |
 | `docs/archive/2026-06-27-doc-routing/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` | 過去 audit。`f40241c` HEAD と 2026-06-23 時点の整理を含む。 | archive 済み。最新入口にはしない。 |
 | `docs/archive/2026-06-27-doc-routing/DOCUMENT_AUDIT_2026-06-26_CODE_TRUTH_DOC_TRIAGE.md` | 過去 audit。`a9faf8a` HEAD、current docs 161 件、public CLI 208 件などの当時値を含む。 | archive 済み。最新入口にはしない。 |
-| `docs/final-summary.md` | merge summary。 | 残す。current proof ではなく merge 時点の要約として読む。 |
-| `docs/final-summary.md` 内の過去 pass count | addendum ごとの検証 snapshot。 | current proof として使わない。作業時点で `./scripts/check` と対象 checker を再実行する。 |
+| 旧 `docs/final-summary.md` addendum ledger | `docs/archive/2026-07-05-residual-risk-doc-split/final-summary-ledger-before-2026-07-05-split.md` に移動済み。 | historical ledger として読む。current proof にはしない。 |
+| 旧 `docs/final-summary.md` 内の過去 pass count | addendum ごとの検証 snapshot。archive 済み。 | current proof として使わない。作業時点で `./scripts/check` と対象 checker を再実行する。 |
 | root-level `docs/plans/*.md` の旧配置 | 2026-07-04/07-05 の完了済み plans は `docs/archive/2026-07-05-docs-code-truth-cleanup/plans/` へ移動済み。多くは implementation plan / historical plan / branch-time contract。 | current proof として読まない。必要時は code/CLI/schema/tests で再確認する。 |
 | `docs/archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md` | run plan。`ai/crypto-perp-profit-readiness-20260627-1901` など作業当時の branch 前提を含む。 | archive 済み。現在の branch 状態や artifact 状態は code/CLI/artifact inventory で確認する。 |
 | `docs/archive/2026-06-28-merged-plans/AI_IN_THE_LOOP_CONTROL_LAYER_IMPLEMENTATION_PLAN_2026-06-27.md` | 完了済み implementation plan。`context_sections`、structured findings、note recording は code/schema/tests/README 側で実装済み。 | archive 済み。current guide として読まない。 |
@@ -162,10 +166,17 @@
 
 以下は壊れているという意味ではない。今の構造では 1 本に役割が集まりやすく、次に触る時は分割や再構成のほうが局所更新より安全。
 
+## 作り直し対応済み
+
+| 対象 | 対応 |
+|---|---|
+| `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` | 旧 1086 行版を archive し、互換入口、overview、glossary、surface reference に分割済み。 |
+| `docs/final-summary.md` | 旧 2812 行 ledger を archive し、最新状態の短い入口に差し替え済み。 |
+
+## 残る作り直し候補
+
 | 対象 | 今の問題 | 作り直し方 |
 |---|---|---|
-| `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` | 利用者向け説明、技術用語、surface detail が 1 本に集まっている。 | current overview、technical glossary、artifact/schema reference に分ける。 |
-| `docs/final-summary.md` | addendum が積み上がり、merge history、verification、rollback、過去 pass count が 1 本に混在している。 | current proof ではなく history ledger として扱う。必要なら最新 addendum index と古い addendum archive に分ける。 |
 | `docs/trade_xyz_bot_beginner_guide.md` と `docs/trade_xyz_bot_beginner_guide.html` | Trade[XYZ] 固有 guide と repo 全体の初心者入口が混ざりやすい。 | Trade[XYZ] 固有 guide と venue-neutral beginner guide を分ける。 |
 | `docs/strategy_research_lab/08_CURRENT_CAPABILITIES_DETAILS.md` | capability detail と operator guide が重なりやすい。 | capability reference と execution guide に分ける。 |
 | `docs/runbooks/README.md` | runbook 入口としてさらに強化できる。 | operator が目的別に辿れる route table へ整理する。 |
@@ -200,19 +211,17 @@
 
 | 優先 | 候補 | 実行条件 | 最小確認 |
 |---|---|---|---|
-| 1 | `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` の分割設計 | 次に利用者向け current-state docs を大きく更新する時。 | `docs/CURRENT_STATE.md`, `docs/IMPLEMENTED_SURFACES.md`, schema/tests/CLI help との差分確認。 |
-| 2 | `docs/final-summary.md` の分割 | addendum が増え、最新結果と historical summary の区別が読みにくくなった時。 | 最新 addendum、archive README、git log、current-doc checker の対象範囲を確認。 |
-| 3 | `docs/archive/2026-07-04-docs-plans/` の index 強化 | archive 後の plan 探索性を上げる必要が出た時。 | archive README、移動済み file list、current docs の参照を確認。 |
-| 4 | `docs/trade_xyz_bot_beginner_guide.*` の役割分離 | venue-neutral beginner guide と Trade[XYZ] 固有 guide を分ける必要が出た時。 | 現在の default scope が venue-neutral / backtest-first であることを AGENTS と current docs で再確認。 |
-| 5 | `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` と `docs/IMPLEMENTED_SURFACES.md` の責務整理 | 新しい surface 追加で capability index と surface map の重複が増えた時。 | CLI catalog、schemas、tests、`src/sis/commands/` の spot check。 |
-| 6 | archive slimming | 公開配布、容量、検索ノイズが問題になった時。 | archive README、git history、current-doc checker excluded prefixes を確認。削除ではなく別 archive package を優先。 |
-| 7 | `docs/live_evidence_reports/` の generated report 扱い明確化 | tracked/generated の境界が再び曖昧になった時。 | `.gitignore`, docs checker allowlist、runtime artifact location を確認。 |
+| 1 | `docs/archive/2026-07-04-docs-plans/` の index 強化 | archive 後の plan 探索性を上げる必要が出た時。 | archive README、移動済み file list、current docs の参照を確認。 |
+| 2 | `docs/trade_xyz_bot_beginner_guide.*` の役割分離 | venue-neutral beginner guide と Trade[XYZ] 固有 guide を分ける必要が出た時。 | 現在の default scope が venue-neutral / backtest-first であることを AGENTS と current docs で再確認。 |
+| 3 | `docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md` と `docs/IMPLEMENTED_SURFACES.md` の責務整理 | 新しい surface 追加で capability index と surface map の重複が増えた時。 | CLI catalog、schemas、tests、`src/sis/commands/` の spot check。 |
+| 4 | archive slimming | 公開配布、容量、検索ノイズが問題になった時。 | archive README、git history、current-doc checker excluded prefixes を確認。削除ではなく別 archive package を優先。 |
+| 5 | `docs/live_evidence_reports/` の generated report 扱い明確化 | tracked/generated の境界が再び曖昧になった時。 | `.gitignore`, docs checker allowlist、runtime artifact location を確認。 |
 
 ## 抜け・漏れ・誤謬リスク
 
 - 以前の説明は、主要 product surface には強いが、`core`, `bot`, `real_market`, `research_protocol`, `risk`, `storage`, `tracking`, `validation`, `strategies` のような低層/補助領域を薄く扱っていた。
 - `templates/`, `tools/`, `sidecars/`, root `package.json`, `Justfile`, legacy sidecar archive は、日常入口ではないが repo 構造として存在する。完全説明を求めるなら無視できない。
-- `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` は詳しいが、現在のコード全体の完全索引ではない。読み物としての全体説明と、実装 catalog を混ぜると誤読しやすい。
+- 旧 `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` は `docs/archive/2026-07-05-residual-risk-doc-split/` に退避済み。現在の入口は overview、glossary、surface reference に分かれている。
 - `docs/IMPLEMENTED_SURFACES.md` は実装済み surface の map として有用だが、`reports`/`commands` の helper 群を漏れなく説明する文書ではない。
 - `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` は CLI surface の catalog であり、CLI が呼ぶ内部処理の完全説明ではない。
 - archive docs は量が多く、本文正誤は current-doc checker の対象外。archive を読んで現行判断する運用は危険。
