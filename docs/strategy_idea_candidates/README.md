@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:27 JST
-更新日: 2026-07-03_13:18 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # Strategy Idea Candidates
@@ -14,6 +14,8 @@
 現行実装が自動で通す次 gate は `strategy-intake-validate` です。Strategy Authoring preflight は readiness gap を列挙するだけです。C9 v0 Prep Watchdeck authoring bridge は、対応 family に限って candidate-scoped spec / suite / bundle / backtest pack を生成し、変換不能・source 不足・pack 失敗は machine-readable blocker を返す fail-closed 経路です。`strategy-idea-candidates-bitget-source-refresh` は、この bridge が読める互換 source root を Bitget public REST から生成します。全候補の backtest 成功保証ではありません。
 
 用語、family ID、最終ゴール、次の未完了 scope、`Strategy Lab / backtest full bridge` の正確な定義は [GOAL_AND_GLOSSARY.md](GOAL_AND_GLOSSARY.md) を正とします。
+
+お金を使わない段階全体の進捗は [../NO_CASH_GOAL_PROGRESS_2026-07-05.md](../NO_CASH_GOAL_PROGRESS_2026-07-05.md) を読みます。C9 v0 が `BRIDGED` を返しても、profit proof、paper permission、live readiness ではありません。
 
 ## 実装済み artifact
 

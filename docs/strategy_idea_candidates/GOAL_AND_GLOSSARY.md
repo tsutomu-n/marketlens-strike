@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:38 JST
-更新日: 2026-07-03_13:18 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # Strategy Idea Candidate Goal And Glossary
@@ -81,6 +81,8 @@ Strategy Idea Candidate Generation Pipeline の最終ゴール:
 10. alpha proof、profit proof、paper permission、live readiness、wallet/signing/exchange write permission を一切主張しない。
 
 ## Current Goal State
+
+お金を使わない段階全体の進捗は [../NO_CASH_GOAL_PROGRESS_2026-07-05.md](../NO_CASH_GOAL_PROGRESS_2026-07-05.md) を読む。C9 bridge の `BRIDGED` は artifact 接続であり、profit proof、paper permission、live readiness ではない。
 
 完了済み:
 

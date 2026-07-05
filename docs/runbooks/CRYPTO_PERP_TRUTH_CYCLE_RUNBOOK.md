@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-07-05_12:17 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -20,6 +20,7 @@ Crypto Perp Truth-Cycle の post-MVP 実務runbookです。目的は、candidate
 - [../CURRENT_STATE.md](../CURRENT_STATE.md)
 - [../IMPLEMENTED_SURFACES.md](../IMPLEMENTED_SURFACES.md)
 - [../CURRENT_GOAL_AND_DIRECTION_2026-07-05.md](../CURRENT_GOAL_AND_DIRECTION_2026-07-05.md)
+- [../NO_CASH_GOAL_PROGRESS_2026-07-05.md](../NO_CASH_GOAL_PROGRESS_2026-07-05.md)
 - [../crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](../crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md)
 - [../crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md](../crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md)
 - [../crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md](../crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md)
@@ -27,6 +28,8 @@ Crypto Perp Truth-Cycle の post-MVP 実務runbookです。目的は、candidate
 ## P-1: actual cashなしのbacktest candidate packを作る
 
 actual cash、tiny-live、live order を扱わず、既存 local artifact から timestamp-safe な simulation evidence を作る場合は、Backtest Candidate Pack v1 を生成します。
+
+進捗は [../NO_CASH_GOAL_PROGRESS_2026-07-05.md](../NO_CASH_GOAL_PROGRESS_2026-07-05.md) を読みます。Backtest Candidate Pack の command が動くことと、証拠品質が十分であることは分けて扱います。
 
 ```bash
 uv run sis crypto-perp-backtest-candidate-pack

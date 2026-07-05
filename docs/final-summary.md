@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-05_12:35 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # Final Summary
@@ -19,6 +19,7 @@
 | Current-direction routing second pass | [CODE_STATUS.md](CODE_STATUS.md), [REPO_CAPABILITIES_CURRENT_2026-06-16.md](REPO_CAPABILITIES_CURRENT_2026-06-16.md), [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md) | current direction split from external input checklist |
 | Runbook and beginner-guide safety pass | [runbooks/README.md](runbooks/README.md), [trade_xyz_bot_beginner_guide.md](trade_xyz_bot_beginner_guide.md), [trade_xyz_bot_beginner_guide.html](trade_xyz_bot_beginner_guide.html) | current direction added and HTML safety bullets aligned with Markdown |
 | Crypto Perp Backtest Candidate Pack v1 | [crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md) | current no-actual-cash endpoint |
+| No-cash goal progress split | [NO_CASH_GOAL_PROGRESS_2026-07-05.md](NO_CASH_GOAL_PROGRESS_2026-07-05.md) | implementation/routing, evidence quality, and overall no-cash progress split |
 | Residual docs risk split | [APP_CURRENT_STATE_OVERVIEW_2026-07-05.md](APP_CURRENT_STATE_OVERVIEW_2026-07-05.md), [APP_TERMS_GLOSSARY_2026-07-05.md](APP_TERMS_GLOSSARY_2026-07-05.md), [CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md](CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md) | current replacements remain active |
 
 ## Current Proof
@@ -27,6 +28,7 @@ Use these instead of old final-summary addenda:
 
 - repo current state: [CURRENT_STATE.md](CURRENT_STATE.md)
 - current goal and direction: [CURRENT_GOAL_AND_DIRECTION_2026-07-05.md](CURRENT_GOAL_AND_DIRECTION_2026-07-05.md)
+- no-cash goal progress: [NO_CASH_GOAL_PROGRESS_2026-07-05.md](NO_CASH_GOAL_PROGRESS_2026-07-05.md)
 - docs index: [CURRENT_DOCS_INDEX_2026-07-05.md](CURRENT_DOCS_INDEX_2026-07-05.md)
 - implemented surfaces: [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md)
 - CLI catalog: [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md)

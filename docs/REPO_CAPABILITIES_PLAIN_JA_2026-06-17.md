@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_17:50 JST
-更新日: 2026-07-05_12:17 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # いまのリポジトリでできること、できないこと
@@ -304,6 +304,8 @@ uv run sis bitget-demo-smoke
 ## 次にやるべきこと
 
 現時点の実務的な次アクションは、`docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md` に従い、C9 bridge、Bitget public source、ticker-aware source availability、Backtest Candidate Pack v1、evidence quality 改善を進めることです。
+
+お金を使わない段階の進捗は `docs/NO_CASH_GOAL_PROGRESS_2026-07-05.md` に分けて書いています。実装・導線は 70% 前後、証拠品質は 50% 前後、総合は 60-65% と読みます。これは利益証明や live readiness ではありません。
 
 Trade[XYZ] の public user address、Bitget demo の認証情報、新しい trading day の paper observation 証拠が揃った場合は、`docs/NEXT_DIRECTION_CURRENT.md` の `External Input Restart Checklist` を見て、read-only / observation として再確認します。
 

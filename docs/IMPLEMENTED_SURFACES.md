@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_06:32 JST
-更新日: 2026-07-05_11:55 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # Implemented Surfaces
@@ -52,6 +52,8 @@ production live trading、wallet、signing、exchange write は現行 operator p
 | Strategy Review packet / operator decision record | implemented as read-only human-review packet plus non-permission decision artifact; can include optional input contract / strategy idea source artifacts | `strategy-review-build`, `strategy-review-record`, `src/sis/strategy_review/`, `schemas/strategy_review_manifest.v1.schema.json`, `schemas/operator_strategy_review.v1.schema.json`, `tests/strategy_review/`, `docs/strategy_review/` |
 
 ## Crypto Perp Truth-Cycle
+
+お金を使わない段階の進捗は [NO_CASH_GOAL_PROGRESS_2026-07-05.md](NO_CASH_GOAL_PROGRESS_2026-07-05.md) を読む。実装済み surface があることと、証拠品質が十分であることは分ける。
 
 | Surface | Status | Primary Evidence |
 |---|---|---|

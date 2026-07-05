@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_07:30 JST
-更新日: 2026-07-05_12:17 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # Current Docs And Structure Triage 2026-06-27
@@ -16,6 +16,8 @@
 ただし、古い棚卸し文書、完了済み作業ブランチ名、当時の HEAD、当時の件数、runtime artifact snapshot は current proof ではない。2026-07-04 時点の progress-to-90 pack、pre-actual-cash gate doc、pre-actual-cash dogfood snapshots、完了済み `docs/plans/*.md` は `docs/archive/2026-07-05-docs-code-truth-cleanup/` へ移動済み。現在の Crypto Perp actual-cashなし短期入口は `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md`。
 
 2026-07-05 の current-only refresh で、現在の方向性は `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md` に統合し、docs routing は `docs/CURRENT_DOCS_INDEX_2026-07-05.md` に分けた。`docs/NEXT_DIRECTION_CURRENT.md` は互換 redirect に降格し、旧 `docs/REALISTIC_ROADMAP_CURRENT_2026-06-28.md` は archive へ移動した。`plan/2026-06-22-strategy-feedback-case-index/` は短い current summary だけを残し、00-33 dogfood logs と `TASK_CHAIN.yaml` は `plan/archive/2026-07-05-strategy-feedback-case-index-history/` へ移動した。
+
+2026-07-05 の no-cash progress split で、お金を使わない段階の進捗は `docs/NO_CASH_GOAL_PROGRESS_2026-07-05.md` に分けて記録した。implementation / routing と evidence quality を同じ%に潰さない。
 
 追加の現実性 pass で、いくつかの current docs がまだ `docs/NEXT_DIRECTION_CURRENT.md` を実務的な次方向として読ませていたことを修正した。今後の分担は、次方向は `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md`、外部入力時の checklist は `docs/NEXT_DIRECTION_CURRENT.md` である。
 
@@ -132,6 +134,7 @@
 | `docs/CODE_STATUS.md` | safety/readiness の誤読防止として維持。 | readiness boundary や exposed operator path が変わった時。 |
 | `docs/IMPLEMENTED_SURFACES.md` | 実装済み surface map として維持。 | CLI、schema、tests、domain surface が増減した時。 |
 | `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md` | 次方向の入口として維持。 | 次に進める作業、stop condition、evidence quality boundary が変わった時。 |
+| `docs/NO_CASH_GOAL_PROGRESS_2026-07-05.md` | お金を使わない段階の進捗判断として維持。 | no-cash goal の実装導線、evidence quality、artifact 判断が変わった時。 |
 | `docs/CURRENT_DOCS_INDEX_2026-07-05.md` | current docs index として維持。 | primary/domain/historical routing が変わった時。 |
 | `docs/NEXT_DIRECTION_CURRENT.md` | 互換 redirect と外部入力 checklist として維持。 | 外部入力 checklist が変わった時。 |
 | `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md` | CLI catalog として維持。 | `scripts/check_cli_catalog.py` の照合結果が変わる CLI 追加/削除時。 |

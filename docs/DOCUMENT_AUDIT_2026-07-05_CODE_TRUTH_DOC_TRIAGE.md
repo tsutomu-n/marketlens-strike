@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-05_10:08 JST
-更新日: 2026-07-05_12:17 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # Document Audit 2026-07-05 Code Truth Doc Triage
@@ -79,6 +79,7 @@
 ## 現在の代替入口
 
 - Crypto Perp Backtest Candidate Pack current guide: `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md`
+- No-cash goal progress split: `docs/NO_CASH_GOAL_PROGRESS_2026-07-05.md`
 - Current state: `docs/CURRENT_STATE.md`
 - Surface map: `docs/IMPLEMENTED_SURFACES.md`
 - CLI catalog: `docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md`
@@ -89,6 +90,7 @@
 - `scripts/check_current_docs.py` は metadata/link/semantic marker を見るが、archive 判定は自動化しない。
 - `docs/archive/**` は historical context なので、本文内の古い path、branch、pass count、decision は現在値ではない。
 - Backtest Candidate Pack の `BACKTEST_COLLECT_MORE_DATA` は利益証明ではない。PBO と rolling stability が sample insufficient なので、current local data は候補保留ではなく追加データ収集に分類される。
+- お金を使わない段階の進捗は、実装・導線と証拠品質を分けて読む。総合%だけでは、Backtest Candidate Pack が動くことと evidence quality の不足を混同しやすい。
 - `APP_CURRENT_STATE_DETAILED` と `final-summary` の旧長文は `docs/archive/2026-07-05-residual-risk-doc-split/` に退避済み。current path は短い入口として維持する。
 
 ## Current-Only Docs Refresh 2026-07-05

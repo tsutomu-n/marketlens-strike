@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_19:01 JST
-更新日: 2026-07-05_10:08 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # Crypto Perp Profit-Readiness Surface Inventory
@@ -40,6 +40,7 @@
 
 - Vocabulary: [PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md](PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md)
 - Backtest Candidate Pack v1: [BACKTEST_CANDIDATE_PACK_V1.md](BACKTEST_CANDIDATE_PACK_V1.md)
+- No-cash progress split: [../NO_CASH_GOAL_PROGRESS_2026-07-05.md](../NO_CASH_GOAL_PROGRESS_2026-07-05.md)
 - Runbook: [../runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](../runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md)
 - Historical pre-actual-cash gate and dogfood snapshots: [../archive/2026-07-05-docs-code-truth-cleanup/crypto_perp/](../archive/2026-07-05-docs-code-truth-cleanup/crypto_perp/)
 - Historical plans: [../archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md](../archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md), [../archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md](../archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md)

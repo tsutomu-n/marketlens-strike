@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-20_12:00 JST
-更新日: 2026-06-23_22:44 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # Agent Assessment: Individual Trader Lens
@@ -60,7 +60,7 @@ uv run python scripts/check_current_docs.py
 | check_cli_catalog.py | pass（189 public CLI commands、当時値） |
 | pyrefly | pass |
 | ty | pass |
-| pytest | **1340 passed**（当時値） |
+| pytest | 当時の成功件数 1340（現行 proof ではない） |
 
 機械カウント（`src/sis/**/*.py`, `schemas/*.json`）:
 
