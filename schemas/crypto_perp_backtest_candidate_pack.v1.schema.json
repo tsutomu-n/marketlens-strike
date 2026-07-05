@@ -41,6 +41,40 @@
     "outcome_count": {"minimum": 0, "type": "integer"},
     "artifact_paths": {"additionalProperties": {"type": "string"}, "type": "object"},
     "summary": {"type": "object"},
+    "evidence_grade_summary": {
+      "additionalProperties": true,
+      "properties": {
+        "overall_grade": {"type": "string"},
+        "strongest_evidence_level": {"const": "simulated_estimate"},
+        "actual_cash_used": {"const": false},
+        "profit_proven": {"const": false},
+        "permits_live_order": {"const": false},
+        "event_count": {"minimum": 0, "type": "integer"},
+        "simulated_trade_count": {"minimum": 0, "type": "integer"},
+        "critical_missing_count": {"minimum": 0, "type": "integer"},
+        "future_signal_source_count": {"minimum": 0, "type": "integer"},
+        "artifact_origin_counts": {"type": "object"},
+        "source_available_counts": {"type": "object"},
+        "source_missing_counts": {"type": "object"},
+        "known_limits": {"items": {"type": "string"}, "type": "array"}
+      },
+      "required": [
+        "overall_grade",
+        "strongest_evidence_level",
+        "actual_cash_used",
+        "profit_proven",
+        "permits_live_order",
+        "event_count",
+        "simulated_trade_count",
+        "critical_missing_count",
+        "future_signal_source_count",
+        "artifact_origin_counts",
+        "source_available_counts",
+        "source_missing_counts",
+        "known_limits"
+      ],
+      "type": "object"
+    },
     "non_goal_flags": {
       "additionalProperties": {"type": "boolean"},
       "properties": {
@@ -84,6 +118,7 @@
     "outcome_count",
     "artifact_paths",
     "summary",
+    "evidence_grade_summary",
     "non_goal_flags"
   ],
   "type": "object"
