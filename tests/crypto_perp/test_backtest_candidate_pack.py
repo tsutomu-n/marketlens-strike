@@ -67,6 +67,16 @@ def test_backtest_candidate_pack_writes_required_artifacts_and_hold_decision(
     for path in result.paths.values():
         assert path.exists()
     assert result.decision.decision == "BACKTEST_CANDIDATE_HOLD"
+    assert result.decision.evidence_grade_summary["actual_cash_used"] is False
+    assert result.decision.evidence_grade_summary["profit_proven"] is False
+    assert result.decision.evidence_grade_summary["permits_live_order"] is False
+    assert (
+        result.decision.evidence_grade_summary["overall_grade"]
+        == "local_simulation_with_recomputed_minimal_artifacts"
+    )
+    assert "RECOMPUTED_MINIMAL_ARTIFACTS_PRESENT" in result.decision.evidence_grade_summary[
+        "known_limits"
+    ]
     assert result.decision.non_goal_flags["profit_proven"] is False
     assert result.decision.boundary.permits_live_order is False
 
@@ -101,6 +111,12 @@ def test_backtest_candidate_pack_collects_more_data_when_sources_are_missing(
     )
 
     assert result.decision.decision == "BACKTEST_COLLECT_MORE_DATA"
+    assert result.decision.evidence_grade_summary["overall_grade"] == (
+        "insufficient_source_for_local_simulation"
+    )
+    assert "CRITICAL_SIGNAL_SOURCE_MISSING" in result.decision.evidence_grade_summary[
+        "known_limits"
+    ]
     assert "CRITICAL_SIGNAL_SOURCE_MISSING" in result.decision.reason_codes
     assert "SELECTED_ACTION_UNKNOWN_DUE_TO_MISSING_SOURCE" in result.decision.reason_codes
 
