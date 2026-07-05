@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-07_20:09 JST
-更新日: 2026-06-17_23:18 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # Layer 2.2 Implementation Record
@@ -149,7 +149,7 @@ uv run python scripts/check_current_docs.py
   passed at the then-current test scope
 ```
 
-2026-06-09 repo-wide verification is archived in `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`. At that point, Layer 2.3/2.4 docs and code surfaces also exist, docs checker observed `101 current docs`, and full local gate observed `936 passed`; these are historical snapshot values, not current verification counts.
+2026-06-09 repo-wide verification is archived in `docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md`. At that point, Layer 2.3/2.4 docs and code surfaces also exist, docs checker observed `101 current docs`, and the full local gate had a historical success count of 936; these are historical snapshot values, not current verification counts.
 
 Generated artifacts under `data/` are runtime outputs and are gitignored. Do not copy new runtime hashes from those artifacts back into this historical record.
 
