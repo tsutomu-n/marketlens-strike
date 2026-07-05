@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-06-28_08:26 JST
+更新日: 2026-07-05_10:08 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -20,8 +20,50 @@ Crypto Perp Truth-Cycle の post-MVP 実務runbookです。目的は、candidate
 - [../CURRENT_STATE.md](../CURRENT_STATE.md)
 - [../IMPLEMENTED_SURFACES.md](../IMPLEMENTED_SURFACES.md)
 - [../NEXT_DIRECTION_CURRENT.md](../NEXT_DIRECTION_CURRENT.md)
+- [../crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](../crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md)
 - [../crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md](../crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md)
 - [../crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md](../crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md)
+
+## P-1: actual cashなしのbacktest candidate packを作る
+
+actual cash、tiny-live、live order を扱わず、既存 local artifact から timestamp-safe な simulation evidence を作る場合は、Backtest Candidate Pack v1 を生成します。
+
+```bash
+uv run sis crypto-perp-backtest-candidate-pack
+```
+
+生成先:
+
+- `data/crypto_perp/backtest_candidate_pack/latest/signal_rows.jsonl`
+- `data/crypto_perp/backtest_candidate_pack/latest/data_availability_ledger.json`
+- `data/crypto_perp/backtest_candidate_pack/latest/execution_assumptions.json`
+- `data/crypto_perp/backtest_candidate_pack/latest/no_lookahead_report.json`
+- `data/crypto_perp/backtest_candidate_pack/latest/backtest_result.json`
+- `data/crypto_perp/backtest_candidate_pack/latest/stress_result.json`
+- `data/crypto_perp/backtest_candidate_pack/latest/decision.json`
+- `data/crypto_perp/backtest_candidate_pack/latest/decision.md`
+
+見るもの:
+
+- `decision`
+- `reason_codes`
+- `summary.selected_action_counts`
+- `summary.no_lookahead.failed_count`
+- `summary.no_lookahead.unverified_count`
+- `summary.backtest.unknown_count`
+- `boundary`
+- `non_goal_flags`
+
+止める条件:
+
+- `decision=BACKTEST_COLLECT_MORE_DATA`
+- `summary.no_lookahead.failed_count > 0`
+- `summary.no_lookahead.unverified_count > 0`
+- `summary.backtest.unknown_count > 0`
+- `non_goal_flags.profit_proven=true`
+- `boundary.permits_live_order=true`
+
+この pack は simulation evidence です。`BACKTEST_CANDIDATE_HOLD` でも profit proof、actual cash readiness、paper permission、tiny-live readiness、live readiness ではありません。
 
 ## P00: tournament rows からreportを再生成する
 

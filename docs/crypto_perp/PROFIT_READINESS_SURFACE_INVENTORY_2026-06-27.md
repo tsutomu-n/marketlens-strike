@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_19:01 JST
-更新日: 2026-07-04_17:51 JST
+更新日: 2026-07-05_10:08 JST
 -->
 
 # Crypto Perp Profit-Readiness Surface Inventory
@@ -33,11 +33,13 @@
 | `crypto_perp_bias_guard.v1` | sample不足、lookahead、recursive warmup、concentrationを止める | `NOT_ESTIMABLE` is a valid result |
 | `crypto_perp_profit_readiness_run.v1` | 1 event/outcome の local run manifest と known gaps を記録する | run manifest status is not profit proof or actual cash readiness |
 | `crypto_perp_pre_actual_cash_decision.v1` | 複数event/outcomeのpre-actual-cash evidenceを4択decisionへ集約する | decision is not profit proof, actual cash readiness, or live permission |
+| `crypto_perp_backtest_candidate_pack.v1` | actual cashなしのtimestamp-safe simulation evidence packを4択BACKTEST decisionへ集約する | backtest candidate decision is not profit proof, paper permission, tiny-live readiness, or live readiness |
 | `crypto_perp_tiny_live_shadow.v1` | tiny-live前の非発注shadow preflightを記録する | exchange write and live order are always false |
 
 ## 入口
 
 - Vocabulary: [PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md](PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md)
-- Pre-actual-cash decision gate: [PRE_ACTUAL_CASH_DECISION_GATE.md](PRE_ACTUAL_CASH_DECISION_GATE.md)
+- Backtest Candidate Pack v1: [BACKTEST_CANDIDATE_PACK_V1.md](BACKTEST_CANDIDATE_PACK_V1.md)
 - Runbook: [../runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](../runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md)
+- Historical pre-actual-cash gate and dogfood snapshots: [../archive/2026-07-05-docs-code-truth-cleanup/crypto_perp/](../archive/2026-07-05-docs-code-truth-cleanup/crypto_perp/)
 - Historical plans: [../archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md](../archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md), [../archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md](../archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md)

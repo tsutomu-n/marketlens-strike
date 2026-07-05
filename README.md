@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-07-04_18:37 JST
+更新日: 2026-07-05_10:08 JST
 -->
 
 # marketlens-strike
@@ -17,7 +17,7 @@ in a fresh checkout until commands are run.
 ## Read First
 
 1. [docs/CURRENT_STATE.md](docs/CURRENT_STATE.md)
-2. [docs/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04/README.md](docs/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04/README.md)
+2. [docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md)
 3. [docs/APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md](docs/APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md)
 4. [docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md](docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md)
 5. [docs/AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](docs/AI_AGENT_STRATEGY_BACKTEST_GUIDE.md)
@@ -81,6 +81,7 @@ They are not the first source for current readiness or permission decisions.
 4. [docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md](docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_QQQ_VENUE_SUITABILITY_REFRESH.md)
 5. [docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md](docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md)
 6. [plan/archive/PR-00_to_PR-08_implementation_plan.md](plan/archive/PR-00_to_PR-08_implementation_plan.md)
+7. [docs/archive/2026-07-05-docs-code-truth-cleanup/](docs/archive/2026-07-05-docs-code-truth-cleanup/)
 
 ## Setup
 
@@ -145,6 +146,16 @@ Paper operations:
 ```bash
 uv run sis paper-operations-cycle
 ```
+
+Crypto Perp actual-cashなしの backtest candidate pack:
+
+```bash
+uv run sis crypto-perp-backtest-candidate-pack
+```
+
+This creates local simulation artifacts only. It does not prove profit, paper
+permission, tiny-live readiness, live readiness, wallet/signing, or exchange
+writes.
 
 Strategy Research Lab to paper-only preview:
 
