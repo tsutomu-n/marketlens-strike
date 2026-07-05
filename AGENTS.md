@@ -74,6 +74,9 @@ For Markdown files, use exactly:
 
 Use Tokyo time. `作成日` is the original document creation time and must not change after first creation. Update `更新日` whenever the document content is materially edited. Place the header at the top of the file, after shebang or frontmatter only if required. Do not add it to generated files, vendored files, lockfiles, binary files, or files where comments are invalid. If a format has no safe comment syntax, do not invent one; use the repository-specific rule.
 
+
+'*.md'ファイルをTerminalに出力、表示するときは、フルパスを書く。
+
 ## Testing And PRs
 
 Add focused Pytest coverage near changed behavior. Prefer deterministic fixtures; avoid live market responses unless testing explicit read-only evidence flow.
@@ -81,7 +84,6 @@ Add focused Pytest coverage near changed behavior. Prefer deterministic fixtures
 PRs should state purpose, changed commands or artifacts, verification run, and any live-readiness boundary. Keep commits scoped and separate formatting from behavior changes.
 
 Keep secrets out of git. Runtime settings come from `.env`; start from `configs/env.example` for normal repo settings and `.env.example` for the Alpaca runbook.
-
 
 # AI開発作業ルール
 
