@@ -56,7 +56,7 @@ class CryptoPerpBacktestCandidatePackDecision(BaseModel):
     outcome_count: int = Field(ge=0)
     artifact_paths: dict[str, str]
     summary: dict[str, Any]
-    evidence_grade_summary: dict[str, Any]
+    evidence_grade_summary: dict[str, Any] = Field(default_factory=dict)
     non_goal_flags: dict[str, bool]
 
     @field_validator("created_at", mode="before")
