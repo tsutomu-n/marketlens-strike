@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-05_00:24 JST
+更新日: 2026-07-05_08:39 JST
 -->
 
 # Final Summary
@@ -19,7 +19,10 @@ Goal:
 Achieved:
 
 - Added `crypto-perp-backtest-candidate-pack` public CLI.
-- Added `src/sis/crypto_perp/backtest_candidate_pack.py` to build a local pack from existing Crypto Perp event/outcome/source artifacts.
+- Added a split local pack builder from existing Crypto Perp event/outcome/source artifacts:
+  - `src/sis/crypto_perp/backtest_candidate_pack.py`
+  - `src/sis/crypto_perp/backtest_candidate_pack_models.py`
+  - `src/sis/crypto_perp/backtest_candidate_pack_reports.py`
 - The pack writes:
   - `signal_rows.jsonl`
   - `data_availability_ledger.json`
@@ -65,6 +68,8 @@ Boundary:
 Changed files:
 
 - `src/sis/crypto_perp/backtest_candidate_pack.py`
+- `src/sis/crypto_perp/backtest_candidate_pack_models.py`
+- `src/sis/crypto_perp/backtest_candidate_pack_reports.py`
 - `src/sis/commands/crypto_perp_backtest_candidate_pack.py`
 - `src/sis/commands/crypto_perp.py`
 - `schemas/crypto_perp_backtest_candidate_pack.v1.schema.json`
@@ -84,12 +89,13 @@ Verification:
 - `uv run python scripts/check_current_docs.py` -> checked 181 current docs.
 - `uv run pyrefly check` -> 0 errors.
 - `uv run ty check src --python-version 3.13 --output-format concise` -> all checks passed.
-- `./scripts/check` -> passed; 2886 pytest tests passed.
+- `./scripts/check` -> passed; 2886 pytest tests passed in 95.29s.
+- Split module line counts after continuation audit: `backtest_candidate_pack.py=476`, `backtest_candidate_pack_models.py=99`, `backtest_candidate_pack_reports.py=632`.
 
 Unexecuted verification:
 
 - No external data refresh was executed. This is intentional because the task forbids external writes and the implemented command is local-artifact only.
-- No `git push` was executed yet. This branch is local unless a later step explicitly pushes it.
+- Current branch tracks `origin/ai/crypto-perp-backtest-pack-20260705-0011`; this continuation did not run `git push`.
 
 Remaining work:
 
@@ -117,7 +123,7 @@ No migration is required. Existing Crypto Perp artifacts remain readable.
 Rollback:
 
 - Revert the new command registration in `src/sis/commands/crypto_perp.py`.
-- Remove the new module, schema, tests, and docs plan listed above.
+- Remove the new modules, schema, tests, and docs plan listed above.
 - Remove generated runtime artifacts under `data/crypto_perp/backtest_candidate_pack/latest/` if local cleanup is desired.
 
 Next consideration:

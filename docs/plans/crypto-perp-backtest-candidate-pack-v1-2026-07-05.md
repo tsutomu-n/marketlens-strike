@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-05_00:12 JST
-更新日: 2026-07-05_00:12 JST
+更新日: 2026-07-05_08:39 JST
 -->
 
 # Crypto Perp Backtest Candidate Pack v1 Plan
@@ -38,6 +38,8 @@ C1
 ## 対象ファイル
 
 - 追加: `src/sis/crypto_perp/backtest_candidate_pack.py`
+- 追加: `src/sis/crypto_perp/backtest_candidate_pack_models.py`
+- 追加: `src/sis/crypto_perp/backtest_candidate_pack_reports.py`
 - 追加: `src/sis/commands/crypto_perp_backtest_candidate_pack.py`
 - 更新: `src/sis/commands/crypto_perp.py`
 - 追加: `schemas/crypto_perp_backtest_candidate_pack.v1.schema.json`
@@ -63,7 +65,7 @@ C1
 
 ## 実装手順
 
-1. `backtest_candidate_pack.py` に pydantic model、artifact builder、markdown renderer、writer を追加する。
+1. `backtest_candidate_pack.py` に pack orchestration、`backtest_candidate_pack_models.py` に pydantic model、`backtest_candidate_pack_reports.py` に ledger/backtest/decision helper を追加する。
 2. 既存 inventory から event/outcome pair を選ぶ。
 3. 既存 source/feature/edge/rows/bias guard があれば使い、なければ minimal recompute し、origin を artifact に残す。
 4. `signal_rows.jsonl` に `timestamp`, `symbol`, `information_cutoff_at`, `source_availability_id`, `feature_pack_id`, `edge_score_id`, `selected_action`, `signal_score`, `entry_allowed`, `no_trade_reason` を出す。
@@ -134,7 +136,7 @@ C1
 
 - ゴール直結性: signal rows、ledger、assumptions、no-lookahead、backtest、stress、decision を同一 pack で生成するため直結している。
 - ご都合主義リスク: small sample でも artifact が出るため、decision と reason に sample不足、missing source、UNKNOWN を必ず出す。
-- 破壊リスク: existing Strategy Backtest と pre-actual-cash の semantics を変えず、新規 module に隔離する。
+- 破壊リスク: existing Strategy Backtest と pre-actual-cash の semantics を変えず、新規 modules に隔離する。
 - 代替単純化: pre-actual-cash の helper を直接 import する誘惑はあるが、private helper 依存が増える。必要最低限だけ local helper として再実装する。
 
 ## Critique 2
