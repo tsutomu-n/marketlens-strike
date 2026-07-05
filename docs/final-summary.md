@@ -1,33 +1,31 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-05_11:35 JST
+更新日: 2026-07-05_11:55 JST
 -->
 
 # Final Summary
 
 ## 結論
 
-この文書は最新の完了状態だけを読む入口です。旧版の長い addendum ledger は [archive/2026-07-05-residual-risk-doc-split/final-summary-ledger-before-2026-07-05-split.md](archive/2026-07-05-residual-risk-doc-split/final-summary-ledger-before-2026-07-05-split.md) に移動しました。
+この文書は最新の完了状態だけを読む入口です。旧版の長い addendum ledger や過去の pass count、branch、artifact snapshot は historical record です。
 
-旧 ledger の pass count、branch、artifact snapshot は historical record であり、current proof ではありません。現在値は `src/`, `tests/`, `schemas/`, CLI help, current artifact, checker を再確認します。
+履歴を探す場合は [archive/README.md](archive/README.md) から辿ります。現在値は `src/`, `tests/`, `schemas/`, CLI help, current artifact, checker を再確認します。
 
 ## Latest Completed Work
 
 | 作業 | 現在の入口 | 状態 |
 |---|---|---|
-| Crypto Perp Backtest Candidate Pack v1 | [crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md) | merged locally to `main` |
-| Crypto Perp ticker source availability adapter | `crypto-perp-source-availability --ticker-source-root <source_root>` | completed on `ai/ticker-source-availability-20260705-1125` |
-| Code-truth docs cleanup | [DOCUMENT_AUDIT_2026-07-05_CODE_TRUTH_DOC_TRIAGE.md](DOCUMENT_AUDIT_2026-07-05_CODE_TRUTH_DOC_TRIAGE.md) | merged locally to `main` |
-| Residual docs risk split | this file, [APP_CURRENT_STATE_OVERVIEW_2026-07-05.md](APP_CURRENT_STATE_OVERVIEW_2026-07-05.md), [APP_TERMS_GLOSSARY_2026-07-05.md](APP_TERMS_GLOSSARY_2026-07-05.md), [CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md](CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md) | completed and verified |
+| Current-only docs refresh | [CURRENT_GOAL_AND_DIRECTION_2026-07-05.md](CURRENT_GOAL_AND_DIRECTION_2026-07-05.md), [CURRENT_DOCS_INDEX_2026-07-05.md](CURRENT_DOCS_INDEX_2026-07-05.md) | completed in local worktree |
+| Crypto Perp Backtest Candidate Pack v1 | [crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md) | current no-actual-cash endpoint |
+| Residual docs risk split | [APP_CURRENT_STATE_OVERVIEW_2026-07-05.md](APP_CURRENT_STATE_OVERVIEW_2026-07-05.md), [APP_TERMS_GLOSSARY_2026-07-05.md](APP_TERMS_GLOSSARY_2026-07-05.md), [CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md](CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md) | current replacements remain active |
 
 ## Current Proof
 
 Use these instead of old final-summary addenda:
 
 - repo current state: [CURRENT_STATE.md](CURRENT_STATE.md)
-- app overview: [APP_CURRENT_STATE_OVERVIEW_2026-07-05.md](APP_CURRENT_STATE_OVERVIEW_2026-07-05.md)
-- terms: [APP_TERMS_GLOSSARY_2026-07-05.md](APP_TERMS_GLOSSARY_2026-07-05.md)
-- surface reference: [CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md](CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md)
+- current goal and direction: [CURRENT_GOAL_AND_DIRECTION_2026-07-05.md](CURRENT_GOAL_AND_DIRECTION_2026-07-05.md)
+- docs index: [CURRENT_DOCS_INDEX_2026-07-05.md](CURRENT_DOCS_INDEX_2026-07-05.md)
 - implemented surfaces: [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md)
 - CLI catalog: [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md)
 - archive ledger: [archive/README.md](archive/README.md)
@@ -38,25 +36,14 @@ Use these instead of old final-summary addenda:
 uv run python scripts/check_current_docs.py
 uv run python scripts/check_cli_catalog.py
 git diff --check
+uv run sis --help
 ./scripts/check
 ```
 
-Latest verification for the residual docs risk split:
-
-- `uv run python scripts/check_current_docs.py` -> checked 178 current docs.
-- `uv run python scripts/check_cli_catalog.py` -> checked 234 public CLI commands.
-- `git diff --check` -> passed.
-- `./scripts/check` -> passed; 2886 pytest tests passed in 116.34s.
-
-Latest verification for the Crypto Perp ticker source availability adapter:
-
-- `uv run pytest tests/crypto_perp/test_source_availability.py -q` -> passed.
-- `uv run pytest tests/crypto_perp/test_profit_readiness_local_automation.py -q` -> passed.
-- `uv run ruff check src/sis/crypto_perp tests/crypto_perp` -> passed.
-- `uv run python scripts/check_current_docs.py` -> passed.
+Do not treat old command counts, test pass counts, branch names, or artifact snapshots in historical docs as current proof.
 
 ## Boundary
 
-This split does not change runtime behavior, schemas, public CLI implementation, dependencies, secrets, external services, or generated runtime artifacts.
+This docs refresh does not change runtime behavior, schemas, public CLI implementation, dependencies, secrets, external services, or generated runtime artifacts.
 
-The ticker source availability adapter is local-file-only. It does not claim profit proof, actual cash readiness, tiny-live readiness, live readiness, wallet use, signing use, exchange writes, or live order submission.
+It does not claim profit proof, actual cash readiness, tiny-live readiness, live readiness, wallet use, signing use, exchange writes, or live order submission.
