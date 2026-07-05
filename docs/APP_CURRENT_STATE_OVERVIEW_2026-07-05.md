@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-05_10:24 JST
-更新日: 2026-07-05_10:24 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # App Current State Overview 2026-07-05
@@ -16,6 +16,7 @@
 | 領域 | 現在できること | 読む入口 |
 |---|---|---|
 | Crypto Perp no-actual-cash | local artifact から timestamp-safe simulation pack を作り、4択 decision に分類する | [crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md) |
+| お金を使わない段階の進捗 | 実装・導線と証拠品質を分けて読む。総合は 60-65% だが、証拠品質はまだ 50% 前後 | [NO_CASH_GOAL_PROGRESS_2026-07-05.md](NO_CASH_GOAL_PROGRESS_2026-07-05.md) |
 | Strategy Lab / Authoring | 戦略案、YAML、signal、backtest、paper-only preview をつなぐ | [strategy_research_lab/README.md](strategy_research_lab/README.md) |
 | Backtest | 過去データと fixture で戦略を検査し、report を作る | [backtest/README.md](backtest/README.md) |
 | Strategy Review | existing artifact から human review packet と判断記録を作る | [strategy_review/README.md](strategy_review/README.md) |

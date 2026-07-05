@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-07-05_12:51 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # marketlens-strike
@@ -34,6 +34,8 @@ The practical next direction is evidence quality, not live execution.
 - Use `crypto-perp-backtest-candidate-pack` as the no-actual-cash short-term Crypto Perp endpoint.
 - Treat `NO_TRADE` as a valid action.
 - Treat missing source, small samples, blocked family mapping, and unsupported product mapping as valid stop results.
+
+No-cash goal progress is tracked in [docs/NO_CASH_GOAL_PROGRESS_2026-07-05.md](docs/NO_CASH_GOAL_PROGRESS_2026-07-05.md). Current practical reading: implementation/routing is around 70%, evidence quality is around 50%, and overall no-cash progress is 60-65%.
 
 This repo does not currently prove profit, actual cash readiness, tiny-live readiness, live readiness, wallet readiness, signing readiness, or exchange-write readiness.
 

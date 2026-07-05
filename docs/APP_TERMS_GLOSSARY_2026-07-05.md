@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-05_10:24 JST
-更新日: 2026-07-05_10:24 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # App Terms Glossary 2026-07-05
@@ -20,6 +20,7 @@
 | `READ_ONLY_GO` | read-only gate の判定 | account readiness, wallet readiness, exchange-write readiness ではない |
 | `READY_FOR_HUMAN_REVIEW` | 人間レビューへ渡せる状態 | 自動採用や注文許可ではない |
 | Crypto Perp Backtest Candidate Pack | actual cash なしの simulation evidence pack | profit proof, paper permission, tiny-live readiness, live readiness ではない |
+| no-cash goal progress | お金を使わない段階の進捗。implementation / routing と evidence quality を分けて読む | 単一の%を profit readiness や live readiness と読むこと |
 | actual cash | 実約定や ledger に基づく cash result | before-cost proxy や simulation estimate とは別物 |
 | tiny-live | 小額・限定条件つきの実ネットワーク測定領域 | 通常の live trading ではない |
 | Trade[XYZ] | 実装済み venue-specific surface / historical context | repo の default product axis ではない |

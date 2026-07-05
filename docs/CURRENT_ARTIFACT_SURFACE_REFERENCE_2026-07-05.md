@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-05_10:24 JST
-更新日: 2026-07-05_10:24 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # Current Artifact Surface Reference 2026-07-05
@@ -15,6 +15,7 @@
 |---|---|---|
 | public CLI surface | [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md) | `src/sis/cli.py`, `src/sis/commands/`, `uv run sis --help` |
 | implemented surface map | [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) | `src/sis/`, `tests/`, `schemas/` |
+| No-cash goal progress | [NO_CASH_GOAL_PROGRESS_2026-07-05.md](NO_CASH_GOAL_PROGRESS_2026-07-05.md) | current artifacts under `data/crypto_perp/backtest_candidate_pack/latest/`, `data/strategy_idea_candidates/`, CLI help |
 | Crypto Perp Backtest Candidate Pack | [crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md) | `src/sis/crypto_perp/backtest_candidate_pack*.py`, `schemas/crypto_perp_backtest_candidate_pack.v1.schema.json`, `tests/crypto_perp/test_backtest_candidate_pack.py` |
 | Crypto Perp runbook | [runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md) | `src/sis/commands/crypto_perp*.py`, `src/sis/crypto_perp/`, `tests/crypto_perp/` |
 | Strategy Lab / Authoring | [strategy_research_lab/README.md](strategy_research_lab/README.md) | `src/sis/research/strategy_lab/`, `tests/strategy_authoring/`, `schemas/strategy_*.json` |

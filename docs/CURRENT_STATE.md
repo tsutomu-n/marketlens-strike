@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-07-05_11:55 JST
+更新日: 2026-07-05_13:26 JST
 -->
 
 # Current State
@@ -33,6 +33,7 @@ archive と historical plan は、現在の status、readiness、許可判断の
 | 用語 | [APP_TERMS_GLOSSARY_2026-07-05.md](APP_TERMS_GLOSSARY_2026-07-05.md) |
 | artifact / code / schema reference | [CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md](CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md) |
 | Crypto Perp no-actual-cash endpoint | [crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md) |
+| お金を使わない段階の進捗 | [NO_CASH_GOAL_PROGRESS_2026-07-05.md](NO_CASH_GOAL_PROGRESS_2026-07-05.md) |
 | Strategy Idea Candidate pipeline | [strategy_idea_candidates/README.md](strategy_idea_candidates/README.md) |
 | Backtest | [backtest/README.md](backtest/README.md) |
 | Strategy Review | [strategy_review/README.md](strategy_review/README.md) |
@@ -50,6 +51,8 @@ Backtest 結果を HTML / JS で見る入口は `uv run sis strategy-backtest-ht
 - `crypto-perp-backtest-candidate-pack` は actual cash なしの短期終着点として使う。
 - `NO_TRADE`、missing source、sample insufficient、unsupported mapping は正式な停止結果として残す。
 - Strategy Review、Workbench、NDX gates は判断材料であり、paper/live permission ではない。
+
+お金を使わない段階の進捗は [NO_CASH_GOAL_PROGRESS_2026-07-05.md](NO_CASH_GOAL_PROGRESS_2026-07-05.md) に分けて記録する。現時点では implementation / routing は 70% 前後、evidence quality は 50% 前後、practical overall は 60-65% と読む。
 
 ## 境界
 
