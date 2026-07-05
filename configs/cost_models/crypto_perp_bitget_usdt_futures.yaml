@@ -1,0 +1,62 @@
+schema_version: cost_model.crypto_perp.bitget_usdt_futures.v1
+created_at: 2026-07-05T09:55:00Z
+status: reference_config_only
+
+purpose: >-
+  Single reference point for Crypto Perp Bitget USDT-FUTURES cost assumptions.
+  This file is not yet wired into all runtime builders. Treat it as the current
+  documented cost-model target and compare implementation defaults against it.
+
+product:
+  exchange: bitget
+  product_type: USDT-FUTURES
+  instrument_type: perpetual_future
+  quote_currency: USDT
+
+project_assumption:
+  taker_fee_rate: '0.0004'
+  taker_fee_bps: '4'
+  round_trip_taker_fee_rate: '0.0008'
+  round_trip_taker_fee_bps: '8'
+  source: project_cost_assumption
+
+current_implementation_default:
+  backtest_candidate_pack_fee_rate: '0.0006'
+  backtest_candidate_pack_fee_bps: '6'
+  round_trip_fee_rate: '0.0012'
+  round_trip_fee_bps: '12'
+  interpretation: conservative_default_above_project_assumption
+  known_gap: runtime_builders_do_not_yet_read_this_config_as_source_of_truth
+
+slippage:
+  default_slippage_bps: '2'
+  stress_slippage_multiplier: '2'
+  measured_slippage_available: false
+  orderbook_depth_available: false
+  known_gaps:
+    - ORDERBOOK_DEPTH_NOT_FETCHED
+    - MEASURED_SLIPPAGE_NOT_FETCHED
+    - WEBSOCKET_NOT_FETCHED
+
+funding:
+  default_funding_rate_assumption: '0.0001'
+  funding_interval_hours: 8
+  source_quality: estimate_or_snapshot_only
+  known_gaps:
+    - FUNDING_IS_NOT_ACTUAL_CASH
+    - FUNDING_INTERVAL_AND_REALIZED_FUNDING_NOT_FULLY_RECONCILED
+
+boundary:
+  actual_cash_used: false
+  profit_proven: false
+  paper_permission: false
+  tiny_live_permission: false
+  live_order_permission: false
+  wallet_or_signing_used: false
+  exchange_write_used: false
+
+operator_rules:
+  - Do not call estimate rows actual cash.
+  - Do not zero-fill missing books, trades, replay, cash ledger, or live measurement.
+  - Do not treat conservative fee defaults as measured exchange cost.
+  - Compare project assumption 0.04 percent taker fee against implementation defaults before accepting a result.
