@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import Counter
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from datetime import datetime
 from decimal import Decimal
 import hashlib
@@ -74,6 +74,103 @@ def _read_json_object(path: Path) -> dict[str, Any]:
 
 def _json_ready(value: Any) -> Any:
     return json.loads(json.dumps(value, ensure_ascii=False, default=str))
+
+
+def _int_from_mapping(payload: Mapping[str, Any], key: str) -> int:
+    value = payload.get(key, 0)
+    if isinstance(value, bool):
+        return 0
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return int(value)
+    if isinstance(value, str) and value.strip():
+        try:
+            return int(value)
+        except ValueError:
+            return 0
+    return 0
+
+
+def _evidence_grade_summary(
+    *,
+    per_event: Sequence[_PerEventArtifacts],
+    ledger: Mapping[str, Any],
+    backtest: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Build a top-level reality marker for the evidence strength of the pack.
+
+    This intentionally does not change candidate decisions. It exists so operators do not
+    confuse generated artifacts, recomputed minimal artifacts, or local simulation rows
+    with actual cash or live-readiness evidence.
+    """
+    origin_counts: Counter[str] = Counter()
+    for artifact in per_event:
+        origin_counts[f"source_availability:{artifact.source_origin.origin}"] += 1
+        origin_counts[f"feature_pack:{artifact.feature_origin.origin}"] += 1
+        origin_counts[f"edge_score:{artifact.edge_origin.origin}"] += 1
+
+    ledger_summary_raw = ledger.get("summary", {})
+    ledger_summary = ledger_summary_raw if isinstance(ledger_summary_raw, Mapping) else {}
+    critical_missing_count = _int_from_mapping(ledger_summary, "critical_missing_count")
+    future_signal_source_count = _int_from_mapping(ledger_summary, "future_signal_source_count")
+
+    source_available_counts: Counter[str] = Counter()
+    source_missing_counts: Counter[str] = Counter()
+    ledger_rows = ledger.get("rows", [])
+    if isinstance(ledger_rows, list):
+        for raw_row in ledger_rows:
+            if not isinstance(raw_row, Mapping):
+                continue
+            source_type = str(raw_row.get("source_type") or "unknown")
+            if raw_row.get("is_available") is True:
+                source_available_counts[source_type] += 1
+            else:
+                source_missing_counts[source_type] += 1
+
+    backtest_summary_raw = backtest.get("summary", {})
+    backtest_summary = backtest_summary_raw if isinstance(backtest_summary_raw, Mapping) else {}
+    simulated_trade_count = _int_from_mapping(backtest_summary, "executed_trade_count")
+
+    recomputed_minimal_count = sum(
+        count for key, count in origin_counts.items() if key.endswith(":recomputed_minimal")
+    )
+    known_limits = [
+        "LOCAL_SIMULATION_ONLY",
+        "NOT_ACTUAL_CASH",
+        "NOT_LIVE_READINESS",
+    ]
+    if recomputed_minimal_count:
+        known_limits.append("RECOMPUTED_MINIMAL_ARTIFACTS_PRESENT")
+    if any(source_missing_counts.get(source_id, 0) for source_id in ("books", "trades", "replay")):
+        known_limits.append("BOOKS_TRADES_REPLAY_MISSING")
+    if critical_missing_count:
+        known_limits.append("CRITICAL_SIGNAL_SOURCE_MISSING")
+    if simulated_trade_count == 0:
+        known_limits.append("NO_SIMULATED_TRADE_ROWS")
+
+    if critical_missing_count:
+        overall_grade = "insufficient_source_for_local_simulation"
+    elif recomputed_minimal_count:
+        overall_grade = "local_simulation_with_recomputed_minimal_artifacts"
+    else:
+        overall_grade = "local_simulation_from_existing_artifacts"
+
+    return {
+        "overall_grade": overall_grade,
+        "strongest_evidence_level": "simulated_estimate",
+        "actual_cash_used": False,
+        "profit_proven": False,
+        "permits_live_order": False,
+        "event_count": len(per_event),
+        "simulated_trade_count": simulated_trade_count,
+        "critical_missing_count": critical_missing_count,
+        "future_signal_source_count": future_signal_source_count,
+        "artifact_origin_counts": dict(sorted(origin_counts.items())),
+        "source_available_counts": dict(sorted(source_available_counts.items())),
+        "source_missing_counts": dict(sorted(source_missing_counts.items())),
+        "known_limits": list(dict.fromkeys(known_limits)),
+    }
 
 
 def _sha256_file(path: Path) -> str:
@@ -425,11 +522,17 @@ def build_crypto_perp_backtest_candidate_pack(
         "bias_guard_status": guard.guard_status if guard else "NOT_RUN",
         "pbo_status": guard.pbo_status if guard else "NOT_RUN",
     }
+    evidence_grade_summary = _evidence_grade_summary(
+        per_event=per_event,
+        ledger=ledger,
+        backtest=backtest,
+    )
     pack_id = stable_hash(
         [
             "crypto-perp-backtest-candidate-pack",
             serialize_utc_z(created),
             summary,
+            evidence_grade_summary,
             decision,
             reason_codes,
         ]
@@ -446,6 +549,7 @@ def build_crypto_perp_backtest_candidate_pack(
         outcome_count=len(pairs),
         artifact_paths=artifact_paths,
         summary=_json_ready(summary),
+        evidence_grade_summary=_json_ready(evidence_grade_summary),
         non_goal_flags=non_goal_flags(),
     )
     out_dir.mkdir(parents=True, exist_ok=True)
