@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_07:30 JST
-更新日: 2026-07-04_18:37 JST
+更新日: 2026-07-05_10:08 JST
 -->
 
 # Current Docs And Structure Triage 2026-06-27
@@ -13,7 +13,7 @@
 
 現在の docs は機械検証上は壊れていない。件数、pass count、CLI count は現時点の固定仕様ではないため、判断時は `uv run python scripts/check_current_docs.py` と `uv run python scripts/check_cli_catalog.py` の再実行結果を正とする。
 
-ただし、古い棚卸し文書、完了済み作業ブランチ名、当時の HEAD、当時の件数、runtime artifact snapshot は current proof ではない。2026-07-04 時点の progress-to-90 正本は `docs/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04/` であり、root 直下の `docs/FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md` と `docs/PROGRESS_TO_90_ROADMAP_2026-07-04.md` は互換用 pointer として扱う。
+ただし、古い棚卸し文書、完了済み作業ブランチ名、当時の HEAD、当時の件数、runtime artifact snapshot は current proof ではない。2026-07-04 時点の progress-to-90 pack、pre-actual-cash gate doc、pre-actual-cash dogfood snapshots、完了済み `docs/plans/*.md` は `docs/archive/2026-07-05-docs-code-truth-cleanup/` へ移動済み。現在の Crypto Perp actual-cashなし短期入口は `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md`。
 
 ただし、目的別 docs を全部読んでも「コード全体を漏れなく説明している」とは言い切らない。現行 docs は入口、operator guide、surface map としては使えるが、`src/sis/reports/`、`src/sis/commands/`、低層 helper、template、tools、sidecar、runtime data までを 1 つずつ説明する完全索引ではない。完全性が必要な作業では、この文書の read order の後に `rg`, `find`, CLI help、schema、tests を直接確認する。
 
@@ -91,6 +91,7 @@
 | `docs/algo/` | strategy ideas / parts / factory docs。 |
 | `docs/archive/` | historical docs。current proof として読まない。 |
 | `docs/archive/2026-07-04-docs-plans/` | 2026-07-04 時点で root-level `docs/plans/` に残っていた implementation plans。current proof として読まない。 |
+| `docs/archive/2026-07-05-docs-code-truth-cleanup/` | 2026-07-05 時点で current path から外した progress-to-90、pre-actual-cash gate、pre-actual-cash dogfood snapshot、完了済み docs/plans。current proof として読まない。 |
 | `plan/2026-06-22-strategy-feedback-case-index/` | 現在 allowlist された active plan package。 |
 | `plan/archive/` | historical plans。current proof として読まない。 |
 
@@ -113,9 +114,7 @@
 |---|---|---|
 | `README.md` | 入口として維持。 | read order、主要 surface、setup command が変わった時。 |
 | `docs/CURRENT_STATE.md` | 現在地の短い入口として維持。 | product axis、外部入力、主要 surface が変わった時。 |
-| `docs/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04/README.md` | progress-to-90 の正本入口として維持。 | 最終形評価、pre-actual-cash 評価、90% roadmap の導線が変わった時。 |
-| `docs/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04/*.md` | progress-to-90 の正本文書として維持。 | progress 評価、pre-actual-cash 境界、長期 roadmap が変わった時。 |
-| root progress pointer docs | `docs/FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md` と `docs/PROGRESS_TO_90_ROADMAP_2026-07-04.md` は互換 pointer として維持。 | read-first folder のファイル名や導線が変わった時。旧本文は戻さない。 |
+| `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md` | actual-cashなしの Crypto Perp 短期終着点として維持。 | Backtest Candidate Pack の artifact set、decision enum、boundary、CLI option が変わった時。 |
 | `docs/action-required.md` | open action の有無と resolved entries の履歴として維持。 | 新しいユーザー判断待ちが発生した時。 |
 | `docs/final-summary.md` | 作業履歴 ledger として維持。 | 実装や docs cleanup の完了要約を追記する時。current proof にはしない。 |
 | `docs/CODE_STATUS.md` | safety/readiness の誤読防止として維持。 | readiness boundary や exposed operator path が変わった時。 |
@@ -142,14 +141,14 @@
 | `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md` | 判断補助。正本ではない。 | 残す。冒頭の非正本注意を強める余地あり。 |
 | `docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md` | 判断補助。正本ではない。 | 残す。冒頭の非正本注意を強める余地あり。 |
 | `docs/MIGRATION_HISTORY.md` | 実装履歴。正本ではない。 | 残す。current readiness へリンクしない。 |
-| root progress docs の旧本文 | `docs/FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md` と `docs/PROGRESS_TO_90_ROADMAP_2026-07-04.md` に以前あった長文本文。 | 旧本文は戻さない。正本は `docs/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04/`。 |
+| progress-to-90 2026-07-04 pack | `docs/archive/2026-07-05-docs-code-truth-cleanup/progress_to_90/` に移動済み。 | 2026-07-04 時点の historical snapshot として読む。current endpoint は `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md`。 |
 | `docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md` | Layer 2.2 historical implementation record。`HEAD`、過去 docs count、過去 pass count を含む。 | 残す。current NDX status は `docs/research/ndx/README.md` と `research-layer22-*` CLI で確認する。 |
 | `docs/archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md` | profit-readiness の historical design plan。実装済み surface と未完の実 evidence collection が混ざる。 | archive 済み。current plan として読まない。 |
 | `docs/archive/2026-06-27-doc-routing/DOCUMENT_AUDIT_2026-06-22_CODE_TRUTH_TRIAGE.md` | 過去 audit。`f40241c` HEAD と 2026-06-23 時点の整理を含む。 | archive 済み。最新入口にはしない。 |
 | `docs/archive/2026-06-27-doc-routing/DOCUMENT_AUDIT_2026-06-26_CODE_TRUTH_DOC_TRIAGE.md` | 過去 audit。`a9faf8a` HEAD、current docs 161 件、public CLI 208 件などの当時値を含む。 | archive 済み。最新入口にはしない。 |
 | `docs/final-summary.md` | merge summary。 | 残す。current proof ではなく merge 時点の要約として読む。 |
 | `docs/final-summary.md` 内の過去 pass count | addendum ごとの検証 snapshot。 | current proof として使わない。作業時点で `./scripts/check` と対象 checker を再実行する。 |
-| root-level `docs/plans/*.md` の旧配置 | 2026-07-04 時点で `docs/archive/2026-07-04-docs-plans/` へ移動済み。多くは implementation plan / historical plan / branch-time contract。 | current proof として読まない。必要時は code/CLI/schema/tests で再確認する。 |
+| root-level `docs/plans/*.md` の旧配置 | 2026-07-04/07-05 の完了済み plans は `docs/archive/2026-07-05-docs-code-truth-cleanup/plans/` へ移動済み。多くは implementation plan / historical plan / branch-time contract。 | current proof として読まない。必要時は code/CLI/schema/tests で再確認する。 |
 | `docs/archive/2026-06-28-merged-plans/PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md` | run plan。`ai/crypto-perp-profit-readiness-20260627-1901` など作業当時の branch 前提を含む。 | archive 済み。現在の branch 状態や artifact 状態は code/CLI/artifact inventory で確認する。 |
 | `docs/archive/2026-06-28-merged-plans/AI_IN_THE_LOOP_CONTROL_LAYER_IMPLEMENTATION_PLAN_2026-06-27.md` | 完了済み implementation plan。`context_sections`、structured findings、note recording は code/schema/tests/README 側で実装済み。 | archive 済み。current guide として読まない。 |
 | `docs/STRATEGY_IDEA_GENERATION_RESEARCH_2026-06-27.md` と関連 research/checkpoint docs | 調査・設計時点の判断補助。外部調査と計画境界を含む。 | 残す場合は research note として読む。current implementation は `docs/strategy_idea_candidates/README.md`、schema、tests を見る。 |
@@ -180,6 +179,9 @@
 | 対象 | 今の扱い | 推奨 |
 |---|---|---|
 | `docs/archive/2026-07-04-docs-plans/` | 2026-07-04 時点で root-level `docs/plans/` に残っていた実装計画。作業時点の branch / artifact / pass count を含む可能性がある。 | archive 済み。削除しない。 |
+| `docs/archive/2026-07-05-docs-code-truth-cleanup/progress_to_90/` | 2026-07-04 progress-to-90 pack と root pointer docs。Backtest Candidate Pack 実装前の snapshot。 | archive 済み。削除しない。 |
+| `docs/archive/2026-07-05-docs-code-truth-cleanup/crypto_perp/` | Pre Actual Cash Decision Gate と pre-actual-cash dogfood snapshots。 | archive 済み。削除しない。 |
+| `docs/archive/2026-07-05-docs-code-truth-cleanup/plans/` | 2026-07-04/07-05 の完了済み implementation plans。 | archive 済み。削除しない。 |
 | `docs/archive/2026-06-27-merged-plans/*.md` | 完了済み作業計画。 | archive 済み。削除しない。 |
 | `docs/archive/2026-06-28-merged-plans/*.md` | 完了済み作業計画。 | archive 済み。削除しない。 |
 | `docs/archive/2026-06-28-merged-plans/AI_IN_THE_LOOP_CONTROL_LAYER_IMPLEMENTATION_PLAN_2026-06-27.md` | 完了済み implementation plan。current README と code/schema/tests が実装後の入口になっている。 | archive 済み。削除しない。 |
@@ -222,6 +224,7 @@
 - 低層 helper は意図的に薄くしか docs 化していない。該当領域を変更する時は、docs の網羅性を前提にせず `rg`, tests, schemas, CLI help から直接確認する。
 - 2026-06-28 の完了済み `docs/plans/` 5 件は、`docs/archive/2026-06-28-merged-plans/` へ移動済み。
 - 2026-07-04 時点で残っていた root-level `docs/plans/` tree は、`docs/archive/2026-07-04-docs-plans/` へ移動済み。current proof として読まない。
+- 2026-07-05 時点で current path に残っていた 2026-07-04/07-05 完了済み `docs/plans/*.md`、progress-to-90 pack、pre-actual-cash gate、dogfood snapshots は、`docs/archive/2026-07-05-docs-code-truth-cleanup/` へ移動済み。current Crypto Perp short-term endpoint は `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md`。
 - 2026-06-28_08:21 JST に、`docs/strategy_ai_review/AI_IN_THE_LOOP_CONTROL_LAYER_IMPLEMENTATION_PLAN_2026-06-27.md` は完了済み plan として `docs/archive/2026-06-28-merged-plans/` へ移動済み。code/schema/tests/README に実装後の入口があるため、current guide として読まない。
 - Crypto Perp の `PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md` と `PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md` は `docs/archive/2026-06-28-merged-plans/` へ移動済み。現行判断では `crypto-perp-profit-readiness-*` CLI と runtime artifact inventory を再実行する。
 - `scripts/check_current_docs.py` が通ることは archive 判定を自動化しない。完了済み plan が current docs dir に残っていても、metadata/link/semantic marker に引っかからなければ通るため、人間の triage が必要。
@@ -239,7 +242,7 @@
    - NDX: `docs/research/ndx/README.md`
    - Strategy Lab: `docs/strategy_research_lab/README.md`
    - Strategy Review: `docs/strategy_review/README.md`
-   - Crypto Perp: `docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md`
+   - Crypto Perp: `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md` と `docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md`
    - Venue boundary: `docs/venues/read_only_capability_probe.md`
 
 ## 今の verification

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-06-28_08:26 JST
+更新日: 2026-07-05_10:15 JST
 -->
 
 # Documentation Archive
@@ -137,5 +137,17 @@ Archived on 2026-06-28:
 - `docs/strategy_ai_review/AI_IN_THE_LOOP_CONTROL_LAYER_IMPLEMENTATION_PLAN_2026-06-27.md` -> `docs/archive/2026-06-28-merged-plans/`
 - `docs/crypto_perp/PROFIT_READINESS_EVIDENCE_PLAN_2026-06-27.md` -> `docs/archive/2026-06-28-merged-plans/`
 - `docs/crypto_perp/PROFIT_READINESS_EVIDENCE_RUN_PLAN_2026-06-27.md` -> `docs/archive/2026-06-28-merged-plans/`
+
+Archived on 2026-07-05:
+
+- `docs/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04/` -> `docs/archive/2026-07-05-docs-code-truth-cleanup/progress_to_90/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04/`
+- `docs/FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md` -> `docs/archive/2026-07-05-docs-code-truth-cleanup/progress_to_90/FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md`
+- `docs/PROGRESS_TO_90_ROADMAP_2026-07-04.md` -> `docs/archive/2026-07-05-docs-code-truth-cleanup/progress_to_90/PROGRESS_TO_90_ROADMAP_2026-07-04.md`
+- `docs/crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md` -> `docs/archive/2026-07-05-docs-code-truth-cleanup/crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md`
+- `docs/crypto_perp/pre_actual_cash_realdata_dogfood_2026_07_04/` -> `docs/archive/2026-07-05-docs-code-truth-cleanup/crypto_perp/pre_actual_cash_realdata_dogfood_2026_07_04/`
+- `docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/` -> `docs/archive/2026-07-05-docs-code-truth-cleanup/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/`
+- completed 2026-07-04/2026-07-05 `docs/plans/*.md` work plans -> `docs/archive/2026-07-05-docs-code-truth-cleanup/plans/`
+
+The current Crypto Perp no-actual-cash entry is `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md`.
 
 Do not treat archived documents as current requirements.

@@ -1,9 +1,92 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-05_08:39 JST
+更新日: 2026-07-05_10:19 JST
 -->
 
 # Final Summary
+
+## Latest Addendum: Code-Truth Docs Cleanup
+
+Completed on branch `ai/docs-code-truth-cleanup-20260705-1006`.
+
+Goal:
+
+- Treat code, CLI help, schemas, tests, and current artifacts as authoritative.
+- Classify updateable, stale, rebuild-candidate, and archiveable docs.
+- Archive unnecessary current-path docs without deleting historical evidence.
+- If possible, keep the branch mergeable to `main`.
+
+Achieved:
+
+- Added the durable triage checklist `docs/DOCUMENT_AUDIT_2026-07-05_CODE_TRUTH_DOC_TRIAGE.md`.
+- Added the current Crypto Perp no-actual-cash guide `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md`.
+- Re-routed README, current state, Crypto Perp runbook, surface inventory, and docs triage from the 2026-07-04 progress-to-90 / pre-actual-cash entry to Backtest Candidate Pack v1.
+- Archived stale progress docs, pre-actual-cash dogfood snapshots, and completed 2026-07-04/2026-07-05 plans under `docs/archive/2026-07-05-docs-code-truth-cleanup/`.
+- Updated `scripts/check_current_docs.py` so the archived progress folder is no longer treated as current docs, and the new audit checklist is checked.
+
+Archived:
+
+- `docs/READ_THIS_FIRST_PROGRESS_TO_90_2026-07-04/`
+- `docs/FINAL_STATE_PROGRESS_ASSESSMENT_2026-07-04.md`
+- `docs/PROGRESS_TO_90_ROADMAP_2026-07-04.md`
+- `docs/crypto_perp/PRE_ACTUAL_CASH_DECISION_GATE.md`
+- `docs/crypto_perp/pre_actual_cash_realdata_dogfood_2026_07_04/`
+- `docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/`
+- completed 2026-07-04/2026-07-05 `docs/plans/*.md`
+
+Boundary:
+
+- No runtime behavior, schemas, public CLI implementation, tests, dependencies, secrets, or external services were changed in this cleanup checkpoint.
+- The archived docs remain historical context, not current requirements.
+- Backtest Candidate Pack v1 remains simulation-only; it is not profit proof, paper permission, tiny-live readiness, live readiness, wallet/signing readiness, or exchange-write permission.
+
+Changed files:
+
+- `README.md`
+- `docs/CURRENT_STATE.md`
+- `docs/DOCUMENT_AUDIT_2026-07-05_CODE_TRUTH_DOC_TRIAGE.md`
+- `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md`
+- `docs/crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md`
+- `docs/runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md`
+- `docs/CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md`
+- `docs/IMPLEMENTED_SURFACES.md`
+- `docs/archive/README.md`
+- `docs/final-summary.md`
+- `scripts/check_current_docs.py`
+- `docs/archive/2026-07-05-docs-code-truth-cleanup/`
+
+Verification:
+
+- `uv run python scripts/check_current_docs.py` -> checked 175 current docs.
+- `uv run python scripts/check_cli_catalog.py` -> checked 234 public CLI commands.
+- `git diff --check` -> passed.
+- `./scripts/check` -> passed; 2886 pytest tests passed in 127.00s.
+
+Unexecuted verification:
+
+- None for this docs cleanup checkpoint.
+
+Destructive change:
+
+No. Documents were moved to archive with `git mv`; no tracked historical evidence was deleted.
+
+Dependency change:
+
+No.
+
+Migration:
+
+No runtime migration is required. Current readers should start from `README.md`, `docs/CURRENT_STATE.md`, and `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md`.
+
+Rollback:
+
+- Move archived docs back from `docs/archive/2026-07-05-docs-code-truth-cleanup/`.
+- Remove `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md` and `docs/DOCUMENT_AUDIT_2026-07-05_CODE_TRUTH_DOC_TRIAGE.md`.
+- Revert the README/current-doc/checker updates in this addendum.
+
+Next consideration:
+
+- Rebuild `docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md` and split `docs/final-summary.md` into current entry versus historical ledger if those docs become active reading paths again.
 
 ## Latest Addendum: Crypto Perp Backtest Candidate Pack v1
 
