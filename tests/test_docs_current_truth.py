@@ -53,6 +53,7 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     readme = _read("README.md")
 
     assert '"AGENTS.md"' in script
+    assert '"docs/NO_CASH_GOAL_PROGRESS_2026-07-05.md"' in script
     assert '"docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md"' in script
     assert '"docs/trade_xyz_bot_beginner_guide.md"' in script
     assert '"docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md"' not in script
@@ -60,6 +61,10 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert '"docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md"' not in script
     assert "docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md" in readme
     assert "docs/CURRENT_DOCS_INDEX_2026-07-05.md" in readme
+    assert "NO_CASH_GOAL_PROGRESS_2026-07-05.md" in _read("docs/CURRENT_DOCS_INDEX_2026-07-05.md")
+    assert "NO_CASH_GOAL_PROGRESS_2026-07-05.md" in _read(
+        "docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md"
+    )
     assert "docs/archive/README.md" in readme
     assert (
         "docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md"

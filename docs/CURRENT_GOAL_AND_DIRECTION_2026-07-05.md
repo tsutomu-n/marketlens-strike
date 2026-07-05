@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-05_11:55 JST
-更新日: 2026-07-05_11:55 JST
+更新日: 2026-07-05_13:13 JST
 -->
 
 # Current Goal And Direction 2026-07-05
@@ -35,6 +35,8 @@
 - CLI help: `uv run sis --help`
 
 現在の読み入口は [CURRENT_DOCS_INDEX_2026-07-05.md](CURRENT_DOCS_INDEX_2026-07-05.md) です。
+
+お金を使わない段階の進捗は [NO_CASH_GOAL_PROGRESS_2026-07-05.md](NO_CASH_GOAL_PROGRESS_2026-07-05.md) を読む。
 
 ## Current Objective
 
