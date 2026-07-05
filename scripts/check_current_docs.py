@@ -13,6 +13,8 @@ CURRENT_DOC_FILES = (
     "AGENTS.md",
     "README.md",
     "docs/CURRENT_STATE.md",
+    "docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md",
+    "docs/CURRENT_DOCS_INDEX_2026-07-05.md",
     "docs/APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md",
     "docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md",
     "docs/APP_CURRENT_STATE_OVERVIEW_2026-07-05.md",
@@ -31,7 +33,6 @@ CURRENT_DOC_FILES = (
     "docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md",
     "docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md",
     "docs/FEATURE_CAPABILITY_SUMMARY_2026-06-27.md",
-    "docs/REALISTIC_ROADMAP_CURRENT_2026-06-28.md",
     "docs/final-summary.md",
     "docs/STRATEGY_IDEA_GENERATION_RESEARCH_2026-06-27.md",
     "docs/STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md",
@@ -57,6 +58,7 @@ CURRENT_DOC_FILES = (
     "docs/trade_xyz_bot_beginner_guide.md",
     "docs/trade_xyz_bot_beginner_guide.html",
     "plan/README.md",
+    "plan/2026-06-22-strategy-feedback-case-index/README.md",
 )
 
 CURRENT_DOC_DIRS = (
@@ -88,18 +90,20 @@ CURRENT_DOC_DIRS = (
     "docs/venues",
     "docs/references/crypto_perp",
     "docs/algo/strategy_factory",
-    "plan/2026-06-22-strategy-feedback-case-index",
 )
 
-PLAN_ROUTING_ALLOWED_FILES = ("plan/README.md",)
+PLAN_ROUTING_ALLOWED_FILES = (
+    "plan/README.md",
+    "plan/2026-06-22-strategy-feedback-case-index/README.md",
+)
 
 PLAN_ROUTING_ALLOWED_PREFIXES = (
-    "plan/2026-06-22-strategy-feedback-case-index/",
     "plan/archive/",
 )
 
 EXCLUDED_DOC_PREFIXES = (
     "docs/archive/",
+    "docs/plans/",
     "docs/algo/obsidian_note_copies/",
     "docs/algo/obsidian_note_rewrites_2026-05-28/",
     "plan/archive/",
@@ -145,6 +149,14 @@ LAYER22_SEMANTIC_DRIFT_MARKERS = (
 )
 
 CURRENT_DOC_SEMANTIC_DRIFT_MARKERS = (
+    (
+        "Pre Actual Cash current entry",
+        "old pre-actual-cash current-entry wording; use Backtest Candidate Pack v1",
+    ),
+    (
+        "progress-to-90 current entry",
+        "old progress-to-90 current-entry wording; use Backtest Candidate Pack v1",
+    ),
     (
         "PID 2484910",
         "old Trade[XYZ] quote coverage process id; current docs should link archive history instead",
@@ -214,6 +226,8 @@ CURRENT_DOC_SEMANTIC_DRIFT_MARKERS = (
 CURRENT_STATUS_DOC_FILES = (
     "README.md",
     "docs/CURRENT_STATE.md",
+    "docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md",
+    "docs/CURRENT_DOCS_INDEX_2026-07-05.md",
     "docs/APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md",
     "docs/APP_CURRENT_STATE_DETAILED_2026-06-20.md",
     "docs/APP_CURRENT_STATE_OVERVIEW_2026-07-05.md",
@@ -227,6 +241,7 @@ CURRENT_STATUS_DOC_FILES = (
     "docs/REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md",
     "docs/REPO_CAPABILITIES_CURRENT_2026-06-16.md",
     "docs/REPO_CLI_CATALOG_CURRENT_2026-06-17.md",
+    "docs/final-summary.md",
     "docs/OPERATIONS_RUNBOOK.md",
     "docs/backtest/BACKTEST_USER_GUIDE_CURRENT_CAPABILITIES_2026-06-15.md",
     "docs/backtest/README.md",
@@ -247,6 +262,14 @@ CURRENT_STATUS_DOC_FILES = (
 )
 
 CURRENT_STATUS_SEMANTIC_DRIFT_MARKERS = (
+    (
+        "origin/main",
+        "fixed remote branch snapshot; rerun git status instead",
+    ),
+    (
+        "branch:",
+        "fixed branch snapshot; rerun git status instead",
+    ),
     (
         "REVISE_2_3",
         "old NDX revision decision; current status docs must point to current artifacts",
@@ -353,6 +376,20 @@ ALLOW_LEGACY_ROOT_PATH_TEXT = {
     "docs/archive/README.md",
 }
 
+ARCHIVE_LINK_RESTRICTED_FILES = {
+    "README.md",
+    "docs/CURRENT_STATE.md",
+    "docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md",
+    "docs/CURRENT_DOCS_INDEX_2026-07-05.md",
+    "docs/NEXT_DIRECTION_CURRENT.md",
+    "docs/final-summary.md",
+}
+
+ARCHIVE_LINK_ALLOWED_TARGETS = {
+    "docs/archive/README.md",
+    "plan/README.md",
+}
+
 MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]\n]+\]\(([^)\n]+)\)")
 HTML_HREF_RE = re.compile(r"""href=["']([^"']+)["']""")
 SCHEME_RE = re.compile(r"^[a-zA-Z][a-zA-Z0-9+.-]*:")
@@ -429,6 +466,14 @@ def _local_link_targets(path: Path, text: str) -> list[tuple[str, str]]:
     return targets
 
 
+def _is_archive_target(path: Path) -> bool:
+    try:
+        rel = _repo_relative(path)
+    except ValueError:
+        return False
+    return rel.startswith(("docs/archive/", "plan/archive/"))
+
+
 def _check_path(path: Path) -> list[str]:
     errors: list[str] = []
     rel = _repo_relative(path)
@@ -494,6 +539,13 @@ def _check_path(path: Path) -> list[str]:
         candidate = _link_path(path, target)
         if not candidate.exists():
             errors.append(f"{rel}: broken {kind} link {raw_target}")
+            continue
+        if rel in ARCHIVE_LINK_RESTRICTED_FILES and _is_archive_target(candidate):
+            target_rel = _repo_relative(candidate)
+            if target_rel not in ARCHIVE_LINK_ALLOWED_TARGETS:
+                errors.append(
+                    f"{rel}: direct archive {kind} link {raw_target}; route via archive index"
+                )
 
     return errors
 

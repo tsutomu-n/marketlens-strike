@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-06-17_06:32 JST
-更新日: 2026-07-05_10:08 JST
+更新日: 2026-07-05_11:55 JST
 -->
 
 # Implemented Surfaces
 
-この文書は現行コードで使える主要 surface を読むための入口です。技術寄りの capability index は [REPO_CAPABILITIES_CURRENT_2026-06-16.md](REPO_CAPABILITIES_CURRENT_2026-06-16.md) を読む。実務的な次方向は [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md) を読む。
+この文書は現行コードで使える主要 surface を読むための入口です。技術寄りの capability index は [REPO_CAPABILITIES_CURRENT_2026-06-16.md](REPO_CAPABILITIES_CURRENT_2026-06-16.md) を読む。実務的な次方向は [CURRENT_GOAL_AND_DIRECTION_2026-07-05.md](CURRENT_GOAL_AND_DIRECTION_2026-07-05.md) を読む。
 
 ## 結論
 

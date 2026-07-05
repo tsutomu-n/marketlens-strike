@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-28_17:18 JST
-更新日: 2026-06-28_17:21 JST
+更新日: 2026-07-05_11:55 JST
 -->
 
 # Risk-Taker Profit Research Brief
@@ -16,7 +16,7 @@
 ## 確認範囲
 
 - repo current docs:
-  - `docs/REALISTIC_ROADMAP_CURRENT_2026-06-28.md`
+  - `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md`
   - `docs/AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md`
   - `docs/AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md`
 - repo CLI:
