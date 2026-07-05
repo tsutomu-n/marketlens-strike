@@ -30,7 +30,7 @@ def register_crypto_perp_backtest_candidate_pack_commands(app: typer.Typer) -> N
             min=1,
         ),
         fold_count: int = typer.Option(0, "--fold-count", min=0),
-        fee_rate: str = typer.Option("0.0006", "--fee-rate"),
+        fee_rate: str = typer.Option("0.0004", "--fee-rate"),
         funding_rate: str = typer.Option("0.0001", "--funding-rate"),
         slippage_bps: str = typer.Option("2", "--slippage-bps"),
         max_holding_minutes: int = typer.Option(60, "--max-holding-minutes", min=1),
