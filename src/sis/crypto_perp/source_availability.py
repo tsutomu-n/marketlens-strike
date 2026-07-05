@@ -111,6 +111,7 @@ def _status(
     row_counts: Mapping[str, int],
     source_refs: Sequence[dict[str, str]],
     source_metadata: Mapping[str, Mapping[str, Any]],
+    source_reasons: Mapping[str, str],
 ) -> SourceAvailabilityStatus:
     row_count = row_counts.get(source_id)
     available = (
@@ -137,6 +138,8 @@ def _status(
     if row_count == 0:
         available = False
         reason = f"{source_id.upper()}_ROW_COUNT_ZERO"
+    if source_id in source_reasons:
+        reason = source_reasons[source_id]
     return SourceAvailabilityStatus(
         source_id=source_id,
         available=available,
@@ -155,6 +158,7 @@ def build_source_availability(
     row_counts: Mapping[str, int] | None = None,
     source_refs: Sequence[dict[str, str]] | None = None,
     source_metadata: Mapping[str, Mapping[str, Any]] | None = None,
+    source_reasons: Mapping[str, str] | None = None,
     known_gaps: Sequence[str] | None = None,
     producer_command: str = "crypto-perp-source-availability",
 ) -> CryptoPerpSourceAvailability:
@@ -170,6 +174,7 @@ def build_source_availability(
             row_counts=counts,
             source_refs=refs,
             source_metadata=source_metadata or {},
+            source_reasons=source_reasons or {},
         )
         for source_id in (
             "event",

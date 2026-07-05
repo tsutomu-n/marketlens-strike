@@ -36,6 +36,7 @@ from sis.crypto_perp.source_availability import (
     CryptoPerpSourceAvailability,
     build_source_availability,
 )
+from sis.crypto_perp.ticker_source import build_ticker_source_status
 from sis.crypto_perp.tiny_live_shadow import build_tiny_live_shadow
 from sis.crypto_perp.tournament_rows import (
     CryptoPerpTournamentRowsV2,
@@ -586,13 +587,41 @@ def register_crypto_perp_profit_readiness_commands(app: typer.Typer) -> None:
             "--row-count",
             help="Source row count as source=count.",
         ),
+        ticker_source_root: Path | None = typer.Option(
+            None,
+            "--ticker-source-root",
+            help="Local source_root containing data/ticker_rows parquet artifacts.",
+        ),
+        ticker_max_staleness_seconds: int = typer.Option(
+            900,
+            "--ticker-max-staleness-seconds",
+            help="Maximum allowed ticker staleness at event cutoff.",
+        ),
     ) -> None:
         try:
+            event_artifact = CryptoPerpEvent.model_validate(_json_object(event))
+            row_counts = _parse_row_counts(row_count)
+            source_refs: list[dict[str, str]] = []
+            source_metadata: dict[str, dict[str, Any]] = {}
+            source_reasons: dict[str, str] = {}
+            if ticker_source_root is not None:
+                ticker_status = build_ticker_source_status(
+                    event=event_artifact,
+                    source_root=ticker_source_root,
+                    max_staleness_seconds=ticker_max_staleness_seconds,
+                )
+                row_counts["ticker"] = ticker_status.row_count
+                source_refs.extend(ticker_status.source_refs)
+                source_metadata["ticker"] = ticker_status.metadata
+                source_reasons["ticker"] = ticker_status.reason
             artifact = build_source_availability(
-                event=CryptoPerpEvent.model_validate(_json_object(event)),
+                event=event_artifact,
                 created_at=_utc_now(),
                 available_sources=_parse_available_sources(available_source),
-                row_counts=_parse_row_counts(row_count),
+                row_counts=row_counts,
+                source_refs=source_refs,
+                source_metadata=source_metadata,
+                source_reasons=source_reasons,
             )
         except Exception as exc:
             typer.echo("status=fail")

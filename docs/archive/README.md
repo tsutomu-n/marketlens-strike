@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-07-05_10:35 JST
+更新日: 2026-07-05_11:35 JST
 -->
 
 # Documentation Archive
@@ -147,6 +147,7 @@ Archived on 2026-07-05:
 - `docs/crypto_perp/pre_actual_cash_realdata_dogfood_2026_07_04/` -> `docs/archive/2026-07-05-docs-code-truth-cleanup/crypto_perp/pre_actual_cash_realdata_dogfood_2026_07_04/`
 - `docs/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/` -> `docs/archive/2026-07-05-docs-code-truth-cleanup/crypto_perp/pre_actual_cash_varied_dogfood_2026_07_04/`
 - completed 2026-07-04/2026-07-05 `docs/plans/*.md` work plans -> `docs/archive/2026-07-05-docs-code-truth-cleanup/plans/`
+- completed `docs/plans/g3-ticker-source-availability-2026-07-05.md` -> `docs/archive/2026-07-05-docs-code-truth-cleanup/plans/g3-ticker-source-availability-2026-07-05.md`
 
 The current Crypto Perp no-actual-cash entry is `docs/crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md`.
 

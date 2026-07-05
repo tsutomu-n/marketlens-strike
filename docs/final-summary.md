@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-05_10:38 JST
+更新日: 2026-07-05_11:35 JST
 -->
 
 # Final Summary
@@ -16,6 +16,7 @@
 | 作業 | 現在の入口 | 状態 |
 |---|---|---|
 | Crypto Perp Backtest Candidate Pack v1 | [crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md) | merged locally to `main` |
+| Crypto Perp ticker source availability adapter | `crypto-perp-source-availability --ticker-source-root <source_root>` | completed on `ai/ticker-source-availability-20260705-1125` |
 | Code-truth docs cleanup | [DOCUMENT_AUDIT_2026-07-05_CODE_TRUTH_DOC_TRIAGE.md](DOCUMENT_AUDIT_2026-07-05_CODE_TRUTH_DOC_TRIAGE.md) | merged locally to `main` |
 | Residual docs risk split | this file, [APP_CURRENT_STATE_OVERVIEW_2026-07-05.md](APP_CURRENT_STATE_OVERVIEW_2026-07-05.md), [APP_TERMS_GLOSSARY_2026-07-05.md](APP_TERMS_GLOSSARY_2026-07-05.md), [CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md](CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md) | completed and verified |
 
@@ -47,6 +48,15 @@ Latest verification for the residual docs risk split:
 - `git diff --check` -> passed.
 - `./scripts/check` -> passed; 2886 pytest tests passed in 116.34s.
 
+Latest verification for the Crypto Perp ticker source availability adapter:
+
+- `uv run pytest tests/crypto_perp/test_source_availability.py -q` -> passed.
+- `uv run pytest tests/crypto_perp/test_profit_readiness_local_automation.py -q` -> passed.
+- `uv run ruff check src/sis/crypto_perp tests/crypto_perp` -> passed.
+- `uv run python scripts/check_current_docs.py` -> passed.
+
 ## Boundary
 
 This split does not change runtime behavior, schemas, public CLI implementation, dependencies, secrets, external services, or generated runtime artifacts.
+
+The ticker source availability adapter is local-file-only. It does not claim profit proof, actual cash readiness, tiny-live readiness, live readiness, wallet use, signing use, exchange writes, or live order submission.
