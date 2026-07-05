@@ -45,7 +45,7 @@
       "additionalProperties": true,
       "properties": {
         "overall_grade": {"type": "string"},
-        "strongest_evidence_level": {"const": "simulated_estimate"},
+        "strongest_evidence_level": {"type": "string"},
         "actual_cash_used": {"const": false},
         "profit_proven": {"const": false},
         "permits_live_order": {"const": false},
@@ -118,7 +118,6 @@
     "outcome_count",
     "artifact_paths",
     "summary",
-    "evidence_grade_summary",
     "non_goal_flags"
   ],
   "type": "object"
