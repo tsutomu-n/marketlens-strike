@@ -323,6 +323,8 @@ def test_human_facing_html_guides_have_markdown_sources() -> None:
     beginner_html = _read("docs/trade_xyz_bot_beginner_guide.html")
 
     assert "docs/trade_xyz_bot_beginner_guide.md" in readme
+    assert "Trade[XYZ] guides are current only as read-only / historical venue context" in readme
+    assert "not the default product axis, current next action, or live readiness path" in readme
     assert "trade_xyz_bot_beginner_guide.html" in beginner
     assert "CURRENT_GOAL_AND_DIRECTION_2026-07-05.md" in beginner
     assert "CURRENT_GOAL_AND_DIRECTION_2026-07-05.md" in beginner_html

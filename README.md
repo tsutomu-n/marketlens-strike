@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-22_09:50 JST
-更新日: 2026-07-05_11:55 JST
+更新日: 2026-07-05_12:51 JST
 -->
 
 # marketlens-strike
@@ -119,8 +119,10 @@ uv run sis phase-gate-review
 
 ## Human-Facing Guides
 
-- [docs/trade_xyz_bot_beginner_guide.md](docs/trade_xyz_bot_beginner_guide.md)
-- [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
+Trade[XYZ] guides are current only as read-only / historical venue context. They are not the default product axis, current next action, or live readiness path.
+
+- [docs/trade_xyz_bot_beginner_guide.md](docs/trade_xyz_bot_beginner_guide.md) - Trade[XYZ] read-only / historical venue companion
+- [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html) - same guide as browser-friendly HTML
 - [docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.md](docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.md)
 - [docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html](docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html)
 - [docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.md)
