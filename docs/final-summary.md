@@ -38,6 +38,7 @@ Current-only docs refresh でこちらが確認済み:
 - `uv run python scripts/check_cli_catalog.py`
 - `git diff --check`
 - `uv run sis --help`
+- `./scripts/check`
 
 再確認する時の command:
 

@@ -13,6 +13,7 @@ from sis.crypto_perp.events import CryptoPerpEvent
 from sis.crypto_perp.pre_actual_cash import _known_gaps_by_source, _source_availability_matrix
 from sis.crypto_perp.source_availability import build_source_availability
 from sis.crypto_perp.ticker_source import build_ticker_source_status
+from support.cli import normalized_stdout
 from .test_event_card import _event
 
 
@@ -373,5 +374,6 @@ def test_crypto_perp_source_availability_cli_help_mentions_ticker_options() -> N
     )
 
     assert result.exit_code == 0
-    assert "--ticker-source-root" in result.stdout
-    assert "--ticker-max-staleness-seconds" in result.stdout
+    stdout = normalized_stdout(result)
+    assert "--ticker-source-root" in stdout
+    assert "--ticker-max-staleness-seconds" in stdout

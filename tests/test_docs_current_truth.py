@@ -58,9 +58,12 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert '"docs/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md"' not in script
     assert '"docs/DOCUMENT_AUDIT_2026-05-31_BACKTEST_UPDATE.md"' not in script
     assert '"docs/LIVE_READINESS_BLOCKER_DECOMPOSITION_PLAN_2026-05-29.md"' not in script
+    assert "docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md" in readme
+    assert "docs/CURRENT_DOCS_INDEX_2026-07-05.md" in readme
+    assert "docs/archive/README.md" in readme
     assert (
         "docs/archive/2026-06-17-doc-routing/DOCUMENT_AUDIT_2026-06-09_NDX_2_3_2_4_REFRESH.md"
-        in readme
+        not in readme
     )
     assert '"docs/DOCUMENT_AUDIT_2026-06-06_CODE_TRUTH_REFRESH.md"' not in script
     assert '"docs/algo/ALGO_STRATEGY_SYSTEM_GUIDE.md"' in script
@@ -90,6 +93,8 @@ def test_current_docs_checker_policy_is_current_scope_only() -> None:
     assert "CURRENT_STATUS_DOC_FILES" in script
     assert "CURRENT_STATUS_SEMANTIC_DRIFT_MARKERS" in script
     assert "CURRENT_STATUS_SEMANTIC_DRIFT_PATTERNS" in script
+    assert "ARCHIVE_LINK_RESTRICTED_FILES" in script
+    assert "ARCHIVE_LINK_ALLOWED_TARGETS" in script
     assert "PLAN_ROUTING_ALLOWED_FILES" in script
     assert "PLAN_ROUTING_ALLOWED_PREFIXES" in script
     assert "check_plan_routing" in script
@@ -232,6 +237,14 @@ def test_plan_routing_keeps_historical_docs_archived() -> None:
     tracked_plan_files = {raw.decode("utf-8") for raw in result.stdout.split(b"\0") if raw}
 
     assert "plan/README.md" in tracked_plan_files
+    assert "plan/2026-06-22-strategy-feedback-case-index/README.md" in tracked_plan_files
+    assert (
+        "plan/archive/2026-07-05-strategy-feedback-case-index-history/00_READ_ME_FIRST.md"
+        in tracked_plan_files
+    )
+    assert (
+        "plan/2026-06-22-strategy-feedback-case-index/00_READ_ME_FIRST.md" not in tracked_plan_files
+    )
     assert (
         "plan/archive/2026-06-08-plan-routing/0607ここからの計画2/zip_intake_guide/README.md"
         in tracked_plan_files

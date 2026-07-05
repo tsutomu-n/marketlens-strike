@@ -41,6 +41,8 @@ archive と historical plan は、現在の status、readiness、許可判断の
 | Runbooks | [runbooks/README.md](runbooks/README.md) |
 | Venue boundary | [venues/read_only_capability_probe.md](venues/read_only_capability_probe.md) |
 
+Backtest 結果を HTML / JS で見る入口は `uv run sis strategy-backtest-html-report`。生成先は `data/reports/strategy_backtest_html_report.html` と `data/research/backtest_html_report/strategy_backtest_html_report.json`。
+
 ## 現在の方向
 
 - C9 bridge は shortlisted candidate を candidate-scoped Strategy Authoring / backtest pack へ fail-closed に接続する。

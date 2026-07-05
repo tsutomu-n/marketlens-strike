@@ -73,6 +73,12 @@ Crypto Perp no-actual-cash backtest candidate pack:
 uv run sis crypto-perp-backtest-candidate-pack
 ```
 
+Strategy backtest HTML report:
+
+```bash
+uv run sis strategy-backtest-html-report
+```
+
 Strategy Idea Candidate C9 bridge helpers:
 
 ```bash
@@ -111,6 +117,15 @@ uv run sis refresh-operations-artifacts
 uv run sis phase-gate-review
 ```
 
+## Human-Facing Guides
+
+- [docs/trade_xyz_bot_beginner_guide.md](docs/trade_xyz_bot_beginner_guide.md)
+- [docs/trade_xyz_bot_beginner_guide.html](docs/trade_xyz_bot_beginner_guide.html)
+- [docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.md](docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.md)
+- [docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html](docs/algo/strategy_factory/STRATEGY_FACTORY_OPERATOR_GUIDE.html)
+- [docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.md](docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.md)
+- [docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html](docs/strategy_research_lab/08_CURRENT_CAPABILITIES_EXPLAINED.html)
+
 ## Current Boundaries
 
 - `VenueId` currently allows `trade_xyz` and `bitget_demo`.
@@ -121,6 +136,7 @@ uv run sis phase-gate-review
 - `strategy-review-build` and `strategy-review-record` create human-review artifacts only.
 - NDX Layer 2.2-2.8 gates are local research / paper-observation gates. They do not prove alpha or live readiness.
 - `crypto-perp-backtest-candidate-pack` creates local simulation artifacts only. It does not create actual cash evidence.
+- `docs/research/ndx/LAYER_2_2_IMPLEMENTATION_RECORD_2026-06-07.md` is a historical implementation record, not a current hash or pass-count source.
 - wallet secrets, signing, exchange writes, and production live trading remain out of scope.
 - `data/` is git-ignored runtime state.
 
