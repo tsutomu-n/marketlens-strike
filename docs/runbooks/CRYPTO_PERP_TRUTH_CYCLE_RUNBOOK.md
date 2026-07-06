@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-07-06_06:37 JST
+更新日: 2026-07-06_12:22 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -448,7 +448,7 @@ uv run sis crypto-perp-tournament-rows-v2 \
   --outcome data/crypto_perp/outcomes/<event-id>/<outcome-id>.json \
   --notional-usd 25 \
   --fee-rate 0.0004 \
-  --funding-rate 0 \
+  --funding-rate 0.0001 \
   --slippage-bps 2 \
   --operator-time-minutes 2 \
   --operator-hourly-cost-usd 60 \
@@ -472,6 +472,8 @@ uv run sis crypto-perp-bias-guard \
 - `bias_guard.guard_status`
 - `bias_guard.pbo_status`
 - `bias_guard.stop_reasons`
+
+`crypto-perp-tournament-rows-v2` の normal project assumption は `fee_rate=0.0004`、`funding_rate=0.0001`、`slippage_bps=2` です。stress は `stress_cash_estimate_usd` と explicit stress multiplier で読み、actual cash や measured exchange cost と混同しません。
 
 `crypto-perp-tournament-rows-v2` は estimate surface です。`actual_cash_result_usd` は actual cash evidence が渡された場合だけ使い、通常の outcome 由来 rows では `null` のまま読みます。比較値は basis に応じた `cash_metric_value_usd` / estimate field で読みます。
 

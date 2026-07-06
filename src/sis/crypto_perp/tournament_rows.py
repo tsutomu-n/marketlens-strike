@@ -8,6 +8,13 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 from sis.crypto_perp.clock import ensure_utc_aware, serialize_utc_z
+from sis.crypto_perp.cost_model import (
+    CRYPTO_PERP_PROJECT_COST_MODEL_ID,
+    CRYPTO_PERP_PROJECT_FUNDING_RATE,
+    CRYPTO_PERP_PROJECT_SLIPPAGE_BPS,
+    CRYPTO_PERP_PROJECT_TAKER_FEE_RATE,
+    CRYPTO_PERP_STRESS_SLIPPAGE_MULTIPLIER,
+)
 from sis.crypto_perp.models import CryptoPerpBoundary, CryptoPerpProducer, stable_hash
 from sis.crypto_perp.outcomes import CryptoPerpOutcome
 from sis.crypto_perp.tournament import TOURNAMENT_ACTIONS, TournamentAction, TournamentEventResult
@@ -344,12 +351,12 @@ def build_cost_aware_tournament_rows(
     outcomes: Sequence[CryptoPerpOutcome],
     created_at: datetime | str,
     notional_usd: Decimal,
-    fee_rate: Decimal = Decimal("0.0006"),
-    funding_rate: Decimal = Decimal("0"),
-    slippage_bps: Decimal = Decimal("0"),
+    fee_rate: Decimal = CRYPTO_PERP_PROJECT_TAKER_FEE_RATE,
+    funding_rate: Decimal = CRYPTO_PERP_PROJECT_FUNDING_RATE,
+    slippage_bps: Decimal = CRYPTO_PERP_PROJECT_SLIPPAGE_BPS,
     operator_time_minutes: Decimal = Decimal("0"),
     operator_hourly_cost_usd: Decimal = Decimal("0"),
-    stress_slippage_multiplier: Decimal = Decimal("2"),
+    stress_slippage_multiplier: Decimal = CRYPTO_PERP_STRESS_SLIPPAGE_MULTIPLIER,
     actual_cash_by_event_action: Mapping[tuple[str, TournamentAction], Decimal] | None = None,
     source_refs: Sequence[dict[str, str]] | None = None,
     known_gaps: Sequence[str] | None = None,
@@ -359,9 +366,11 @@ def build_cost_aware_tournament_rows(
         raise ValueError("outcomes must not be empty")
     if notional_usd <= 0:
         raise ValueError("notional_usd must be positive")
+    if fee_rate <= 0:
+        raise ValueError("fee_rate must be positive; zero-cost tournament rows are forbidden")
+    if slippage_bps <= 0:
+        raise ValueError("slippage_bps must be positive; zero-cost tournament rows are forbidden")
     for value_name, value in {
-        "fee_rate": fee_rate,
-        "slippage_bps": slippage_bps,
         "operator_time_minutes": operator_time_minutes,
         "operator_hourly_cost_usd": operator_hourly_cost_usd,
         "stress_slippage_multiplier": stress_slippage_multiplier,
@@ -427,6 +436,14 @@ def build_cost_aware_tournament_rows(
         "no_trade_cost_adjusted_cash_estimate_usd": no_trade_total,
         "leader_beats_no_trade": leader_total is not None and leader_total > no_trade_total,
         "known_gap_count": len(known_gap_list),
+        "cost_assumptions": {
+            "cost_model_id": CRYPTO_PERP_PROJECT_COST_MODEL_ID,
+            "fee_rate": str(fee_rate),
+            "funding_rate": str(funding_rate),
+            "slippage_bps": str(slippage_bps),
+            "stress_slippage_multiplier": str(stress_slippage_multiplier),
+            "actual_cash_used": actual_cash_by_event_action is not None,
+        },
     }
     refs = [*_source_refs_for_outcomes(outcomes), *(dict(ref) for ref in source_refs or [])]
     return CryptoPerpTournamentRowsV2(

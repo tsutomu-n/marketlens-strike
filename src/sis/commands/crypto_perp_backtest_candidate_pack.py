@@ -7,6 +7,11 @@ from pathlib import Path
 import typer
 
 from sis.crypto_perp.backtest_candidate_pack import build_crypto_perp_backtest_candidate_pack
+from sis.crypto_perp.cost_model import (
+    CRYPTO_PERP_PROJECT_FUNDING_RATE_TEXT,
+    CRYPTO_PERP_PROJECT_SLIPPAGE_BPS_TEXT,
+    CRYPTO_PERP_PROJECT_TAKER_FEE_RATE_TEXT,
+)
 
 
 def _utc_now() -> datetime:
@@ -30,9 +35,9 @@ def register_crypto_perp_backtest_candidate_pack_commands(app: typer.Typer) -> N
             min=1,
         ),
         fold_count: int = typer.Option(0, "--fold-count", min=0),
-        fee_rate: str = typer.Option("0.0004", "--fee-rate"),
-        funding_rate: str = typer.Option("0.0001", "--funding-rate"),
-        slippage_bps: str = typer.Option("2", "--slippage-bps"),
+        fee_rate: str = typer.Option(CRYPTO_PERP_PROJECT_TAKER_FEE_RATE_TEXT, "--fee-rate"),
+        funding_rate: str = typer.Option(CRYPTO_PERP_PROJECT_FUNDING_RATE_TEXT, "--funding-rate"),
+        slippage_bps: str = typer.Option(CRYPTO_PERP_PROJECT_SLIPPAGE_BPS_TEXT, "--slippage-bps"),
         max_holding_minutes: int = typer.Option(60, "--max-holding-minutes", min=1),
     ) -> None:
         try:

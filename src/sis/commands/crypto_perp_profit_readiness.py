@@ -10,6 +10,11 @@ from typing import Any, cast
 import typer
 
 from sis.crypto_perp.bias_guards import build_bias_guard
+from sis.crypto_perp.cost_model import (
+    CRYPTO_PERP_PROJECT_FUNDING_RATE_TEXT,
+    CRYPTO_PERP_PROJECT_SLIPPAGE_BPS_TEXT,
+    CRYPTO_PERP_PROJECT_TAKER_FEE_RATE_TEXT,
+)
 from sis.crypto_perp.edge_scorer import build_edge_score
 from sis.crypto_perp.events import CryptoPerpEvent
 from sis.crypto_perp.features import CryptoPerpFeaturePack, build_feature_pack
@@ -750,9 +755,9 @@ def register_crypto_perp_profit_readiness_commands(app: typer.Typer) -> None:
         outcome: list[Path] = typer.Option(..., "--outcome"),
         out: Path = typer.Option(Path("data/crypto_perp/tournament_rows_v2"), "--out"),
         notional_usd: str = typer.Option(..., "--notional-usd"),
-        fee_rate: str = typer.Option("0.0006", "--fee-rate"),
-        funding_rate: str = typer.Option("0", "--funding-rate"),
-        slippage_bps: str = typer.Option("0", "--slippage-bps"),
+        fee_rate: str = typer.Option(CRYPTO_PERP_PROJECT_TAKER_FEE_RATE_TEXT, "--fee-rate"),
+        funding_rate: str = typer.Option(CRYPTO_PERP_PROJECT_FUNDING_RATE_TEXT, "--funding-rate"),
+        slippage_bps: str = typer.Option(CRYPTO_PERP_PROJECT_SLIPPAGE_BPS_TEXT, "--slippage-bps"),
         operator_time_minutes: str = typer.Option("0", "--operator-time-minutes"),
         operator_hourly_cost_usd: str = typer.Option("0", "--operator-hourly-cost-usd"),
     ) -> None:

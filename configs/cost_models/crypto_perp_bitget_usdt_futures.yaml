@@ -1,11 +1,14 @@
 schema_version: cost_model.crypto_perp.bitget_usdt_futures.v1
 created_at: 2026-07-05T09:55:00Z
-status: reference_config_only
+updated_at: 2026-07-06T03:22:00Z
+status: documented_reference_with_code_constants
 
 purpose: >-
   Single reference point for Crypto Perp Bitget USDT-FUTURES cost assumptions.
-  This file is not yet wired into all runtime builders. Treat it as the current
-  documented cost-model target and compare implementation defaults against it.
+  Normal runtime defaults for the targeted local simulation surfaces are wired
+  through src/sis/crypto_perp/cost_model.py. This config documents the same
+  assumptions and separates normal project assumptions from explicit stress or
+  conservative assumptions.
 
 product:
   exchange: bitget
@@ -14,23 +17,42 @@ product:
   quote_currency: USDT
 
 project_assumption:
-  taker_fee_rate: '0.0004'
-  taker_fee_bps: '4'
-  round_trip_taker_fee_rate: '0.0008'
-  round_trip_taker_fee_bps: '8'
+  cost_model_id: crypto_perp_project_cost_assumption_v1
+  taker_fee_rate: "0.0004"
+  taker_fee_bps: "4"
+  round_trip_taker_fee_rate: "0.0008"
+  round_trip_taker_fee_bps: "8"
+  funding_rate_assumption: "0.0001"
+  default_slippage_bps: "2"
+  stress_slippage_multiplier: "2"
   source: project_cost_assumption
+  wired_surfaces:
+    - crypto-perp-backtest-candidate-pack
+    - crypto-perp-tournament-rows-v2
+    - build_crypto_perp_backtest_candidate_pack
+    - build_cost_aware_tournament_rows
+    - build_pre_actual_cash_evidence_pack
+    - write_pre_actual_cash_evidence_pack
 
-current_implementation_default:
-  backtest_candidate_pack_fee_rate: '0.0006'
-  backtest_candidate_pack_fee_bps: '6'
-  round_trip_fee_rate: '0.0012'
-  round_trip_fee_bps: '12'
-  interpretation: conservative_default_above_project_assumption
-  known_gap: runtime_builders_do_not_yet_read_this_config_as_source_of_truth
+stress_or_conservative_assumption:
+  cost_model_id: crypto_perp_conservative_stress_assumption_v1
+  taker_fee_rate: "0.0006"
+  taker_fee_bps: "6"
+  round_trip_taker_fee_rate: "0.0012"
+  round_trip_taker_fee_bps: "12"
+  interpretation: explicit_conservative_or_stress_assumption_not_normal_default
+  use_only_when_named: true
+  actual_cash_used: false
+  measured_exchange_cost: false
+
+zero_cost_policy:
+  fee_rate_must_be_positive: true
+  slippage_bps_must_be_positive: true
+  zero_cost_simulation_allowed: false
 
 slippage:
-  default_slippage_bps: '2'
-  stress_slippage_multiplier: '2'
+  default_slippage_bps: "2"
+  stress_slippage_multiplier: "2"
   measured_slippage_available: false
   orderbook_depth_available: false
   known_gaps:
@@ -39,7 +61,7 @@ slippage:
     - WEBSOCKET_NOT_FETCHED
 
 funding:
-  default_funding_rate_assumption: '0.0001'
+  default_funding_rate_assumption: "0.0001"
   funding_interval_hours: 8
   source_quality: estimate_or_snapshot_only
   known_gaps:
@@ -58,5 +80,5 @@ boundary:
 operator_rules:
   - Do not call estimate rows actual cash.
   - Do not zero-fill missing books, trades, replay, cash ledger, or live measurement.
-  - Do not treat conservative fee defaults as measured exchange cost.
-  - Compare project assumption 0.04 percent taker fee against implementation defaults before accepting a result.
+  - Do not treat conservative or stress assumptions as measured exchange cost.
+  - Treat 0.04 percent taker fee, 0.0001 funding, and 2 bps slippage as the normal project assumption for targeted local simulation surfaces.
