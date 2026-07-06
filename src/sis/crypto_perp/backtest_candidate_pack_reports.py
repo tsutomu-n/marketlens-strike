@@ -575,6 +575,11 @@ def decide_backtest_candidate(
 
 
 def decision_markdown(artifact: CryptoPerpBacktestCandidatePackDecision) -> str:
+    strongest_evidence_level = (
+        artifact.evidence_grade_summary.strongest_evidence_level
+        if artifact.evidence_grade_summary is not None
+        else "unknown"
+    )
     return "\n".join(
         [
             "# Crypto Perp Backtest Candidate Pack Decision",
@@ -585,6 +590,7 @@ def decision_markdown(artifact: CryptoPerpBacktestCandidatePackDecision) -> str:
             f"- outcome_count: `{artifact.outcome_count}`",
             f"- decision: `{artifact.decision}`",
             f"- reason_codes: `{', '.join(artifact.reason_codes)}`",
+            f"- strongest_evidence_level: `{strongest_evidence_level}`",
             "- actual_cash_used: `false`",
             "- profit_proven: `false`",
             "- permits_live_order: `false`",

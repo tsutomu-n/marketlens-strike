@@ -42,10 +42,23 @@
     "artifact_paths": {"additionalProperties": {"type": "string"}, "type": "object"},
     "summary": {"type": "object"},
     "evidence_grade_summary": {
-      "additionalProperties": true,
+      "additionalProperties": false,
       "properties": {
-        "overall_grade": {"type": "string"},
-        "strongest_evidence_level": {"type": "string"},
+        "overall_grade": {
+          "enum": [
+            "insufficient_source_for_local_simulation",
+            "local_simulation_with_recomputed_minimal_artifacts",
+            "local_simulation_from_existing_artifacts"
+          ]
+        },
+        "strongest_evidence_level": {
+          "enum": [
+            "incomplete_local_artifact",
+            "recomputed_minimal_simulated_estimate",
+            "local_simulated_estimate"
+          ]
+        },
+        "basis": {"const": "timestamp_safe_local_simulation"},
         "actual_cash_used": {"const": false},
         "profit_proven": {"const": false},
         "permits_live_order": {"const": false},
@@ -53,14 +66,17 @@
         "simulated_trade_count": {"minimum": 0, "type": "integer"},
         "critical_missing_count": {"minimum": 0, "type": "integer"},
         "future_signal_source_count": {"minimum": 0, "type": "integer"},
-        "artifact_origin_counts": {"type": "object"},
-        "source_available_counts": {"type": "object"},
-        "source_missing_counts": {"type": "object"},
+        "artifact_origin_counts": {"additionalProperties": {"minimum": 0, "type": "integer"}, "type": "object"},
+        "source_available_counts": {"additionalProperties": {"minimum": 0, "type": "integer"}, "type": "object"},
+        "source_missing_counts": {"additionalProperties": {"minimum": 0, "type": "integer"}, "type": "object"},
+        "recomputed_minimal_artifact_count": {"minimum": 0, "type": "integer"},
+        "existing_artifact_only": {"type": "boolean"},
         "known_limits": {"items": {"type": "string"}, "type": "array"}
       },
       "required": [
         "overall_grade",
         "strongest_evidence_level",
+        "basis",
         "actual_cash_used",
         "profit_proven",
         "permits_live_order",
@@ -71,6 +87,8 @@
         "artifact_origin_counts",
         "source_available_counts",
         "source_missing_counts",
+        "recomputed_minimal_artifact_count",
+        "existing_artifact_only",
         "known_limits"
       ],
       "type": "object"

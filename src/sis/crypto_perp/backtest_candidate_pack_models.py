@@ -36,6 +36,37 @@ BacktestCandidateDecisionName = Literal[
     "BACKTEST_COLLECT_MORE_DATA",
     "BACKTEST_CANDIDATE_HOLD",
 ]
+EvidenceGradeLevel = Literal[
+    "incomplete_local_artifact",
+    "recomputed_minimal_simulated_estimate",
+    "local_simulated_estimate",
+]
+EvidenceOverallGrade = Literal[
+    "insufficient_source_for_local_simulation",
+    "local_simulation_with_recomputed_minimal_artifacts",
+    "local_simulation_from_existing_artifacts",
+]
+
+
+class CryptoPerpBacktestCandidatePackEvidenceGradeSummary(BaseModel):
+    model_config = ConfigDict(extra="forbid", frozen=True)
+
+    overall_grade: EvidenceOverallGrade
+    strongest_evidence_level: EvidenceGradeLevel
+    basis: Literal["timestamp_safe_local_simulation"]
+    actual_cash_used: Literal[False]
+    profit_proven: Literal[False]
+    permits_live_order: Literal[False]
+    event_count: int = Field(ge=0)
+    simulated_trade_count: int = Field(ge=0)
+    critical_missing_count: int = Field(ge=0)
+    future_signal_source_count: int = Field(ge=0)
+    artifact_origin_counts: dict[str, int] = Field(default_factory=dict)
+    source_available_counts: dict[str, int] = Field(default_factory=dict)
+    source_missing_counts: dict[str, int] = Field(default_factory=dict)
+    recomputed_minimal_artifact_count: int = Field(ge=0)
+    existing_artifact_only: bool
+    known_limits: list[str]
 
 
 class CryptoPerpBacktestCandidatePackDecision(BaseModel):
@@ -56,7 +87,7 @@ class CryptoPerpBacktestCandidatePackDecision(BaseModel):
     outcome_count: int = Field(ge=0)
     artifact_paths: dict[str, str]
     summary: dict[str, Any]
-    evidence_grade_summary: dict[str, Any] = Field(default_factory=dict)
+    evidence_grade_summary: CryptoPerpBacktestCandidatePackEvidenceGradeSummary | None = None
     non_goal_flags: dict[str, bool]
 
     @field_validator("created_at", mode="before")
