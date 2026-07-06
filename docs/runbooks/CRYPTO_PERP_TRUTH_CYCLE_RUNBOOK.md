@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-07-06_12:22 JST
+更新日: 2026-07-06_18:03 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -53,6 +53,20 @@ uv run sis crypto-perp-backtest-candidate-pack
 - `summary.selected_action_counts`
 - `summary.no_lookahead.failed_count`
 - `summary.no_lookahead.unverified_count`
+
+次に直接 Paper Observation へ進めず、no-cash backtest gate に通します。
+
+```bash
+uv run sis crypto-perp-no-cash-backtest-gate \
+  --decision data/crypto_perp/backtest_candidate_pack/latest/decision.json \
+  --data-availability data/crypto_perp/backtest_candidate_pack/latest/data_availability_ledger.json \
+  --backtest data/crypto_perp/backtest_candidate_pack/latest/backtest_result.json \
+  --stress data/crypto_perp/backtest_candidate_pack/latest/stress_result.json \
+  --rolling-stability data/crypto_perp/backtest_candidate_pack/latest/rolling_stability_result.json \
+  --out data/crypto_perp/no_cash_backtest_gate/latest
+```
+
+`NO_CASH_BACKTEST_HOLD` は human review に残すだけで、paper order permission ではありません。
 - `summary.backtest.unknown_count`
 - `boundary`
 - `non_goal_flags`
