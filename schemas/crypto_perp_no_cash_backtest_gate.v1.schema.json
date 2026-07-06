@@ -1,0 +1,119 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": "crypto_perp_no_cash_backtest_gate.v1"},
+    "artifact_id": {"type": "string"},
+    "created_at": {"type": "string"},
+    "producer": {
+      "additionalProperties": false,
+      "properties": {
+        "tool": {"const": "sis"},
+        "command": {"const": "crypto-perp-no-cash-backtest-gate"}
+      },
+      "required": ["tool", "command"],
+      "type": "object"
+    },
+    "source_refs": {"items": {"type": "object"}, "type": "array"},
+    "boundary": {
+      "additionalProperties": false,
+      "properties": {
+        "permits_live_order": {"const": false},
+        "live_conversion_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false},
+        "live_order_submitted": {"const": false}
+      },
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ],
+      "type": "object"
+    },
+    "gate_decision": {
+      "enum": [
+        "NO_CASH_BACKTEST_COLLECT_MORE_DATA",
+        "NO_CASH_BACKTEST_REVISE",
+        "NO_CASH_BACKTEST_REJECT",
+        "NO_CASH_BACKTEST_HOLD"
+      ]
+    },
+    "reason_codes": {"items": {"type": "string"}, "type": "array"},
+    "blockers": {"items": {"$ref": "#/$defs/blocker"}, "type": "array"},
+    "known_gaps": {"items": {"type": "string"}, "type": "array"},
+    "thresholds": {
+      "additionalProperties": false,
+      "properties": {
+        "min_events_for_gate": {"minimum": 1, "type": "integer"},
+        "min_simulated_trades": {"minimum": 1, "type": "integer"},
+        "max_largest_loss_to_total_result_ratio": {"type": "string"},
+        "max_drawdown_to_total_result_ratio": {"type": "string"},
+        "require_books_trades_replay": {"type": "boolean"}
+      },
+      "required": [
+        "min_events_for_gate",
+        "min_simulated_trades",
+        "max_largest_loss_to_total_result_ratio",
+        "max_drawdown_to_total_result_ratio",
+        "require_books_trades_replay"
+      ],
+      "type": "object"
+    },
+    "summary": {"type": "object"},
+    "input_artifacts": {"additionalProperties": {"type": "string"}, "type": "object"},
+    "permits_paper_order": {"const": false},
+    "paper_permission_granted": {"const": false},
+    "permits_live_order": {"const": false},
+    "actual_cash_used": {"const": false},
+    "profit_proven": {"const": false},
+    "wallet_used": {"const": false},
+    "signing_used": {"const": false},
+    "exchange_write_used": {"const": false},
+    "live_order_submitted": {"const": false}
+  },
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "created_at",
+    "producer",
+    "source_refs",
+    "boundary",
+    "gate_decision",
+    "reason_codes",
+    "blockers",
+    "known_gaps",
+    "thresholds",
+    "summary",
+    "input_artifacts",
+    "permits_paper_order",
+    "paper_permission_granted",
+    "permits_live_order",
+    "actual_cash_used",
+    "profit_proven",
+    "wallet_used",
+    "signing_used",
+    "exchange_write_used",
+    "live_order_submitted"
+  ],
+  "type": "object",
+  "$defs": {
+    "blocker": {
+      "additionalProperties": false,
+      "properties": {
+        "scope": {"enum": ["input", "candidate", "event", "source", "metric"]},
+        "code": {"type": "string"},
+        "message": {"type": "string"},
+        "event_id": {"type": ["string", "null"]},
+        "source_type": {"type": ["string", "null"]},
+        "metric": {"type": ["string", "null"]}
+      },
+      "required": ["scope", "code", "message", "event_id", "source_type", "metric"],
+      "type": "object"
+    }
+  }
+}

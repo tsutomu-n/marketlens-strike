@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-05_10:08 JST
-更新日: 2026-07-06_12:22 JST
+更新日: 2026-07-06_18:03 JST
 -->
 
 # Crypto Perp Backtest Candidate Pack v1
@@ -17,6 +17,8 @@ actual cash を扱わない短期の Crypto Perp 終着点は、`crypto-perp-bac
 - `BACKTEST_CANDIDATE_HOLD`
 
 `BACKTEST_PROMOTE_TO_LIVE` は存在しません。`BACKTEST_CANDIDATE_HOLD` でも、actual cash readiness、paper permission、tiny-live readiness、live readiness、wallet/signing、exchange write、live order permission は出ません。
+
+次の段階は直接 Paper Observation ではなく、[NO_CASH_BACKTEST_GATE_V1.md](NO_CASH_BACKTEST_GATE_V1.md) の no-cash backtest gate です。stage order は `No-cash backtest evidence pack -> no-cash backtest gate -> human review for paper observation -> Paper Observation -> Actual Cash evidence` と読む。
 
 現実評価は [EVIDENCE_QUALITY_REALITY_CHECK_2026-07-05.md](EVIDENCE_QUALITY_REALITY_CHECK_2026-07-05.md) も読む。
 
