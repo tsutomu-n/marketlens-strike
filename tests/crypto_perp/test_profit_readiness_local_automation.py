@@ -13,6 +13,13 @@ from sis.crypto_perp.cash_ledger import CashLedgerEntry, build_cash_ledger
 from sis.crypto_perp.events import EventSourceRef, detect_event
 from sis.crypto_perp.features import EventDetectorConfig
 from sis.crypto_perp.outcomes import OutcomePriceWindow, build_outcome
+from sis.crypto_perp.cost_model import (
+    CRYPTO_PERP_PROJECT_COST_MODEL_ID,
+    CRYPTO_PERP_PROJECT_FUNDING_RATE_TEXT,
+    CRYPTO_PERP_PROJECT_SLIPPAGE_BPS_TEXT,
+    CRYPTO_PERP_PROJECT_TAKER_FEE_RATE_TEXT,
+    CRYPTO_PERP_STRESS_SLIPPAGE_MULTIPLIER,
+)
 from sis.crypto_perp.pre_actual_cash import (
     PRE_ACTUAL_CASH_SUMMARY_ARTIFACT_NAMES,
     build_pre_actual_cash_evidence_pack,
@@ -579,6 +586,14 @@ def test_pre_actual_cash_pack_builder_returns_required_summaries_for_ten_pairs(
     assert decision.non_goal_flags["profit_proven"] is False
     assert decision.non_goal_flags["tiny_live_readiness_claimed"] is False
     assert decision.tournament_summary["actual_cash_result_null_count"] == 30
+    assert decision.tournament_summary["cost_assumptions"] == {
+        "cost_model_id": CRYPTO_PERP_PROJECT_COST_MODEL_ID,
+        "fee_rate": CRYPTO_PERP_PROJECT_TAKER_FEE_RATE_TEXT,
+        "funding_rate": CRYPTO_PERP_PROJECT_FUNDING_RATE_TEXT,
+        "slippage_bps": CRYPTO_PERP_PROJECT_SLIPPAGE_BPS_TEXT,
+        "stress_slippage_multiplier": str(CRYPTO_PERP_STRESS_SLIPPAGE_MULTIPLIER),
+        "actual_cash_used": False,
+    }
     assert decision.source_gap_summary["run_manifest"]["status"] == "missing"
     assert decision.source_gap_summary["run_manifest"]["known_gap_count"] > 0
     assert decision.non_goal_flags["cost_adjusted_estimate_is_actual_cash"] is False

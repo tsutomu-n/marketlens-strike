@@ -1,15 +1,15 @@
 <!--
 作成日: 2026-07-05_19:24 JST
-更新日: 2026-07-05_19:24 JST
+更新日: 2026-07-06_12:22 JST
 -->
 
 # Crypto Perp Follow-up Remediation 2026-07-05
 
 ## 結論
 
-前回の evidence quality 補強は方向としては有効だが、まだ追加修正が必要です。
+前回の evidence quality 補強後に残っていた backtest candidate pack 側の remediation は完了済みです。issue #22 では、残った Crypto Perp cost model default の surface 間統一を扱います。
 
-優先度は次です。
+完了済み項目は次です。
 
 1. `build_crypto_perp_backtest_candidate_pack` の Python API default fee を `0.0004` に合わせる。
 2. `evidence_grade_summary.strongest_evidence_level` を source 不足時に `simulated_estimate` と呼ばない。
@@ -29,7 +29,7 @@
 
 プロジェクト前提は taker fee `0.0004` です。
 
-CLI default は `0.0004` に修正済み。Python API builder default にはまだ `0.0006` が残っているため、次に修正する。
+CLI default と Python API builder default は `0.0004` に修正済み。issue #22 では `tournament_rows.py`、`pre_actual_cash.py`、`crypto-perp-tournament-rows-v2` も normal project assumption に揃える。
 
 ### 3. strongest evidence label
 

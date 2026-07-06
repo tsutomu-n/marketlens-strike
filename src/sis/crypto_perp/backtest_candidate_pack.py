@@ -37,6 +37,11 @@ from sis.crypto_perp.backtest_candidate_pack_reports import (
 )
 from sis.crypto_perp.bias_guards import CryptoPerpBiasGuard, build_bias_guard
 from sis.crypto_perp.clock import ensure_utc_aware, serialize_utc_z
+from sis.crypto_perp.cost_model import (
+    CRYPTO_PERP_PROJECT_FUNDING_RATE,
+    CRYPTO_PERP_PROJECT_SLIPPAGE_BPS,
+    CRYPTO_PERP_PROJECT_TAKER_FEE_RATE,
+)
 from sis.crypto_perp.edge_scorer import CryptoPerpEdgeScore, build_edge_score
 from sis.crypto_perp.events import CryptoPerpEvent
 from sis.crypto_perp.features import CryptoPerpFeaturePack, build_feature_pack
@@ -455,9 +460,9 @@ def build_crypto_perp_backtest_candidate_pack(
     min_events: int = 10,
     min_events_for_stability: int = 30,
     fold_count: int = 0,
-    fee_rate: Decimal = Decimal("0.0004"),
-    funding_rate: Decimal = Decimal("0.0001"),
-    slippage_bps: Decimal = Decimal("2"),
+    fee_rate: Decimal = CRYPTO_PERP_PROJECT_TAKER_FEE_RATE,
+    funding_rate: Decimal = CRYPTO_PERP_PROJECT_FUNDING_RATE,
+    slippage_bps: Decimal = CRYPTO_PERP_PROJECT_SLIPPAGE_BPS,
     max_holding_minutes: int = 60,
 ) -> BacktestCandidatePackResult:
     validate_backtest_assumptions(

@@ -9,6 +9,13 @@ from jsonschema import Draft202012Validator, ValidationError
 from typer.testing import CliRunner
 
 from sis.cli import app
+from sis.crypto_perp.cost_model import (
+    CRYPTO_PERP_PROJECT_COST_MODEL_ID,
+    CRYPTO_PERP_PROJECT_FUNDING_RATE_TEXT,
+    CRYPTO_PERP_PROJECT_SLIPPAGE_BPS_TEXT,
+    CRYPTO_PERP_PROJECT_TAKER_FEE_RATE_TEXT,
+    CRYPTO_PERP_STRESS_SLIPPAGE_MULTIPLIER,
+)
 from sis.crypto_perp.outcomes import CryptoPerpOutcome, OutcomePriceWindow, build_outcome
 from sis.crypto_perp.tournament import TournamentEventResult, build_tournament_report
 from sis.crypto_perp.tournament_rows import (
@@ -238,6 +245,106 @@ def test_cost_aware_tournament_rows_v2_separates_estimate_from_actual_cash() -> 
     assert continuation.cost_adjusted_cash_estimate_usd < continuation.before_cost_proxy_usd
     assert continuation.evidence_level == "cost_adjusted_estimate"
     assert "ESTIMATE_NOT_ACTUAL_CASH" in continuation.known_gaps
+
+
+def test_cost_aware_tournament_rows_v2_defaults_to_project_cost_model() -> None:
+    outcome = build_outcome(
+        event_id="event-1",
+        settled_at="2026-06-21T06:00:00Z",
+        horizons=[
+            OutcomePriceWindow(
+                horizon_minutes=60,
+                matured=True,
+                reference_price=Decimal("100"),
+                close_price=Decimal("105"),
+                high_price=Decimal("110"),
+                low_price=Decimal("95"),
+            )
+        ],
+    )
+
+    row_set = build_cost_aware_tournament_rows(
+        outcomes=[outcome],
+        created_at="2026-06-27T10:00:00Z",
+        notional_usd=Decimal("100"),
+    )
+
+    assumptions = row_set.summary["cost_assumptions"]
+    assert assumptions == {
+        "cost_model_id": CRYPTO_PERP_PROJECT_COST_MODEL_ID,
+        "fee_rate": CRYPTO_PERP_PROJECT_TAKER_FEE_RATE_TEXT,
+        "funding_rate": CRYPTO_PERP_PROJECT_FUNDING_RATE_TEXT,
+        "slippage_bps": CRYPTO_PERP_PROJECT_SLIPPAGE_BPS_TEXT,
+        "stress_slippage_multiplier": str(CRYPTO_PERP_STRESS_SLIPPAGE_MULTIPLIER),
+        "actual_cash_used": False,
+    }
+    continuation = next(row for row in row_set.rows if row.action == "CONTINUATION_LONG")
+    assert continuation.fee_estimate_usd == Decimal("0.0800")
+    assert continuation.funding_estimate_usd == Decimal("0.0012500")
+    assert continuation.slippage_estimate_usd == Decimal("0.02")
+    assert continuation.cost_adjusted_cash_estimate_usd == Decimal("4.8987500")
+    assert continuation.stress_cash_estimate_usd == Decimal("4.8787500")
+
+
+def test_cost_aware_tournament_rows_v2_rejects_zero_cost_inputs() -> None:
+    outcome = build_outcome(
+        event_id="event-1",
+        settled_at="2026-06-21T06:00:00Z",
+        horizons=[
+            OutcomePriceWindow(
+                horizon_minutes=60,
+                matured=True,
+                reference_price=Decimal("100"),
+                close_price=Decimal("105"),
+                high_price=Decimal("110"),
+                low_price=Decimal("95"),
+            )
+        ],
+    )
+
+    with pytest.raises(ValueError, match="fee_rate must be positive"):
+        build_cost_aware_tournament_rows(
+            outcomes=[outcome],
+            created_at="2026-06-27T10:00:00Z",
+            notional_usd=Decimal("100"),
+            fee_rate=Decimal("0"),
+        )
+
+    with pytest.raises(ValueError, match="slippage_bps must be positive"):
+        build_cost_aware_tournament_rows(
+            outcomes=[outcome],
+            created_at="2026-06-27T10:00:00Z",
+            notional_usd=Decimal("100"),
+            slippage_bps=Decimal("0"),
+        )
+
+
+def test_crypto_perp_tournament_rows_v2_cli_uses_project_cost_defaults(tmp_path: Path) -> None:
+    outcome = _outcome_path(tmp_path)
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-tournament-rows-v2",
+            "--outcome",
+            str(outcome),
+            "--out",
+            str(tmp_path / "rows-v2"),
+            "--notional-usd",
+            "100",
+        ],
+    )
+
+    assert result.exit_code == 0, result.stdout
+    payload = json.loads((tmp_path / "rows-v2/tournament_rows_v2.json").read_text())
+    assert payload["summary"]["cost_assumptions"] == {
+        "cost_model_id": CRYPTO_PERP_PROJECT_COST_MODEL_ID,
+        "fee_rate": CRYPTO_PERP_PROJECT_TAKER_FEE_RATE_TEXT,
+        "funding_rate": CRYPTO_PERP_PROJECT_FUNDING_RATE_TEXT,
+        "slippage_bps": CRYPTO_PERP_PROJECT_SLIPPAGE_BPS_TEXT,
+        "stress_slippage_multiplier": str(CRYPTO_PERP_STRESS_SLIPPAGE_MULTIPLIER),
+        "actual_cash_used": False,
+    }
 
 
 def test_cost_aware_tournament_rows_v2_schema_accepts_artifact(tmp_path: Path) -> None:

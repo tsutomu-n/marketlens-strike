@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-05_11:55 JST
-更新日: 2026-07-06_06:37 JST
+更新日: 2026-07-06_12:22 JST
 -->
 
 # Current Docs Index 2026-07-05
@@ -26,6 +26,7 @@
 | 領域 | 読むもの |
 |---|---|
 | Crypto Perp actual-cashなし短期終着点 / evidence grade | [crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md) |
+| Crypto Perp cost model assumptions | [../configs/cost_models/crypto_perp_bitget_usdt_futures.yaml](../configs/cost_models/crypto_perp_bitget_usdt_futures.yaml) |
 | Crypto Perp operator loop | [runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md](runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md) |
 | Crypto Perp cash/proxy/estimate 用語境界 | [crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md](crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md) |
 | Strategy Idea Candidate pipeline | [strategy_idea_candidates/README.md](strategy_idea_candidates/README.md) |

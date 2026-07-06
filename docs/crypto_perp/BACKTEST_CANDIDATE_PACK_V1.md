@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-05_10:08 JST
-更新日: 2026-07-06_06:37 JST
+更新日: 2026-07-06_12:22 JST
 -->
 
 # Crypto Perp Backtest Candidate Pack v1
@@ -68,11 +68,11 @@ uv run sis crypto-perp-backtest-candidate-pack \
   --slippage-bps 2
 ```
 
-zero-cost simulation は禁止です。`fee_rate` と `slippage_bps` は正の値でなければなりません。CLI と builder の default `fee_rate` は `0.0004` です。
+zero-cost simulation は禁止です。`fee_rate` と `slippage_bps` は正の値でなければなりません。CLI と builder の normal default は `fee_rate=0.0004`、`funding_rate=0.0001`、`slippage_bps=2` です。
 
 `decision.json` は optional `evidence_grade_summary` を出します。既存 v1 artifact 互換のため required ではありません。ただし存在する場合は schema と Pydantic model が内部字段を検証します。`strongest_evidence_level` は `incomplete_local_artifact`、`recomputed_minimal_simulated_estimate`、`local_simulated_estimate` のいずれかです。
 
-プロジェクト前提の taker fee は 0.04% です。`crypto-perp-backtest-candidate-pack` の CLI と builder default は `0.0004` に揃えています。ただし、現時点では全 Crypto Perp runtime builder が config を source of truth として読む実装ではありません。
+プロジェクト前提の taker fee は 0.04% です。`crypto-perp-backtest-candidate-pack`、`crypto-perp-tournament-rows-v2`、`build_cost_aware_tournament_rows`、`build_pre_actual_cash_evidence_pack`、`write_pre_actual_cash_evidence_pack` は normal project assumption を `src/sis/crypto_perp/cost_model.py` の共有定数から使います。`configs/cost_models/crypto_perp_bitget_usdt_futures.yaml` は同じ前提を文書化し、`0.0006` は explicit conservative / stress assumption としてのみ扱います。
 
 ## 現在の local result
 

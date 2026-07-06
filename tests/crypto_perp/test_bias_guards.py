@@ -33,8 +33,6 @@ def _rows():
         outcomes=[outcome],
         created_at="2026-06-27T10:01:00Z",
         notional_usd=Decimal("25"),
-        fee_rate=Decimal("0"),
-        slippage_bps=Decimal("0"),
     )
 
 
