@@ -97,6 +97,8 @@ def _evidence_grade_summary(
     per_event: Sequence[_PerEventArtifacts],
     ledger: Mapping[str, Any],
     backtest: Mapping[str, Any],
+    rows_origin: _ArtifactOrigin,
+    guard_origin: _ArtifactOrigin,
 ) -> dict[str, Any]:
     """Build a top-level reality marker for the evidence strength of the pack.
 
@@ -109,6 +111,8 @@ def _evidence_grade_summary(
         origin_counts[f"source_availability:{artifact.source_origin.origin}"] += 1
         origin_counts[f"feature_pack:{artifact.feature_origin.origin}"] += 1
         origin_counts[f"edge_score:{artifact.edge_origin.origin}"] += 1
+    origin_counts[f"tournament_rows:{rows_origin.origin}"] += 1
+    origin_counts[f"bias_guard:{guard_origin.origin}"] += 1
 
     ledger_summary_raw = ledger.get("summary", {})
     ledger_summary = ledger_summary_raw if isinstance(ledger_summary_raw, Mapping) else {}
@@ -149,16 +153,20 @@ def _evidence_grade_summary(
     if simulated_trade_count == 0:
         known_limits.append("NO_SIMULATED_TRADE_ROWS")
 
-    if critical_missing_count:
+    if critical_missing_count or simulated_trade_count == 0:
         overall_grade = "insufficient_source_for_local_simulation"
+        strongest_evidence_level = "incomplete_local_artifact"
     elif recomputed_minimal_count:
         overall_grade = "local_simulation_with_recomputed_minimal_artifacts"
+        strongest_evidence_level = "recomputed_minimal_simulated_estimate"
     else:
         overall_grade = "local_simulation_from_existing_artifacts"
+        strongest_evidence_level = "local_simulated_estimate"
 
     return {
         "overall_grade": overall_grade,
-        "strongest_evidence_level": "simulated_estimate",
+        "strongest_evidence_level": strongest_evidence_level,
+        "basis": "timestamp_safe_local_simulation",
         "actual_cash_used": False,
         "profit_proven": False,
         "permits_live_order": False,
@@ -169,6 +177,8 @@ def _evidence_grade_summary(
         "artifact_origin_counts": dict(sorted(origin_counts.items())),
         "source_available_counts": dict(sorted(source_available_counts.items())),
         "source_missing_counts": dict(sorted(source_missing_counts.items())),
+        "recomputed_minimal_artifact_count": recomputed_minimal_count,
+        "existing_artifact_only": recomputed_minimal_count == 0,
         "known_limits": list(dict.fromkeys(known_limits)),
     }
 
@@ -445,7 +455,7 @@ def build_crypto_perp_backtest_candidate_pack(
     min_events: int = 10,
     min_events_for_stability: int = 30,
     fold_count: int = 0,
-    fee_rate: Decimal = Decimal("0.0006"),
+    fee_rate: Decimal = Decimal("0.0004"),
     funding_rate: Decimal = Decimal("0.0001"),
     slippage_bps: Decimal = Decimal("2"),
     max_holding_minutes: int = 60,
@@ -526,6 +536,8 @@ def build_crypto_perp_backtest_candidate_pack(
         per_event=per_event,
         ledger=ledger,
         backtest=backtest,
+        rows_origin=rows_origin,
+        guard_origin=guard_origin,
     )
     pack_id = stable_hash(
         [

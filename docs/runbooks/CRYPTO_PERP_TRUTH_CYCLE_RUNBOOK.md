@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-07-05_13:26 JST
+更新日: 2026-07-06_06:37 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -447,7 +447,7 @@ uv run sis crypto-perp-edge-score \
 uv run sis crypto-perp-tournament-rows-v2 \
   --outcome data/crypto_perp/outcomes/<event-id>/<outcome-id>.json \
   --notional-usd 25 \
-  --fee-rate 0.0006 \
+  --fee-rate 0.0004 \
   --funding-rate 0 \
   --slippage-bps 2 \
   --operator-time-minutes 2 \
