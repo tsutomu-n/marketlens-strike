@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-07_18:06 JST
-更新日: 2026-07-07_18:06 JST
+更新日: 2026-07-07_19:12 JST
 -->
 
 # Crypto Perp Real-Market No-Cash Sample v1
@@ -17,7 +17,7 @@
 
 ```bash
 uv run sis crypto-perp-real-market-no-cash-sample \
-  --source-root data/strategy_idea_candidates/c9-btcusdt-realdata-20260628T045945Z/bitget_public_source/source_root \
+  --source-root data/strategy_idea_candidates/btc-perp/bitget_public_source/source_root \
   --out data/crypto_perp/real_market_no_cash/latest
 ```
 
@@ -28,6 +28,18 @@ uv run sis crypto-perp-real-market-no-cash-sample \
   --input-csv data/crypto_perp/real_market_no_cash/latest/input/BTCUSDT_5m_public_market.csv \
   --out data/crypto_perp/real_market_no_cash/latest
 ```
+
+ticker/funding source coverage を別の local source root から接続する場合:
+
+```bash
+uv run sis crypto-perp-real-market-no-cash-sample \
+  --input-csv data/crypto_perp/real_market_no_cash/latest/input/BTCUSDT_5m_public_market.csv \
+  --ticker-source-root data/strategy_idea_candidates/btc-perp/bitget_public_source/source_root \
+  --ticker-max-staleness-seconds 900 \
+  --out data/crypto_perp/real_market_no_cash/latest
+```
+
+`--source-root` を使う場合は、その source root 内の `data/ticker_rows` / `data/ticker_manifest.json` を ticker/funding coverage 候補としても使います。`--source-root` と `--input-csv` を両方省略した場合は `data/strategy_idea_candidates/btc-perp/bitget_public_source/source_root` を使います。
 
 作成後は fixture default と混ざらないよう、専用 `--data-dir` を渡します。
 
@@ -53,9 +65,11 @@ The command selects eligible windows before evaluating the future outcome. It do
 
 ## Expected Gaps
 
-Current public candle-only runs can build 30+ matured event/outcome pairs and make PBO / rolling stability estimable, but they still leave source blockers when ticker or funding source is absent before each information cutoff.
+Current public candle-only runs can build 30+ matured event/outcome pairs and make PBO / rolling stability estimable. Ticker and funding coverage are marked available only when a local public ticker row exists at or before each event `information_cutoff_at` and within `--ticker-max-staleness-seconds`. Funding is not promoted from ticker unless the selected ticker row contains a real `funding_rate` value.
 
-Expected known gaps include:
+If the source row is after the event cutoff or too stale, ticker/funding remain blockers instead of being zero-filled.
+
+Expected known gaps can include:
 
 - `PUBLIC_MARKET_CANDLES_ONLY`
 - `TICKER_SOURCE_MISSING_BEFORE_CUTOFF`

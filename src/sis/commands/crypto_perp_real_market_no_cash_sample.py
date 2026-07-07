@@ -9,6 +9,11 @@ import typer
 from sis.crypto_perp.real_market_no_cash_sample import write_real_market_no_cash_sample
 
 
+DEFAULT_PUBLIC_SOURCE_ROOT = Path(
+    "data/strategy_idea_candidates/btc-perp/bitget_public_source/source_root"
+)
+
+
 def _utc_now() -> datetime:
     return datetime.now(timezone.utc).replace(microsecond=0)
 
@@ -32,6 +37,17 @@ def register_crypto_perp_real_market_no_cash_sample_commands(app: typer.Typer) -
             "--out",
             help="Output directory for real-market no-cash local artifacts.",
         ),
+        ticker_source_root: Path | None = typer.Option(
+            None,
+            "--ticker-source-root",
+            help="Optional local source_root containing data/ticker_rows parquet artifacts. Defaults to --source-root when provided.",
+        ),
+        ticker_max_staleness_seconds: int = typer.Option(
+            900,
+            "--ticker-max-staleness-seconds",
+            min=0,
+            help="Maximum allowed ticker staleness at event cutoff.",
+        ),
         target_event_count: int = typer.Option(30, "--target-event-count", min=1),
         lookback_minutes: int = typer.Option(60, "--lookback-minutes", min=1),
         horizon_minutes: int = typer.Option(60, "--horizon-minutes", min=1),
@@ -49,8 +65,14 @@ def register_crypto_perp_real_market_no_cash_sample_commands(app: typer.Typer) -
                 out_dir=out,
                 created_at=_utc_now(),
                 symbol=symbol,
-                source_root=source_root,
+                source_root=(
+                    source_root
+                    if source_root is not None or input_csv is not None
+                    else DEFAULT_PUBLIC_SOURCE_ROOT
+                ),
                 input_csv=input_csv,
+                ticker_source_root=ticker_source_root,
+                ticker_max_staleness_seconds=ticker_max_staleness_seconds,
                 target_event_count=target_event_count,
                 lookback_minutes=lookback_minutes,
                 horizon_minutes=horizon_minutes,
@@ -80,6 +102,8 @@ def register_crypto_perp_real_market_no_cash_sample_commands(app: typer.Typer) -
         typer.echo(f"event_count={result.event_count}")
         typer.echo(f"outcome_count={result.outcome_count}")
         typer.echo(f"source_availability_count={result.source_availability_count}")
+        typer.echo(f"ticker_available_count={result.ticker_available_count}")
+        typer.echo(f"funding_available_count={result.funding_available_count}")
         typer.echo(f"input_csv_path={result.input_csv_path.as_posix()}")
         typer.echo(f"rows_path={result.rows_path.as_posix()}")
         typer.echo(f"guard_path={result.guard_path.as_posix()}")
