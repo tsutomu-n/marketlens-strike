@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
@@ -27,6 +28,7 @@ MAX_LARGEST_LOSS_TO_TOTAL_RESULT_RATIO = Decimal("0.5")
 MAX_DRAWDOWN_TO_TOTAL_RESULT_RATIO = Decimal("1")
 REQUIRE_BOOKS_TRADES_REPLAY = False
 _OPTIONAL_MARKET_SOURCES = ("books", "trades", "replay")
+_CRITICAL_SIGNAL_SOURCES = ("event", "bars", "ticker", "funding")
 
 NoCashBacktestGateDecision = Literal[
     "NO_CASH_BACKTEST_COLLECT_MORE_DATA",
@@ -201,6 +203,38 @@ def _missing_sources(ledger: Mapping[str, Any]) -> list[NoCashBacktestGateBlocke
     return blockers
 
 
+def _critical_missing_sources(ledger: Mapping[str, Any]) -> list[NoCashBacktestGateBlocker]:
+    rows = ledger.get("rows", [])
+    if not isinstance(rows, list):
+        return []
+    counts: Counter[str] = Counter()
+    reasons: dict[str, set[str]] = {}
+    for row in rows:
+        if not isinstance(row, Mapping):
+            continue
+        source_type = str(row.get("source_type", ""))
+        if source_type not in _CRITICAL_SIGNAL_SOURCES:
+            continue
+        if row.get("is_available") is True:
+            continue
+        counts[source_type] += 1
+        reason = str(row.get("missing_reason") or f"{source_type.upper()}_SOURCE_MISSING")
+        reasons.setdefault(source_type, set()).add(reason)
+    blockers: list[NoCashBacktestGateBlocker] = []
+    for source_type in sorted(counts):
+        reason_text = ", ".join(sorted(reasons.get(source_type, set())))
+        blockers.append(
+            _blocker(
+                "source",
+                f"CRITICAL_SIGNAL_SOURCE_MISSING_{source_type.upper()}",
+                f"critical signal source {source_type} is missing for {counts[source_type]} rows: {reason_text}",
+                source_type=source_type,
+                metric="critical_missing_count",
+            )
+        )
+    return blockers
+
+
 def _no_trade_not_beaten(backtest_summary: Mapping[str, Any]) -> bool:
     beats = backtest_summary.get("beats_no_trade")
     if isinstance(beats, bool):
@@ -351,12 +385,14 @@ def build_no_cash_backtest_gate(
                 "evidence grade says source is insufficient for local simulation",
             )
         )
-    if critical_missing_count > 0:
+    critical_source_blockers = _critical_missing_sources(data_availability)
+    if critical_missing_count > 0 or critical_source_blockers:
         blockers.append(
             _blocker(
                 "source", "CRITICAL_SIGNAL_SOURCE_MISSING", "critical signal source is missing"
             )
         )
+        blockers.extend(critical_source_blockers)
     if future_signal_source_count > 0:
         blockers.append(
             _blocker(

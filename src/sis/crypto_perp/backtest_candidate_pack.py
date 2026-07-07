@@ -126,6 +126,7 @@ def _evidence_grade_summary(
 
     source_available_counts: Counter[str] = Counter()
     source_missing_counts: Counter[str] = Counter()
+    critical_missing_reasons: Counter[str] = Counter()
     ledger_rows = ledger.get("rows", [])
     if isinstance(ledger_rows, list):
         for raw_row in ledger_rows:
@@ -136,6 +137,10 @@ def _evidence_grade_summary(
                 source_available_counts[source_type] += 1
             else:
                 source_missing_counts[source_type] += 1
+                if source_type in {"event", "bars", "ticker", "funding"}:
+                    missing_reason = str(raw_row.get("missing_reason") or "")
+                    if missing_reason:
+                        critical_missing_reasons[missing_reason] += 1
 
     backtest_summary_raw = backtest.get("summary", {})
     backtest_summary = backtest_summary_raw if isinstance(backtest_summary_raw, Mapping) else {}
@@ -155,6 +160,7 @@ def _evidence_grade_summary(
         known_limits.append("BOOKS_TRADES_REPLAY_MISSING")
     if critical_missing_count:
         known_limits.append("CRITICAL_SIGNAL_SOURCE_MISSING")
+        known_limits.extend(sorted(critical_missing_reasons))
     if simulated_trade_count == 0:
         known_limits.append("NO_SIMULATED_TRADE_ROWS")
     for artifact in per_event:
