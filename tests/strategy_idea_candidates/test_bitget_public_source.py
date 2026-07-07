@@ -199,6 +199,11 @@ def test_refresh_generates_prep_watchdeck_compatible_source_root(tmp_path: Path)
     assert manifest["row_counts"]["candles_5m"] == 8
     assert manifest["source_root"] == result.source_root.as_posix()
     assert "ORDERBOOK_DEPTH_NOT_FETCHED" in manifest["known_gaps"]
+    assert "CURRENT_TICKER_SNAPSHOT_ONLY" in manifest["known_gaps"]
+    assert (
+        "HISTORICAL_BID_ASK_TICKER_NOT_AVAILABLE_FROM_BITGET_PUBLIC_REST" in manifest["known_gaps"]
+    )
+    assert "PRICE_MARK_INDEX_CANDLES_NOT_BID_ASK_TICKER_COVERAGE" in manifest["known_gaps"]
 
     ticker_manifest_path = result.source_root / "data/ticker_manifest.json"
     ticker_manifest = json.loads(ticker_manifest_path.read_text(encoding="utf-8"))
@@ -214,6 +219,11 @@ def test_refresh_generates_prep_watchdeck_compatible_source_root(tmp_path: Path)
     assert ticker_manifest["supports_cost_adjusted_estimate"] is True
     assert ticker_manifest["supports_edge_action"] is True
     assert ticker_manifest["row_count_after_dedupe"] == 1
+    assert "CURRENT_TICKER_SNAPSHOT_ONLY" in ticker_manifest["warnings"]
+    assert (
+        "HISTORICAL_BID_ASK_TICKER_NOT_AVAILABLE_FROM_BITGET_PUBLIC_REST"
+        in ticker_manifest["warnings"]
+    )
     assert ticker_manifest["exchange_write_used"] is False
     assert ticker_manifest["live_order_submitted"] is False
 
