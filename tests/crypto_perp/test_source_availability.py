@@ -11,6 +11,7 @@ from typer.testing import CliRunner
 from sis.cli import app
 from sis.crypto_perp.events import CryptoPerpEvent
 from sis.crypto_perp.pre_actual_cash import _known_gaps_by_source, _source_availability_matrix
+from sis.crypto_perp.funding_source import build_funding_source_status
 from sis.crypto_perp.source_availability import build_source_availability
 from sis.crypto_perp.ticker_source import build_ticker_source_status
 from support.cli import normalized_stdout
@@ -87,11 +88,86 @@ def _write_ticker_source_root(
     return source_root
 
 
+def _write_funding_source_root(
+    source_root: Path,
+    *,
+    rows: list[dict[str, object]],
+) -> Path:
+    data_dir = source_root / "data"
+    data_dir.mkdir(parents=True, exist_ok=True)
+    rows_by_path: dict[Path, list[dict[str, object]]] = {}
+    for row in rows:
+        exchange = str(row.get("exchange", "bitget"))
+        symbol = str(row.get("symbol_canonical", "BTCUSDT")).upper()
+        funding_time_ms = int(row["funding_time_ms"])
+        date = datetime.fromtimestamp(funding_time_ms / 1000, tz=timezone.utc).strftime("%Y-%m-%d")
+        out_dir = (
+            data_dir / "funding_rows" / f"exchange={exchange}" / f"symbol={symbol}" / f"date={date}"
+        )
+        rows_by_path.setdefault(out_dir / "funding_rows.parquet", []).append(row)
+    for parquet_path, partition_rows in rows_by_path.items():
+        parquet_path.parent.mkdir(parents=True, exist_ok=True)
+        pl.DataFrame(partition_rows).write_parquet(parquet_path)
+    funding_values = [int(row["funding_time_ms"]) for row in rows]
+    manifest = {
+        "schema_version": "crypto_perp_funding_manifest.v1",
+        "manifest_id": "funding-manifest-test",
+        "created_at": "2026-06-21T04:00:00Z",
+        "artifact": "funding_rows",
+        "version": 1,
+        "exchange": "bitget",
+        "market_type": "perp_linear",
+        "symbols": sorted({str(row["symbol_canonical"]).upper() for row in rows}),
+        "capture_mode": "rest_funding_history",
+        "coverage_class": "historical_public_funding" if rows else "absent",
+        "supports_cost_adjusted_estimate": bool(rows),
+        "window": {
+            "start_ms": min(funding_values) if funding_values else None,
+            "end_ms": max(funding_values) if funding_values else None,
+        },
+        "row_count_total": len(rows),
+        "row_count_after_dedupe": len(rows),
+        "fields_present": ["funding_rate"],
+        "warnings": [],
+        "raw_inputs": ["funding_history"],
+        "network_attempted": True,
+        "credentials_used": False,
+        "exchange_write_used": False,
+        "live_order_submitted": False,
+    }
+    (data_dir / "funding_manifest.json").write_text(json.dumps(manifest), encoding="utf-8")
+    return source_root
+
+
+def _funding_row(
+    *,
+    funding_time_ms: int,
+    available_at_ms: int,
+    funding_rate: object = 0.0002,
+    symbol_canonical: str = "BTCUSDT",
+) -> dict[str, object]:
+    return {
+        "exchange": "bitget",
+        "market_type": "perp_linear",
+        "symbol_native": symbol_canonical,
+        "symbol_canonical": symbol_canonical,
+        "funding_time_ms": funding_time_ms,
+        "available_at_ms": available_at_ms,
+        "funding_rate": funding_rate,
+        "source_channel": "rest_funding_history",
+        "coverage_class": "historical_public_funding",
+        "raw_ref": "funding_history",
+        "run_id": "funding-test",
+    }
+
+
 def _ticker_row(
     *,
     ts_received_ms: int,
     ts_exchange_ms: int,
     symbol_canonical: str = "BTCUSDT",
+    bid_px: object = 100.4,
+    ask_px: object = 100.6,
 ) -> dict[str, object]:
     return {
         "exchange": "bitget",
@@ -102,8 +178,8 @@ def _ticker_row(
         "ts_received_ms": ts_received_ms,
         "source_channel": "rest_ticker",
         "last_px": 100.5,
-        "bid_px": 100.4,
-        "ask_px": 100.6,
+        "bid_px": bid_px,
+        "ask_px": ask_px,
         "bid_sz": 1.0,
         "ask_sz": 1.2,
         "mid_px": 100.5,
@@ -267,6 +343,72 @@ def test_ticker_source_rejects_stale_received_row(tmp_path: Path) -> None:
     assert "TICKER_SOURCE_STALE" in known_gaps["sources"]["ticker"]["reason_codes"]
 
 
+def test_ticker_source_rejects_row_without_bid_ask(tmp_path: Path) -> None:
+    event = _event()
+    cutoff_ms = _cutoff_ms(event)
+    source_root = _write_ticker_source_root(
+        tmp_path / "source_root",
+        rows=[
+            _ticker_row(
+                ts_received_ms=cutoff_ms - 120_000,
+                ts_exchange_ms=cutoff_ms - 120_000,
+                bid_px=None,
+                ask_px=None,
+            ),
+        ],
+    )
+
+    ticker_status = build_ticker_source_status(
+        event=event,
+        source_root=source_root,
+        max_staleness_seconds=900,
+    )
+    artifact = build_source_availability(
+        event=event,
+        created_at="2026-06-27T10:00:00Z",
+        row_counts={"ticker": ticker_status.row_count},
+        source_refs=ticker_status.source_refs,
+        source_metadata={"ticker": ticker_status.metadata},
+        source_reasons={"ticker": ticker_status.reason},
+    )
+
+    status = _status_by_source(artifact)["ticker"]
+    assert status.available is False
+    assert status.reason == "HISTORICAL_TICKER_BID_ASK_NOT_AVAILABLE"
+    assert status.metadata["ts_received_ms"] == cutoff_ms - 120_000
+    assert status.metadata["bid_px"] is None
+    assert status.metadata["ask_px"] is None
+
+
+def test_ticker_source_skips_bid_ask_missing_row_when_older_valid_row_exists(
+    tmp_path: Path,
+) -> None:
+    event = _event()
+    cutoff_ms = _cutoff_ms(event)
+    source_root = _write_ticker_source_root(
+        tmp_path / "source_root",
+        rows=[
+            _ticker_row(ts_received_ms=cutoff_ms - 300_000, ts_exchange_ms=cutoff_ms - 300_000),
+            _ticker_row(
+                ts_received_ms=cutoff_ms - 120_000,
+                ts_exchange_ms=cutoff_ms - 120_000,
+                bid_px=None,
+                ask_px=None,
+            ),
+        ],
+    )
+
+    ticker_status = build_ticker_source_status(
+        event=event,
+        source_root=source_root,
+        max_staleness_seconds=900,
+    )
+
+    assert ticker_status.row_count == 1
+    assert ticker_status.reason == "available"
+    assert ticker_status.metadata["ts_received_ms"] == cutoff_ms - 300_000
+
+
 def test_ticker_funding_rate_does_not_promote_funding_source(tmp_path: Path) -> None:
     event = _event().model_copy(
         update={
@@ -377,3 +519,80 @@ def test_crypto_perp_source_availability_cli_help_mentions_ticker_options() -> N
     stdout = normalized_stdout(result)
     assert "--ticker-source-root" in stdout
     assert "--ticker-max-staleness-seconds" in stdout
+
+
+def test_funding_source_selects_latest_public_value_before_cutoff(tmp_path: Path) -> None:
+    event = _event().model_copy(
+        update={
+            "features_at_detection": _event().features_at_detection.model_copy(
+                update={"funding_rate": ""}
+            )
+        }
+    )
+    cutoff_ms = _cutoff_ms(event)
+    source_root = _write_funding_source_root(
+        tmp_path / "source_root",
+        rows=[
+            _funding_row(funding_time_ms=cutoff_ms - 900_000, available_at_ms=cutoff_ms - 900_000),
+            _funding_row(funding_time_ms=cutoff_ms - 120_000, available_at_ms=cutoff_ms - 120_000),
+        ],
+    )
+
+    funding_status = build_funding_source_status(event=event, source_root=source_root)
+    artifact = build_source_availability(
+        event=event,
+        created_at="2026-06-27T10:00:00Z",
+        row_counts={"bars": 10, "ticker": 1, "funding": funding_status.row_count},
+        source_refs=funding_status.source_refs,
+        source_metadata={"funding": funding_status.metadata},
+        source_reasons={"funding": funding_status.reason},
+    )
+
+    status = _status_by_source(artifact)["funding"]
+    assert status.available is True
+    assert status.reason == "available"
+    assert status.metadata["funding_time_ms"] == cutoff_ms - 120_000
+    assert status.metadata["available_at_ms"] == cutoff_ms - 120_000
+    assert status.metadata["funding_rate"] == "0.0002"
+    assert status.metadata["selected_parquet_path"].endswith("funding_rows.parquet")
+    assert {ref["schema_version"] for ref in status.source_refs} == {
+        "crypto_perp_funding_manifest.v1",
+        "funding_rows.parquet",
+    }
+    assert artifact.can_compute_cost_adjusted_estimate is True
+
+
+def test_funding_source_rejects_future_value_and_missing_rate(tmp_path: Path) -> None:
+    event = _event()
+    cutoff_ms = _cutoff_ms(event)
+    source_root = _write_funding_source_root(
+        tmp_path / "source_root",
+        rows=[
+            _funding_row(
+                funding_time_ms=cutoff_ms + 60_000,
+                available_at_ms=cutoff_ms + 60_000,
+            ),
+            _funding_row(
+                funding_time_ms=cutoff_ms - 60_000,
+                available_at_ms=cutoff_ms - 60_000,
+                funding_rate=None,
+            ),
+        ],
+    )
+
+    funding_status = build_funding_source_status(event=event, source_root=source_root)
+
+    assert funding_status.row_count == 0
+    assert funding_status.reason == "FUNDING_SOURCE_MISSING_BEFORE_CUTOFF"
+    assert funding_status.metadata["manifest_path"].endswith("funding_manifest.json")
+    assert "selected_parquet_path" not in funding_status.metadata
+
+
+def test_funding_source_reports_historical_source_unavailable(tmp_path: Path) -> None:
+    event = _event()
+
+    funding_status = build_funding_source_status(event=event, source_root=tmp_path / "source_root")
+
+    assert funding_status.row_count == 0
+    assert funding_status.reason == "HISTORICAL_FUNDING_SOURCE_NOT_AVAILABLE"
+    assert funding_status.metadata["symbol_canonical"] == "BTCUSDT"

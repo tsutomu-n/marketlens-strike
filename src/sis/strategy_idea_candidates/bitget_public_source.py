@@ -14,11 +14,13 @@ import polars as pl
 
 from sis.crypto_perp.bitget.client import BitgetPublicClient, BitgetPublicClientConfig
 from sis.crypto_perp.bitget.normalizers import (
+    normalize_funding_history,
     normalize_mix_contracts,
     normalize_mix_history_candles,
     normalize_mix_tickers,
 )
 from sis.crypto_perp.bitget.public_api import BitgetPublicAPI
+from sis.crypto_perp.funding_source import FUNDING_MANIFEST_SCHEMA_VERSION
 from sis.strategy_inputs.io import write_json_artifact
 
 
@@ -34,6 +36,7 @@ SOURCE_ENDPOINT_IDS = [
     "bitget.mix.market.contracts",
     "bitget.mix.market.tickers",
     "bitget.mix.market.history_candles",
+    "funding_history",
 ]
 
 
@@ -126,6 +129,7 @@ async def _refresh_async(
     )
     tickers = _filter_by_symbol(normalize_mix_tickers(tickers_result.payload), symbols)
     candles_by_symbol: dict[str, list[dict[str, Any]]] = {}
+    funding_by_symbol: dict[str, list[dict[str, Any]]] = {}
     for symbol in symbols:
         candles_by_symbol[symbol] = await _fetch_recent_candles(
             api=api,
@@ -135,6 +139,7 @@ async def _refresh_async(
             limit=limit,
             now=now,
         )
+        funding_by_symbol[symbol] = await _fetch_funding_history(api=api, symbol=symbol)
 
     row_counts = _write_source_root(
         source_root=source_root,
@@ -144,6 +149,7 @@ async def _refresh_async(
         contracts=contracts,
         tickers=tickers,
         candles_by_symbol=candles_by_symbol,
+        funding_by_symbol=funding_by_symbol,
     )
     manifest = _manifest(
         source_root=source_root,
@@ -157,6 +163,7 @@ async def _refresh_async(
         candles_by_symbol=candles_by_symbol,
         contracts=contracts,
         tickers=tickers,
+        funding_by_symbol=funding_by_symbol,
     )
     write_json_artifact(manifest_path, manifest)
     return BitgetPublicSourceRefreshResult(
@@ -215,6 +222,16 @@ async def _fetch_recent_candles(
     return [rows_by_ts[ts] for ts in sorted(rows_by_ts)[-limit:]]
 
 
+async def _fetch_funding_history(
+    *,
+    api: BitgetPublicAPI,
+    symbol: str,
+) -> list[dict[str, Any]]:
+    result = await api.funding_history(symbol=symbol, limit=100)
+    rows = normalize_funding_history(result.payload)
+    return [row for row in rows if str(row.get("native_symbol", "")).upper() == symbol.upper()]
+
+
 def _write_source_root(
     *,
     source_root: Path,
@@ -224,6 +241,7 @@ def _write_source_root(
     contracts: list[dict[str, Any]],
     tickers: list[dict[str, Any]],
     candles_by_symbol: dict[str, list[dict[str, Any]]],
+    funding_by_symbol: dict[str, list[dict[str, Any]]],
 ) -> dict[str, int]:
     data_dir = source_root / "data"
     snapshot_dir = source_root / "var/snapshots"
@@ -255,6 +273,19 @@ def _write_source_root(
         product_type=product_type,
         ticker_rows=ticker_rows,
     )
+    funding_rows = _funding_rows(
+        run_id=run_id,
+        product_type=product_type,
+        funding_by_symbol=funding_by_symbol,
+    )
+    _write_funding_rows_parquet(data_dir / "funding_rows", funding_rows)
+    _write_funding_manifest(
+        data_dir / "funding_manifest.json",
+        run_id=run_id,
+        generated_at_ms=generated_at_ms,
+        product_type=product_type,
+        funding_rows=funding_rows,
+    )
     _write_latest_snapshot(
         snapshot_dir / "latest.json",
         run_id=run_id,
@@ -267,6 +298,7 @@ def _write_source_root(
         "contracts": len(contracts),
         "tickers_snapshot": len(tickers),
         "ticker_rows": len(ticker_rows),
+        "funding_rows": len(funding_rows),
         "candles_5m": len(candle_rows),
         "scanner_rows": len(scanner_rows),
     }
@@ -428,6 +460,109 @@ def _ticker_manifest_warnings(rows: list[dict[str, Any]], fields_present: set[st
     if not rows:
         warnings.append("TICKER_ROWS_EMPTY")
     return warnings
+
+
+def _funding_rows(
+    *,
+    run_id: str,
+    product_type: str,
+    funding_by_symbol: dict[str, list[dict[str, Any]]],
+) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for symbol, symbol_rows in funding_by_symbol.items():
+        for row in symbol_rows:
+            funding_rate = _float_or_none(row.get("funding_rate"))
+            funding_time_ms = _int_or_none(row.get("ts_event"))
+            if funding_rate is None or funding_time_ms is None:
+                continue
+            rows.append(
+                {
+                    "exchange": "bitget",
+                    "market_type": "perp_linear"
+                    if product_type == "USDT-FUTURES"
+                    else product_type,
+                    "symbol_native": str(row.get("native_symbol") or symbol).upper(),
+                    "symbol_canonical": symbol.upper(),
+                    "funding_time_ms": funding_time_ms,
+                    "available_at_ms": funding_time_ms,
+                    "funding_rate": funding_rate,
+                    "source_channel": "rest_funding_history",
+                    "coverage_class": "historical_public_funding",
+                    "raw_ref": "funding_history",
+                    "run_id": run_id,
+                }
+            )
+    return _dedupe_funding_rows(rows)
+
+
+def _write_funding_rows_parquet(base_dir: Path, funding_rows: list[dict[str, Any]]) -> None:
+    if not funding_rows:
+        return
+    frame = pl.DataFrame(funding_rows).with_columns(
+        pl.from_epoch("funding_time_ms", time_unit="ms").dt.strftime("%Y-%m-%d").alias("date")
+    )
+    for keys, group in frame.partition_by(
+        ["exchange", "symbol_canonical", "date"],
+        as_dict=True,
+    ).items():
+        exchange, symbol, date = keys
+        out_dir = base_dir / f"exchange={exchange}" / f"symbol={symbol}" / f"date={date}"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        group.drop("date").write_parquet(out_dir / "funding_rows.parquet")
+
+
+def _write_funding_manifest(
+    path: Path,
+    *,
+    run_id: str,
+    generated_at_ms: int,
+    product_type: str,
+    funding_rows: list[dict[str, Any]],
+) -> None:
+    timestamp_values = [int(row["funding_time_ms"]) for row in funding_rows]
+    write_json_artifact(
+        path,
+        {
+            "schema_version": FUNDING_MANIFEST_SCHEMA_VERSION,
+            "manifest_id": f"{run_id}-bitget-funding-rows",
+            "created_at": _serialize_datetime(
+                datetime.fromtimestamp(generated_at_ms / 1000, tz=timezone.utc)
+            ),
+            "artifact": "funding_rows",
+            "version": 1,
+            "exchange": "bitget",
+            "market_type": "perp_linear" if product_type == "USDT-FUTURES" else product_type,
+            "symbols": sorted({str(row["symbol_canonical"]) for row in funding_rows}),
+            "capture_mode": "rest_funding_history",
+            "coverage_class": "historical_public_funding" if funding_rows else "absent",
+            "supports_cost_adjusted_estimate": bool(funding_rows),
+            "window": {
+                "start_ms": min(timestamp_values) if timestamp_values else None,
+                "end_ms": max(timestamp_values) if timestamp_values else None,
+            },
+            "row_count_total": len(funding_rows),
+            "row_count_after_dedupe": len(_dedupe_funding_rows(funding_rows)),
+            "fields_present": ["funding_rate"] if funding_rows else [],
+            "warnings": [] if funding_rows else ["FUNDING_ROWS_EMPTY"],
+            "raw_inputs": ["funding_history"],
+            "network_attempted": True,
+            "credentials_used": False,
+            "exchange_write_used": False,
+            "live_order_submitted": False,
+        },
+    )
+
+
+def _dedupe_funding_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    deduped: dict[tuple[str, str, int], dict[str, Any]] = {}
+    for row in rows:
+        key = (
+            str(row["exchange"]),
+            str(row["symbol_canonical"]),
+            int(row["funding_time_ms"]),
+        )
+        deduped[key] = row
+    return list(deduped.values())
 
 
 def _write_scanner_duckdb(
@@ -645,6 +780,7 @@ def _manifest(
     candles_by_symbol: dict[str, list[dict[str, Any]]],
     contracts: list[dict[str, Any]],
     tickers: list[dict[str, Any]],
+    funding_by_symbol: dict[str, list[dict[str, Any]]],
 ) -> dict[str, Any]:
     known_gaps = [
         "ORDERBOOK_DEPTH_NOT_FETCHED",
@@ -662,6 +798,8 @@ def _manifest(
             known_gaps.append(f"TICKER_MISSING:{symbol}")
         if not candles_by_symbol.get(symbol):
             known_gaps.append(f"CANDLES_5M_MISSING:{symbol}")
+        if not funding_by_symbol.get(symbol):
+            known_gaps.append(f"FUNDING_HISTORY_MISSING:{symbol}")
     return {
         "schema_version": BITGET_PUBLIC_SOURCE_SCHEMA_VERSION,
         "manifest_id": f"{run_id}-bitget-public-source",
@@ -778,6 +916,13 @@ def _prepare_output(
         ticker_manifest = source_root / "data/ticker_manifest.json"
         if ticker_manifest.exists():
             ticker_manifest.unlink()
+        for path in (source_root / "data/funding_rows").glob(
+            "exchange=*/symbol=*/date=*/funding_rows.parquet"
+        ):
+            path.unlink()
+        funding_manifest = source_root / "data/funding_manifest.json"
+        if funding_manifest.exists():
+            funding_manifest.unlink()
 
 
 def _validate_request(

@@ -19,10 +19,17 @@ from sis.crypto_perp.cost_model import (
     CRYPTO_PERP_PROJECT_TAKER_FEE_RATE,
 )
 from sis.crypto_perp.events import build_market_window_event
+from sis.crypto_perp.funding_source import (
+    HISTORICAL_FUNDING_SOURCE_NOT_AVAILABLE,
+    build_funding_source_status,
+)
 from sis.crypto_perp.io import write_json_artifact
 from sis.crypto_perp.outcomes import OutcomePriceWindow, build_outcome
 from sis.crypto_perp.source_availability import build_source_availability
-from sis.crypto_perp.ticker_source import build_ticker_source_status
+from sis.crypto_perp.ticker_source import (
+    TICKER_SOURCE_MISSING_BEFORE_CUTOFF,
+    build_ticker_source_status,
+)
 from sis.crypto_perp.tournament_rows import build_cost_aware_tournament_rows
 
 
@@ -30,8 +37,7 @@ REAL_MARKET_NO_CASH_PRODUCER = "crypto-perp-real-market-no-cash-sample"
 PUBLIC_CANDLES_ONLY_GAP = "PUBLIC_MARKET_CANDLES_ONLY"
 LOCAL_SIMULATION_GAP = "LOCAL_SIMULATION_ONLY"
 NOT_ACTUAL_CASH_GAP = "NOT_ACTUAL_CASH"
-FUNDING_SOURCE_AVAILABLE = "available"
-FUNDING_SOURCE_MISSING_FROM_TICKER = "FUNDING_SOURCE_MISSING_FROM_TICKER"
+HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE = "HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE"
 
 
 @dataclass(frozen=True)
@@ -245,6 +251,25 @@ def _event_with_ticker_context(event, metadata: dict[str, Any]):
     )
 
 
+def _event_with_funding_context(event, metadata: dict[str, Any]):
+    funding_rate = _decimal_json(_decimal_or_none(metadata.get("funding_rate")))
+    if funding_rate is None:
+        return event
+    return event.model_copy(
+        update={
+            "features_at_detection": event.features_at_detection.model_copy(
+                update={"funding_rate": funding_rate}
+            )
+        }
+    )
+
+
+def _real_market_ticker_reason(reason: str) -> str:
+    if reason == TICKER_SOURCE_MISSING_BEFORE_CUTOFF:
+        return HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE
+    return reason
+
+
 def write_real_market_no_cash_sample(
     *,
     out_dir: Path,
@@ -338,19 +363,26 @@ def write_real_market_no_cash_sample(
             producer_command=REAL_MARKET_NO_CASH_PRODUCER,
         )
         ticker_status = None
+        funding_status = None
         if effective_ticker_source_root is not None:
             ticker_status = build_ticker_source_status(
                 event=event,
                 source_root=effective_ticker_source_root,
                 max_staleness_seconds=ticker_max_staleness_seconds,
             )
+            funding_status = build_funding_source_status(
+                event=event,
+                source_root=effective_ticker_source_root,
+            )
             if ticker_status.row_count > 0:
                 event = _event_with_ticker_context(event, ticker_status.metadata)
+            if funding_status.row_count > 0:
+                event = _event_with_funding_context(event, funding_status.metadata)
         event_path = out_dir / "events" / f"event_{sample_index:03d}.json"
         outcome_path = out_dir / "outcomes" / f"outcome_{sample_index:03d}.json"
         write_json_artifact(event_path, _json_payload(event))
         write_json_artifact(outcome_path, _json_payload(outcome))
-        events.append((event_path, event, ticker_status))
+        events.append((event_path, event, ticker_status, funding_status))
         outcomes.append((outcome_path, outcome))
 
     source_paths: list[str] = []
@@ -358,7 +390,7 @@ def write_real_market_no_cash_sample(
     missing_funding_reasons: set[str] = set()
     ticker_available_count = 0
     funding_available_count = 0
-    for index, (event_path, event, ticker_status) in enumerate(events):
+    for index, (event_path, event, ticker_status, funding_status) in enumerate(events):
         row_counts = {"bars": indices[index] + 1, "outcome": 1}
         source_refs_for_availability = [
             _artifact_ref(event_path, schema_version="crypto_perp_event.v1"),
@@ -371,38 +403,33 @@ def write_real_market_no_cash_sample(
             "replay": "REPLAY_SOURCE_MISSING",
         }
         if ticker_status is not None:
+            ticker_reason = _real_market_ticker_reason(ticker_status.reason)
             row_counts["ticker"] = ticker_status.row_count
             source_refs_for_availability.extend(ticker_status.source_refs)
             source_metadata["ticker"] = ticker_status.metadata
-            source_reasons["ticker"] = ticker_status.reason
+            source_reasons["ticker"] = ticker_reason
             if ticker_status.row_count > 0:
                 ticker_available_count += 1
-                if ticker_status.metadata.get("funding_rate") is not None:
-                    row_counts["funding"] = 1
-                    source_metadata["funding"] = dict(ticker_status.metadata)
-                    source_reasons["funding"] = FUNDING_SOURCE_AVAILABLE
-                    funding_available_count += 1
-                else:
-                    row_counts["funding"] = 0
-                    source_reasons["funding"] = FUNDING_SOURCE_MISSING_FROM_TICKER
-                    missing_funding_reasons.add(FUNDING_SOURCE_MISSING_FROM_TICKER)
             else:
-                missing_ticker_reasons.add(ticker_status.reason)
-                row_counts["funding"] = 0
-                funding_reason = (
-                    "FUNDING_SOURCE_MISSING_BEFORE_CUTOFF"
-                    if ticker_status.reason == "TICKER_SOURCE_MISSING_BEFORE_CUTOFF"
-                    else f"FUNDING_SOURCE_{ticker_status.reason.removeprefix('TICKER_SOURCE_')}"
-                )
-                source_reasons["funding"] = funding_reason
-                missing_funding_reasons.add(funding_reason)
+                missing_ticker_reasons.add(ticker_reason)
         else:
             row_counts["ticker"] = 0
+            source_reasons["ticker"] = HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE
+            missing_ticker_reasons.add(HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE)
+
+        if funding_status is not None:
+            row_counts["funding"] = funding_status.row_count
+            source_refs_for_availability.extend(funding_status.source_refs)
+            source_metadata["funding"] = funding_status.metadata
+            source_reasons["funding"] = funding_status.reason
+            if funding_status.row_count > 0:
+                funding_available_count += 1
+            else:
+                missing_funding_reasons.add(funding_status.reason)
+        else:
             row_counts["funding"] = 0
-            source_reasons["ticker"] = "TICKER_SOURCE_MISSING_BEFORE_CUTOFF"
-            source_reasons["funding"] = "FUNDING_SOURCE_MISSING"
-            missing_ticker_reasons.add("TICKER_SOURCE_MISSING_BEFORE_CUTOFF")
-            missing_funding_reasons.add("FUNDING_SOURCE_MISSING")
+            source_reasons["funding"] = HISTORICAL_FUNDING_SOURCE_NOT_AVAILABLE
+            missing_funding_reasons.add(HISTORICAL_FUNDING_SOURCE_NOT_AVAILABLE)
         source = build_source_availability(
             event=event,
             created_at=created,
@@ -461,6 +488,9 @@ def write_real_market_no_cash_sample(
             "ticker_available_count": ticker_available_count,
             "funding_available_count": funding_available_count,
             "ticker_source_root": effective_ticker_source_root.as_posix()
+            if effective_ticker_source_root is not None
+            else None,
+            "funding_source_root": effective_ticker_source_root.as_posix()
             if effective_ticker_source_root is not None
             else None,
             "ticker_max_staleness_seconds": ticker_max_staleness_seconds,

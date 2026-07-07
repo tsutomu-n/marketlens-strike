@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-07_18:06 JST
-更新日: 2026-07-07_19:12 JST
+更新日: 2026-07-07_20:45 JST
 -->
 
 # Crypto Perp Real-Market No-Cash Sample v1
@@ -39,7 +39,7 @@ uv run sis crypto-perp-real-market-no-cash-sample \
   --out data/crypto_perp/real_market_no_cash/latest
 ```
 
-`--source-root` を使う場合は、その source root 内の `data/ticker_rows` / `data/ticker_manifest.json` を ticker/funding coverage 候補としても使います。`--source-root` と `--input-csv` を両方省略した場合は `data/strategy_idea_candidates/btc-perp/bitget_public_source/source_root` を使います。
+`--source-root` を使う場合は、その source root 内の `data/ticker_rows` / `data/ticker_manifest.json` を ticker coverage 候補として、`data/funding_rows` / `data/funding_manifest.json` を funding coverage 候補として使います。`--source-root` と `--input-csv` を両方省略した場合は `data/strategy_idea_candidates/btc-perp/bitget_public_source/source_root` を使います。
 
 作成後は fixture default と混ざらないよう、専用 `--data-dir` を渡します。
 
@@ -65,15 +65,17 @@ The command selects eligible windows before evaluating the future outcome. It do
 
 ## Expected Gaps
 
-Current public candle-only runs can build 30+ matured event/outcome pairs and make PBO / rolling stability estimable. Ticker and funding coverage are marked available only when a local public ticker row exists at or before each event `information_cutoff_at` and within `--ticker-max-staleness-seconds`. Funding is not promoted from ticker unless the selected ticker row contains a real `funding_rate` value.
+Current public candle-only runs can build 30+ matured event/outcome pairs and make PBO / rolling stability estimable. Ticker coverage is marked available only when a local public ticker row has `ts_received_ms <= information_cutoff_at`, is within `--ticker-max-staleness-seconds`, and includes valid `bid_px` / `ask_px`. A current ticker snapshot is not treated as if it existed before older event cutoffs. Historical price, mark, or index candles alone are not bid/ask ticker coverage.
 
-If the source row is after the event cutoff or too stale, ticker/funding remain blockers instead of being zero-filled.
+Funding coverage is evaluated separately from ticker coverage. It is marked available only when a public historical funding row has `funding_time_ms <= information_cutoff_at`, `available_at_ms <= information_cutoff_at`, and a non-null `funding_rate`. If the source row is after the event cutoff, unavailable, missing bid/ask, or too stale, ticker/funding remain blockers instead of being zero-filled.
 
 Expected known gaps can include:
 
 - `PUBLIC_MARKET_CANDLES_ONLY`
-- `TICKER_SOURCE_MISSING_BEFORE_CUTOFF`
-- `FUNDING_SOURCE_MISSING`
+- `HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE`
+- `HISTORICAL_TICKER_BID_ASK_NOT_AVAILABLE`
+- `FUNDING_SOURCE_MISSING_BEFORE_CUTOFF`
+- `HISTORICAL_FUNDING_SOURCE_NOT_AVAILABLE`
 - `BOOKS_SOURCE_MISSING`
 - `TRADES_SOURCE_MISSING`
 - `REPLAY_SOURCE_MISSING`

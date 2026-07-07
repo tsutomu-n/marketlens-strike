@@ -92,6 +92,27 @@ def _tickers_payload() -> dict[str, Any]:
     }
 
 
+def _funding_history_payload() -> dict[str, Any]:
+    return {
+        "code": "00000",
+        "msg": "success",
+        "data": {
+            "resultList": [
+                {
+                    "symbol": "BTCUSDT",
+                    "fundingRate": "0.0002",
+                    "fundingRateTimestamp": "1781712000000",
+                },
+                {
+                    "symbol": "BTCUSDT",
+                    "fundingRate": "0.0001",
+                    "fundingRateTimestamp": "1781683200000",
+                },
+            ]
+        },
+    }
+
+
 def _source_transport(
     *,
     now: datetime,
@@ -106,6 +127,8 @@ def _source_transport(
             return httpx.Response(200, json=_contracts_payload())
         if path == "/api/v2/mix/market/tickers":
             return httpx.Response(200, json=_tickers_payload())
+        if path == "/api/v3/market/history-fund-rate":
+            return httpx.Response(200, json=_funding_history_payload())
         if path == "/api/v2/mix/market/history-candles":
             history_requests.append(request)
             query = parse_qs(request.url.query.decode("ascii"))
@@ -172,6 +195,7 @@ def test_refresh_generates_prep_watchdeck_compatible_source_root(tmp_path: Path)
     assert manifest["exchange_write_used"] is False
     assert "bitget.mix.market.history_candles" in manifest["source_endpoint_ids"]
     assert manifest["row_counts"]["ticker_rows"] == 1
+    assert manifest["row_counts"]["funding_rows"] == 2
     assert manifest["row_counts"]["candles_5m"] == 8
     assert manifest["source_root"] == result.source_root.as_posix()
     assert "ORDERBOOK_DEPTH_NOT_FETCHED" in manifest["known_gaps"]
@@ -210,6 +234,30 @@ def test_refresh_generates_prep_watchdeck_compatible_source_root(tmp_path: Path)
     assert ticker["mark_px"] == 100.45
     assert ticker["index_px"] == 100.2
     assert ticker["funding_rate"] == 0.0002
+
+    funding_manifest_path = result.source_root / "data/funding_manifest.json"
+    funding_manifest = json.loads(funding_manifest_path.read_text(encoding="utf-8"))
+    assert funding_manifest["schema_version"] == "crypto_perp_funding_manifest.v1"
+    assert funding_manifest["exchange"] == "bitget"
+    assert funding_manifest["coverage_class"] == "historical_public_funding"
+    assert funding_manifest["supports_cost_adjusted_estimate"] is True
+    assert funding_manifest["row_count_after_dedupe"] == 2
+    assert funding_manifest["exchange_write_used"] is False
+    assert funding_manifest["live_order_submitted"] is False
+
+    funding_parquet = next(
+        (result.source_root / "data/funding_rows").glob(
+            "exchange=bitget/symbol=BTCUSDT/date=*/funding_rows.parquet"
+        )
+    )
+    funding_rows = pl.read_parquet(funding_parquet).sort("funding_time_ms")
+    assert funding_rows.height == 2
+    funding = funding_rows.row(-1, named=True)
+    assert funding["source_channel"] == "rest_funding_history"
+    assert funding["coverage_class"] == "historical_public_funding"
+    assert funding["funding_time_ms"] == 1781712000000
+    assert funding["available_at_ms"] == 1781712000000
+    assert funding["funding_rate"] == 0.0002
 
 
 def test_refresh_paginates_history_candles_beyond_single_request_limit(tmp_path: Path) -> None:
