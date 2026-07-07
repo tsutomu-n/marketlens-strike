@@ -157,6 +157,10 @@ def _evidence_grade_summary(
         known_limits.append("CRITICAL_SIGNAL_SOURCE_MISSING")
     if simulated_trade_count == 0:
         known_limits.append("NO_SIMULATED_TRADE_ROWS")
+    for artifact in per_event:
+        for gap in artifact.source_availability.known_gaps:
+            if gap.endswith("_NOT_REAL_MARKET_EVIDENCE"):
+                known_limits.append(gap)
 
     if critical_missing_count or simulated_trade_count == 0:
         overall_grade = "insufficient_source_for_local_simulation"
