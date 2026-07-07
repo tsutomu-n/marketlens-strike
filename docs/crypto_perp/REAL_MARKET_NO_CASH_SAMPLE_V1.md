@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-07_18:06 JST
-更新日: 2026-07-07_20:45 JST
+更新日: 2026-07-08_06:35 JST
 -->
 
 # Crypto Perp Real-Market No-Cash Sample v1
@@ -67,6 +67,8 @@ The command selects eligible windows before evaluating the future outcome. It do
 
 Current public candle-only runs can build 30+ matured event/outcome pairs and make PBO / rolling stability estimable. Ticker coverage is marked available only when a local public ticker row has `ts_received_ms <= information_cutoff_at`, is within `--ticker-max-staleness-seconds`, and includes valid `bid_px` / `ask_px`. A current ticker snapshot is not treated as if it existed before older event cutoffs. Historical price, mark, or index candles alone are not bid/ask ticker coverage.
 
+`strategy-idea-candidates-bitget-source-refresh` records current Bitget REST ticker snapshots, historical market candles, and historical funding rows. It also records `CURRENT_TICKER_SNAPSHOT_ONLY`, `HISTORICAL_BID_ASK_TICKER_NOT_AVAILABLE_FROM_BITGET_PUBLIC_REST`, and `PRICE_MARK_INDEX_CANDLES_NOT_BID_ASK_TICKER_COVERAGE` so downstream review can see that public REST candles are not native historical bid/ask ticker rows. The relevant public docs are current ticker (`/api/v2/mix/market/ticker`), historical market candles (`/api/v2/mix/market/history-candles`), historical mark candles (`/api/v2/mix/market/history-mark-candles`), and historical index candles (`/api/v2/mix/market/history-index-candles`). None of those candle endpoints clear bid/ask ticker coverage by themselves.
+
 Funding coverage is evaluated separately from ticker coverage. It is marked available only when a public historical funding row has `funding_time_ms <= information_cutoff_at`, `available_at_ms <= information_cutoff_at`, and a non-null `funding_rate`. If the source row is after the event cutoff, unavailable, missing bid/ask, or too stale, ticker/funding remain blockers instead of being zero-filled.
 
 Expected known gaps can include:
@@ -74,6 +76,9 @@ Expected known gaps can include:
 - `PUBLIC_MARKET_CANDLES_ONLY`
 - `HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE`
 - `HISTORICAL_TICKER_BID_ASK_NOT_AVAILABLE`
+- `HISTORICAL_BID_ASK_TICKER_NOT_AVAILABLE_FROM_BITGET_PUBLIC_REST`
+- `CURRENT_TICKER_SNAPSHOT_ONLY`
+- `PRICE_MARK_INDEX_CANDLES_NOT_BID_ASK_TICKER_COVERAGE`
 - `FUNDING_SOURCE_MISSING_BEFORE_CUTOFF`
 - `HISTORICAL_FUNDING_SOURCE_NOT_AVAILABLE`
 - `BOOKS_SOURCE_MISSING`

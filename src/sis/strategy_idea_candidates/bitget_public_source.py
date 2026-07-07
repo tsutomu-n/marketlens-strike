@@ -38,6 +38,11 @@ SOURCE_ENDPOINT_IDS = [
     "bitget.mix.market.history_candles",
     "funding_history",
 ]
+CURRENT_TICKER_SNAPSHOT_ONLY_GAP = "CURRENT_TICKER_SNAPSHOT_ONLY"
+HISTORICAL_BID_ASK_TICKER_NOT_AVAILABLE_GAP = (
+    "HISTORICAL_BID_ASK_TICKER_NOT_AVAILABLE_FROM_BITGET_PUBLIC_REST"
+)
+PRICE_CANDLES_NOT_BID_ASK_TICKER_GAP = "PRICE_MARK_INDEX_CANDLES_NOT_BID_ASK_TICKER_COVERAGE"
 
 
 class BitgetPublicSourceRefreshError(ValueError):
@@ -453,6 +458,10 @@ def _dedupe_ticker_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def _ticker_manifest_warnings(rows: list[dict[str, Any]], fields_present: set[str]) -> list[str]:
     warnings: list[str] = []
+    if rows and any(row.get("is_snapshot") is True for row in rows):
+        warnings.append(CURRENT_TICKER_SNAPSHOT_ONLY_GAP)
+    if rows:
+        warnings.append(HISTORICAL_BID_ASK_TICKER_NOT_AVAILABLE_GAP)
     if rows and not {"bid_px", "ask_px"}.issubset(fields_present):
         warnings.append("BID_ASK_MISSING")
     if rows and "funding_rate" not in fields_present:
@@ -787,6 +796,9 @@ def _manifest(
         "MEASURED_SLIPPAGE_NOT_FETCHED",
         "WEBSOCKET_NOT_FETCHED",
         "DEEP_BACKFILL_NOT_FETCHED",
+        CURRENT_TICKER_SNAPSHOT_ONLY_GAP,
+        HISTORICAL_BID_ASK_TICKER_NOT_AVAILABLE_GAP,
+        PRICE_CANDLES_NOT_BID_ASK_TICKER_GAP,
         "PAPER_LIVE_PERMISSION_NOT_GRANTED",
     ]
     contract_symbols = {str(row["symbol"]).upper() for row in contracts}
