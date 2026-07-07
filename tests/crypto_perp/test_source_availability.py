@@ -166,6 +166,8 @@ def _ticker_row(
     ts_received_ms: int,
     ts_exchange_ms: int,
     symbol_canonical: str = "BTCUSDT",
+    bid_px: object = 100.4,
+    ask_px: object = 100.6,
 ) -> dict[str, object]:
     return {
         "exchange": "bitget",
@@ -176,8 +178,8 @@ def _ticker_row(
         "ts_received_ms": ts_received_ms,
         "source_channel": "rest_ticker",
         "last_px": 100.5,
-        "bid_px": 100.4,
-        "ask_px": 100.6,
+        "bid_px": bid_px,
+        "ask_px": ask_px,
         "bid_sz": 1.0,
         "ask_sz": 1.2,
         "mid_px": 100.5,
@@ -339,6 +341,72 @@ def test_ticker_source_rejects_stale_received_row(tmp_path: Path) -> None:
     known_gaps = _known_gaps_by_source([artifact], [])
     assert matrix["events"][0]["sources"]["ticker"]["reason"] == "TICKER_SOURCE_STALE"
     assert "TICKER_SOURCE_STALE" in known_gaps["sources"]["ticker"]["reason_codes"]
+
+
+def test_ticker_source_rejects_row_without_bid_ask(tmp_path: Path) -> None:
+    event = _event()
+    cutoff_ms = _cutoff_ms(event)
+    source_root = _write_ticker_source_root(
+        tmp_path / "source_root",
+        rows=[
+            _ticker_row(
+                ts_received_ms=cutoff_ms - 120_000,
+                ts_exchange_ms=cutoff_ms - 120_000,
+                bid_px=None,
+                ask_px=None,
+            ),
+        ],
+    )
+
+    ticker_status = build_ticker_source_status(
+        event=event,
+        source_root=source_root,
+        max_staleness_seconds=900,
+    )
+    artifact = build_source_availability(
+        event=event,
+        created_at="2026-06-27T10:00:00Z",
+        row_counts={"ticker": ticker_status.row_count},
+        source_refs=ticker_status.source_refs,
+        source_metadata={"ticker": ticker_status.metadata},
+        source_reasons={"ticker": ticker_status.reason},
+    )
+
+    status = _status_by_source(artifact)["ticker"]
+    assert status.available is False
+    assert status.reason == "HISTORICAL_TICKER_BID_ASK_NOT_AVAILABLE"
+    assert status.metadata["ts_received_ms"] == cutoff_ms - 120_000
+    assert status.metadata["bid_px"] is None
+    assert status.metadata["ask_px"] is None
+
+
+def test_ticker_source_skips_bid_ask_missing_row_when_older_valid_row_exists(
+    tmp_path: Path,
+) -> None:
+    event = _event()
+    cutoff_ms = _cutoff_ms(event)
+    source_root = _write_ticker_source_root(
+        tmp_path / "source_root",
+        rows=[
+            _ticker_row(ts_received_ms=cutoff_ms - 300_000, ts_exchange_ms=cutoff_ms - 300_000),
+            _ticker_row(
+                ts_received_ms=cutoff_ms - 120_000,
+                ts_exchange_ms=cutoff_ms - 120_000,
+                bid_px=None,
+                ask_px=None,
+            ),
+        ],
+    )
+
+    ticker_status = build_ticker_source_status(
+        event=event,
+        source_root=source_root,
+        max_staleness_seconds=900,
+    )
+
+    assert ticker_status.row_count == 1
+    assert ticker_status.reason == "available"
+    assert ticker_status.metadata["ts_received_ms"] == cutoff_ms - 300_000
 
 
 def test_ticker_funding_rate_does_not_promote_funding_source(tmp_path: Path) -> None:

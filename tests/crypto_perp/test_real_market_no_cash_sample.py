@@ -34,7 +34,12 @@ def _write_public_candle_csv(path: Path, *, row_count: int = 60) -> Path:
     return path
 
 
-def _write_ticker_source_root(source_root: Path, *, row_count: int = 60) -> Path:
+def _write_ticker_source_root(
+    source_root: Path,
+    *,
+    row_count: int = 60,
+    include_bid_ask: bool = True,
+) -> Path:
     base = datetime(2026, 6, 27, 0, 0, tzinfo=timezone.utc)
     rows = []
     for index in range(row_count):
@@ -50,8 +55,8 @@ def _write_ticker_source_root(source_root: Path, *, row_count: int = 60) -> Path
                 "ts_received_ms": ts_ms,
                 "source_channel": "rest_ticker",
                 "last_px": 60000.0 + index,
-                "bid_px": 59999.5 + index,
-                "ask_px": 60000.5 + index,
+                "bid_px": 59999.5 + index if include_bid_ask else None,
+                "ask_px": 60000.5 + index if include_bid_ask else None,
                 "bid_sz": 1.0,
                 "ask_sz": 1.0,
                 "mid_px": 60000.0 + index,
@@ -352,3 +357,88 @@ def test_real_market_no_cash_sample_connects_ticker_and_funding_when_source_rows
     assert artifact["summary"]["paper_permission_granted"] is False
     assert artifact["summary"]["actual_cash_used"] is False
     assert "DOGFOOD_FIXTURE_NOT_REAL_MARKET_EVIDENCE" not in json.dumps(artifact)
+
+
+def test_real_market_no_cash_sample_keeps_ticker_blocked_without_bid_ask(
+    tmp_path: Path,
+) -> None:
+    input_csv = _write_public_candle_csv(tmp_path / "BTCUSDT_5m_input.csv")
+    source_root = _write_funding_rows(
+        _write_ticker_source_root(tmp_path / "source_root", include_bid_ask=False)
+    )
+    data_dir = tmp_path / "real_market_no_cash"
+
+    sample = runner.invoke(
+        app,
+        [
+            "crypto-perp-real-market-no-cash-sample",
+            "--input-csv",
+            str(input_csv),
+            "--ticker-source-root",
+            str(source_root),
+            "--out",
+            str(data_dir),
+        ],
+    )
+
+    assert sample.exit_code == 0, sample.stdout
+    assert "ticker_available_count=0" in sample.stdout
+    assert "funding_available_count=30" in sample.stdout
+    manifest = json.loads((data_dir / "selection_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["source_coverage"]["ticker_available_count"] == 0
+    assert manifest["source_coverage"]["funding_available_count"] == 30
+    assert "HISTORICAL_TICKER_BID_ASK_NOT_AVAILABLE" in manifest["known_gaps"]
+    assert "HISTORICAL_FUNDING_SOURCE_NOT_AVAILABLE" not in manifest["known_gaps"]
+
+    pack_out = tmp_path / "pack"
+    pack = runner.invoke(
+        app,
+        [
+            "crypto-perp-backtest-candidate-pack",
+            "--data-dir",
+            str(data_dir),
+            "--out",
+            str(pack_out),
+        ],
+    )
+
+    assert pack.exit_code == 0, pack.stdout
+    decision = json.loads((pack_out / "decision.json").read_text(encoding="utf-8"))
+    evidence = decision["evidence_grade_summary"]
+    assert evidence["source_available_counts"]["funding"] == 30
+    assert evidence["source_missing_counts"]["ticker"] == 30
+    assert "HISTORICAL_TICKER_BID_ASK_NOT_AVAILABLE" in evidence["known_limits"]
+    assert "HISTORICAL_FUNDING_SOURCE_NOT_AVAILABLE" not in evidence["known_limits"]
+
+    gate_out = tmp_path / "gate"
+    gate = runner.invoke(
+        app,
+        [
+            "crypto-perp-no-cash-backtest-gate",
+            "--decision",
+            str(pack_out / "decision.json"),
+            "--data-availability",
+            str(pack_out / "data_availability_ledger.json"),
+            "--backtest",
+            str(pack_out / "backtest_result.json"),
+            "--stress",
+            str(pack_out / "stress_result.json"),
+            "--rolling-stability",
+            str(pack_out / "rolling_stability_result.json"),
+            "--out",
+            str(gate_out),
+        ],
+    )
+
+    assert gate.exit_code == 0, gate.stdout
+    artifact = json.loads((gate_out / "no_cash_backtest_gate.json").read_text(encoding="utf-8"))
+    blocker_messages = "\n".join(blocker["message"] for blocker in artifact["blockers"])
+    assert "CRITICAL_SIGNAL_SOURCE_MISSING_TICKER" in {
+        blocker["code"] for blocker in artifact["blockers"]
+    }
+    assert "CRITICAL_SIGNAL_SOURCE_MISSING_FUNDING" not in {
+        blocker["code"] for blocker in artifact["blockers"]
+    }
+    assert "HISTORICAL_TICKER_BID_ASK_NOT_AVAILABLE" in blocker_messages
+    assert artifact["summary"]["paper_permission_granted"] is False
+    assert artifact["summary"]["actual_cash_used"] is False

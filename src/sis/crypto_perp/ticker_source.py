@@ -14,6 +14,7 @@ from sis.crypto_perp.events import CryptoPerpEvent
 TICKER_SOURCE_AVAILABLE = "available"
 TICKER_SOURCE_MISSING_BEFORE_CUTOFF = "TICKER_SOURCE_MISSING_BEFORE_CUTOFF"
 TICKER_SOURCE_STALE = "TICKER_SOURCE_STALE"
+HISTORICAL_TICKER_BID_ASK_NOT_AVAILABLE = "HISTORICAL_TICKER_BID_ASK_NOT_AVAILABLE"
 TICKER_MANIFEST_SCHEMA_VERSION = "crypto_perp_ticker_manifest.v1"
 TICKER_ROWS_SCHEMA_VERSION = "ticker_rows.parquet"
 
@@ -79,22 +80,28 @@ def build_ticker_source_status(
             metadata=manifest_metadata,
         )
 
-    selected = (
-        eligible.sort(["ts_received_ms", "ts_exchange_ms"], descending=[True, True])
-        .head(1)
-        .row(0, named=True)
-    )
+    sorted_eligible = eligible.sort(["ts_received_ms", "ts_exchange_ms"], descending=[True, True])
+    selected = _first_valid_bid_ask_row(sorted_eligible)
+    if selected is None:
+        latest = sorted_eligible.head(1).row(0, named=True)
+        metadata = {
+            **manifest_metadata,
+            **_selected_row_metadata(latest, cutoff_ms=cutoff_ms, manifest_path=manifest_path),
+        }
+        return TickerSourceStatus(
+            row_count=0,
+            reason=HISTORICAL_TICKER_BID_ASK_NOT_AVAILABLE,
+            source_refs=_row_refs(latest, manifest_path),
+            metadata=metadata,
+        )
+
     ts_received_ms = _required_int(selected, "ts_received_ms")
     staleness_ms = cutoff_ms - ts_received_ms
     metadata = {
         **manifest_metadata,
         **_selected_row_metadata(selected, cutoff_ms=cutoff_ms, manifest_path=manifest_path),
     }
-    selected_parquet_path = Path(str(selected["__parquet_path"]))
-    refs = [
-        _local_file_source_ref(selected_parquet_path, TICKER_ROWS_SCHEMA_VERSION),
-        *_manifest_refs(manifest_path),
-    ]
+    refs = _row_refs(selected, manifest_path)
     if staleness_ms > max_staleness_ms:
         return TickerSourceStatus(
             row_count=0,
@@ -108,6 +115,27 @@ def build_ticker_source_status(
         source_refs=refs,
         metadata=metadata,
     )
+
+
+def _first_valid_bid_ask_row(rows: pl.DataFrame) -> dict[str, Any] | None:
+    for row in rows.iter_rows(named=True):
+        if _has_valid_bid_ask(row):
+            return row
+    return None
+
+
+def _has_valid_bid_ask(row: dict[str, Any]) -> bool:
+    bid = _optional_float(row.get("bid_px"))
+    ask = _optional_float(row.get("ask_px"))
+    return bid is not None and ask is not None and bid > 0 and ask > 0 and ask >= bid
+
+
+def _row_refs(row: dict[str, Any], manifest_path: Path) -> list[dict[str, str]]:
+    selected_parquet_path = Path(str(row["__parquet_path"]))
+    return [
+        _local_file_source_ref(selected_parquet_path, TICKER_ROWS_SCHEMA_VERSION),
+        *_manifest_refs(manifest_path),
+    ]
 
 
 def _ticker_parquet_paths(source_root: Path, symbol: str) -> list[Path]:
@@ -225,6 +253,22 @@ def _optional_int(value: object) -> int | None:
         return value
     if isinstance(value, (float, str)):
         return int(value)
+    return None
+
+
+def _optional_float(value: object) -> float | None:
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        raw = value.strip()
+        if not raw:
+            return None
+        try:
+            return float(raw)
+        except ValueError:
+            return None
     return None
 
 
