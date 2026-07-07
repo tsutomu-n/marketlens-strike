@@ -22,6 +22,7 @@ from sis.crypto_perp.events import build_market_window_event
 from sis.crypto_perp.io import write_json_artifact
 from sis.crypto_perp.outcomes import OutcomePriceWindow, build_outcome
 from sis.crypto_perp.source_availability import build_source_availability
+from sis.crypto_perp.ticker_source import build_ticker_source_status
 from sis.crypto_perp.tournament_rows import build_cost_aware_tournament_rows
 
 
@@ -29,6 +30,8 @@ REAL_MARKET_NO_CASH_PRODUCER = "crypto-perp-real-market-no-cash-sample"
 PUBLIC_CANDLES_ONLY_GAP = "PUBLIC_MARKET_CANDLES_ONLY"
 LOCAL_SIMULATION_GAP = "LOCAL_SIMULATION_ONLY"
 NOT_ACTUAL_CASH_GAP = "NOT_ACTUAL_CASH"
+FUNDING_SOURCE_AVAILABLE = "available"
+FUNDING_SOURCE_MISSING_FROM_TICKER = "FUNDING_SOURCE_MISSING_FROM_TICKER"
 
 
 @dataclass(frozen=True)
@@ -36,6 +39,8 @@ class RealMarketNoCashSampleResult:
     event_count: int
     outcome_count: int
     source_availability_count: int
+    ticker_available_count: int
+    funding_available_count: int
     rows_path: Path
     guard_path: Path
     manifest_path: Path
@@ -184,6 +189,62 @@ def _price_window(
     return reference, close, high, low
 
 
+def _decimal_or_none(value: object) -> Decimal | None:
+    if value is None:
+        return None
+    raw = str(value).strip()
+    if not raw:
+        return None
+    return Decimal(raw)
+
+
+def _decimal_json(value: Decimal | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.normalize()
+    if normalized == normalized.to_integral():
+        return format(normalized.quantize(Decimal("1")), "f")
+    return format(normalized, "f")
+
+
+def _spread_bps_from_ticker(metadata: dict[str, Any]) -> str | None:
+    bid = _decimal_or_none(metadata.get("bid_px"))
+    ask = _decimal_or_none(metadata.get("ask_px"))
+    if bid is None or ask is None or bid <= 0 or ask <= 0 or ask < bid:
+        return None
+    mid = (bid + ask) / Decimal("2")
+    return _decimal_json((ask - bid) / mid * Decimal("10000"))
+
+
+def _mark_index_basis_bps_from_ticker(metadata: dict[str, Any]) -> str | None:
+    mark = _decimal_or_none(metadata.get("mark_px"))
+    index = _decimal_or_none(metadata.get("index_px"))
+    if mark is None or index is None or index == 0:
+        return None
+    return _decimal_json((mark - index) / index * Decimal("10000"))
+
+
+def _event_with_ticker_context(event, metadata: dict[str, Any]):
+    updates: dict[str, str] = {}
+    spread_bps = _spread_bps_from_ticker(metadata)
+    mark_index_basis_bps = _mark_index_basis_bps_from_ticker(metadata)
+    funding_rate = _decimal_json(_decimal_or_none(metadata.get("funding_rate")))
+    open_interest = _decimal_json(_decimal_or_none(metadata.get("open_interest")))
+    if spread_bps is not None:
+        updates["spread_bps"] = spread_bps
+    if mark_index_basis_bps is not None:
+        updates["mark_index_basis_bps"] = mark_index_basis_bps
+    if funding_rate is not None:
+        updates["funding_rate"] = funding_rate
+    if open_interest is not None:
+        updates["open_interest_raw"] = open_interest
+    if not updates:
+        return event
+    return event.model_copy(
+        update={"features_at_detection": event.features_at_detection.model_copy(update=updates)}
+    )
+
+
 def write_real_market_no_cash_sample(
     *,
     out_dir: Path,
@@ -191,6 +252,8 @@ def write_real_market_no_cash_sample(
     symbol: str = "BTCUSDT",
     source_root: Path | None = None,
     input_csv: Path | None = None,
+    ticker_source_root: Path | None = None,
+    ticker_max_staleness_seconds: int = 900,
     target_event_count: int = 30,
     lookback_minutes: int = 60,
     horizon_minutes: int = 60,
@@ -203,6 +266,8 @@ def write_real_market_no_cash_sample(
         raise ValueError("source_root or input_csv is required")
     if source_root is not None and input_csv is not None:
         raise ValueError("provide only one of source_root or input_csv")
+    if ticker_max_staleness_seconds < 0:
+        raise ValueError("ticker_max_staleness_seconds must be non-negative")
     if target_event_count < 1:
         raise ValueError("target_event_count must be positive")
     if interval_minutes < 1:
@@ -219,6 +284,7 @@ def write_real_market_no_cash_sample(
         if source_root is not None
         else _input_csv_rows(input_csv or Path(), symbol)
     )
+    effective_ticker_source_root = ticker_source_root or source_root
     materialized_csv = out_dir / "input" / f"{symbol.upper()}_{interval_minutes}m_public_market.csv"
     _write_input_csv(materialized_csv, rows)
 
@@ -271,37 +337,81 @@ def write_real_market_no_cash_sample(
             source_refs=source_refs,
             producer_command=REAL_MARKET_NO_CASH_PRODUCER,
         )
+        ticker_status = None
+        if effective_ticker_source_root is not None:
+            ticker_status = build_ticker_source_status(
+                event=event,
+                source_root=effective_ticker_source_root,
+                max_staleness_seconds=ticker_max_staleness_seconds,
+            )
+            if ticker_status.row_count > 0:
+                event = _event_with_ticker_context(event, ticker_status.metadata)
         event_path = out_dir / "events" / f"event_{sample_index:03d}.json"
         outcome_path = out_dir / "outcomes" / f"outcome_{sample_index:03d}.json"
         write_json_artifact(event_path, _json_payload(event))
         write_json_artifact(outcome_path, _json_payload(outcome))
-        events.append((event_path, event))
+        events.append((event_path, event, ticker_status))
         outcomes.append((outcome_path, outcome))
 
     source_paths: list[str] = []
-    for index, (event_path, event) in enumerate(events):
+    missing_ticker_reasons: set[str] = set()
+    missing_funding_reasons: set[str] = set()
+    ticker_available_count = 0
+    funding_available_count = 0
+    for index, (event_path, event, ticker_status) in enumerate(events):
+        row_counts = {"bars": indices[index] + 1, "outcome": 1}
+        source_refs_for_availability = [
+            _artifact_ref(event_path, schema_version="crypto_perp_event.v1"),
+            _artifact_ref(outcomes[index][0], schema_version="crypto_perp_outcome.v1"),
+        ]
+        source_metadata: dict[str, dict[str, Any]] = {}
+        source_reasons = {
+            "books": "BOOKS_SOURCE_MISSING",
+            "trades": "TRADES_SOURCE_MISSING",
+            "replay": "REPLAY_SOURCE_MISSING",
+        }
+        if ticker_status is not None:
+            row_counts["ticker"] = ticker_status.row_count
+            source_refs_for_availability.extend(ticker_status.source_refs)
+            source_metadata["ticker"] = ticker_status.metadata
+            source_reasons["ticker"] = ticker_status.reason
+            if ticker_status.row_count > 0:
+                ticker_available_count += 1
+                if ticker_status.metadata.get("funding_rate") is not None:
+                    row_counts["funding"] = 1
+                    source_metadata["funding"] = dict(ticker_status.metadata)
+                    source_reasons["funding"] = FUNDING_SOURCE_AVAILABLE
+                    funding_available_count += 1
+                else:
+                    row_counts["funding"] = 0
+                    source_reasons["funding"] = FUNDING_SOURCE_MISSING_FROM_TICKER
+                    missing_funding_reasons.add(FUNDING_SOURCE_MISSING_FROM_TICKER)
+            else:
+                missing_ticker_reasons.add(ticker_status.reason)
+                row_counts["funding"] = 0
+                funding_reason = (
+                    "FUNDING_SOURCE_MISSING_BEFORE_CUTOFF"
+                    if ticker_status.reason == "TICKER_SOURCE_MISSING_BEFORE_CUTOFF"
+                    else f"FUNDING_SOURCE_{ticker_status.reason.removeprefix('TICKER_SOURCE_')}"
+                )
+                source_reasons["funding"] = funding_reason
+                missing_funding_reasons.add(funding_reason)
+        else:
+            row_counts["ticker"] = 0
+            row_counts["funding"] = 0
+            source_reasons["ticker"] = "TICKER_SOURCE_MISSING_BEFORE_CUTOFF"
+            source_reasons["funding"] = "FUNDING_SOURCE_MISSING"
+            missing_ticker_reasons.add("TICKER_SOURCE_MISSING_BEFORE_CUTOFF")
+            missing_funding_reasons.add("FUNDING_SOURCE_MISSING")
         source = build_source_availability(
             event=event,
             created_at=created,
-            available_sources={
-                "bars": True,
-                "ticker": False,
-                "funding": False,
-                "outcome": True,
-            },
-            row_counts={"bars": indices[index] + 1, "outcome": 1},
-            source_reasons={
-                "ticker": "TICKER_SOURCE_MISSING_BEFORE_CUTOFF",
-                "funding": "FUNDING_SOURCE_MISSING",
-                "books": "BOOKS_SOURCE_MISSING",
-                "trades": "TRADES_SOURCE_MISSING",
-                "replay": "REPLAY_SOURCE_MISSING",
-            },
+            available_sources={"bars": True, "outcome": True},
+            row_counts=row_counts,
+            source_reasons=source_reasons,
+            source_metadata=source_metadata,
             known_gaps=[PUBLIC_CANDLES_ONLY_GAP, LOCAL_SIMULATION_GAP, NOT_ACTUAL_CASH_GAP],
-            source_refs=[
-                _artifact_ref(event_path, schema_version="crypto_perp_event.v1"),
-                _artifact_ref(outcomes[index][0], schema_version="crypto_perp_outcome.v1"),
-            ],
+            source_refs=source_refs_for_availability,
             producer_command=REAL_MARKET_NO_CASH_PRODUCER,
         )
         source_path = out_dir / "source_availability" / f"source_{index:03d}.json"
@@ -347,16 +457,28 @@ def write_real_market_no_cash_sample(
         "outcome_count": len(pairs),
         "source_availability_count": len(source_paths),
         "selection_policy": "time_evenly_spaced_before_outcome; no outcome-favorable filtering",
-        "known_gaps": [
-            PUBLIC_CANDLES_ONLY_GAP,
-            "TICKER_SOURCE_MISSING_BEFORE_CUTOFF",
-            "FUNDING_SOURCE_MISSING",
-            "BOOKS_SOURCE_MISSING",
-            "TRADES_SOURCE_MISSING",
-            "REPLAY_SOURCE_MISSING",
-            LOCAL_SIMULATION_GAP,
-            NOT_ACTUAL_CASH_GAP,
-        ],
+        "source_coverage": {
+            "ticker_available_count": ticker_available_count,
+            "funding_available_count": funding_available_count,
+            "ticker_source_root": effective_ticker_source_root.as_posix()
+            if effective_ticker_source_root is not None
+            else None,
+            "ticker_max_staleness_seconds": ticker_max_staleness_seconds,
+        },
+        "known_gaps": list(
+            dict.fromkeys(
+                [
+                    PUBLIC_CANDLES_ONLY_GAP,
+                    *sorted(missing_ticker_reasons),
+                    *sorted(missing_funding_reasons),
+                    "BOOKS_SOURCE_MISSING",
+                    "TRADES_SOURCE_MISSING",
+                    "REPLAY_SOURCE_MISSING",
+                    LOCAL_SIMULATION_GAP,
+                    NOT_ACTUAL_CASH_GAP,
+                ]
+            )
+        ),
         "non_goal_flags": {
             "paper_permission_granted": False,
             "actual_cash_used": False,
@@ -381,6 +503,8 @@ def write_real_market_no_cash_sample(
         event_count=len(pairs),
         outcome_count=len(pairs),
         source_availability_count=len(source_paths),
+        ticker_available_count=ticker_available_count,
+        funding_available_count=funding_available_count,
         rows_path=rows_path,
         guard_path=guard_path,
         manifest_path=manifest_path,

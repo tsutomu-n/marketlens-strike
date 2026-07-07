@@ -154,6 +154,13 @@ def _selected_row_metadata(
         "source_channel": _optional_str(row.get("source_channel")),
         "coverage_class": _optional_str(row.get("coverage_class")),
         "selected_parquet_path": selected_parquet_path,
+        "last_px": _optional_str(row.get("last_px")),
+        "bid_px": _optional_str(row.get("bid_px")),
+        "ask_px": _optional_str(row.get("ask_px")),
+        "mark_px": _optional_str(row.get("mark_px")),
+        "index_px": _optional_str(row.get("index_px")),
+        "funding_rate": _optional_str(row.get("funding_rate")),
+        "open_interest": _optional_str(row.get("open_interest")),
     }
     if manifest_path.exists():
         metadata["manifest_path"] = manifest_path.as_posix()
