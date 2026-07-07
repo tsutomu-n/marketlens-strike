@@ -240,6 +240,14 @@ def test_critical_missing_source_collects_more_data() -> None:
 
     assert gate.gate_decision == "NO_CASH_BACKTEST_COLLECT_MORE_DATA"
     assert "CRITICAL_SIGNAL_SOURCE_MISSING" in gate.reason_codes
+    assert "CRITICAL_SIGNAL_SOURCE_MISSING_BARS" in gate.reason_codes
+    bar_blocker = next(
+        blocker
+        for blocker in gate.blockers
+        if blocker.code == "CRITICAL_SIGNAL_SOURCE_MISSING_BARS"
+    )
+    assert bar_blocker.source_type == "bars"
+    assert bar_blocker.metric == "critical_missing_count"
 
 
 def test_future_signal_source_collects_more_data() -> None:

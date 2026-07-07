@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-06_20:34 JST
+更新日: 2026-07-07_18:06 JST
 -->
 
 # Final Summary
@@ -23,6 +23,7 @@
 | Crypto Perp cost model default unification | [../configs/cost_models/crypto_perp_bitget_usdt_futures.yaml](../configs/cost_models/crypto_perp_bitget_usdt_futures.yaml), [crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md) | normal project assumption wired for targeted local simulation surfaces |
 | Crypto Perp no-cash backtest gate | [crypto_perp/NO_CASH_BACKTEST_GATE_V1.md](crypto_perp/NO_CASH_BACKTEST_GATE_V1.md) | local gate before human review for Paper Observation; no paper permission granted |
 | Crypto Perp no-cash backtest sample dogfood | [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md) | fixture-only sample generator for gate prerequisites; not real-market evidence |
+| Crypto Perp real-market no-cash sample | [crypto_perp/REAL_MARKET_NO_CASH_SAMPLE_V1.md](crypto_perp/REAL_MARKET_NO_CASH_SAMPLE_V1.md) | public candle source event/outcome generator for no-cash gate; not paper permission |
 | No-cash goal progress split | [NO_CASH_GOAL_PROGRESS_2026-07-05.md](NO_CASH_GOAL_PROGRESS_2026-07-05.md) | implementation/routing, evidence quality, and overall no-cash progress split |
 | Residual docs risk split | [APP_CURRENT_STATE_OVERVIEW_2026-07-05.md](APP_CURRENT_STATE_OVERVIEW_2026-07-05.md), [APP_TERMS_GLOSSARY_2026-07-05.md](APP_TERMS_GLOSSARY_2026-07-05.md), [CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md](CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md) | current replacements remain active |
 
@@ -38,6 +39,7 @@ Use these instead of old final-summary addenda:
 - crypto perp cost model reference: [../configs/cost_models/crypto_perp_bitget_usdt_futures.yaml](../configs/cost_models/crypto_perp_bitget_usdt_futures.yaml)
 - no-cash backtest gate: [crypto_perp/NO_CASH_BACKTEST_GATE_V1.md](crypto_perp/NO_CASH_BACKTEST_GATE_V1.md)
 - no-cash backtest sample CLI: `uv run sis crypto-perp-no-cash-backtest-sample`
+- real-market no-cash sample CLI: `uv run sis crypto-perp-real-market-no-cash-sample`
 - CLI catalog: [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md)
 - archive ledger: [archive/README.md](archive/README.md)
 
@@ -76,4 +78,4 @@ Do not treat old command counts, test pass counts, branch names, or artifact sna
 
 The latest Crypto Perp cost-model work changes local simulation defaults for targeted estimate surfaces: normal project assumption is `fee_rate=0.0004`, `funding_rate=0.0001`, and `slippage_bps=2`; zero-cost tournament rows are rejected.
 
-The no-cash backtest gate adds a local artifact before human review for Paper Observation. It does not grant paper order permission. The no-cash sample command only writes fixture-only local dogfood artifacts and must not be treated as real-market evidence. These surfaces do not change dependencies, secrets, external services, wallet/signing paths, exchange writes, or live order submission. They do not claim profit proof, actual cash readiness, tiny-live readiness, or live readiness.
+The no-cash backtest gate adds a local artifact before human review for Paper Observation. It does not grant paper order permission. The no-cash sample command only writes fixture-only local dogfood artifacts and must not be treated as real-market evidence. The real-market no-cash sample command uses public candle source data but still does not grant paper permission, prove profit, or use actual cash. These surfaces do not change dependencies, secrets, external services, wallet/signing paths, exchange writes, or live order submission. They do not claim profit proof, actual cash readiness, tiny-live readiness, or live readiness.
