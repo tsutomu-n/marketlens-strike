@@ -73,6 +73,7 @@ def refresh_bitget_public_source(
     limit: int = BITGET_HISTORY_CANDLES_LIMIT,
     network: bool = False,
     replace_existing: bool = False,
+    append_existing: bool = False,
     base_url: str = BITGET_PUBLIC_BASE_URL,
     transport: httpx.AsyncBaseTransport | None = None,
     now: datetime | None = None,
@@ -94,6 +95,7 @@ def refresh_bitget_public_source(
         source_root=source_root,
         manifest_path=manifest_path,
         replace_existing=replace_existing,
+        append_existing=append_existing,
     )
     return asyncio.run(
         _refresh_async(
@@ -106,6 +108,7 @@ def refresh_bitget_public_source(
             base_url=base_url,
             transport=transport,
             now=timestamp,
+            append_existing=append_existing,
         )
     )
 
@@ -121,6 +124,7 @@ async def _refresh_async(
     base_url: str,
     transport: httpx.AsyncBaseTransport | None,
     now: datetime,
+    append_existing: bool,
 ) -> BitgetPublicSourceRefreshResult:
     client = BitgetPublicClient(BitgetPublicClientConfig(base_url=base_url, transport=transport))
     api = BitgetPublicAPI(client, category=product_type)
@@ -155,6 +159,7 @@ async def _refresh_async(
         tickers=tickers,
         candles_by_symbol=candles_by_symbol,
         funding_by_symbol=funding_by_symbol,
+        append_existing=append_existing,
     )
     manifest = _manifest(
         source_root=source_root,
@@ -247,6 +252,7 @@ def _write_source_root(
     tickers: list[dict[str, Any]],
     candles_by_symbol: dict[str, list[dict[str, Any]]],
     funding_by_symbol: dict[str, list[dict[str, Any]]],
+    append_existing: bool = False,
 ) -> dict[str, int]:
     data_dir = source_root / "data"
     snapshot_dir = source_root / "var/snapshots"
@@ -263,14 +269,18 @@ def _write_source_root(
         candle_rows=candle_rows,
         scanner_rows=scanner_rows,
     )
-    _write_candles_parquet(data_dir / "candles_5m", candle_rows)
+    candle_rows = _write_candles_parquet(
+        data_dir / "candles_5m", candle_rows, append_existing=append_existing
+    )
     ticker_rows = _ticker_rows(
         run_id=run_id,
         generated_at_ms=generated_at_ms,
         product_type=product_type,
         tickers=tickers,
     )
-    _write_ticker_rows_parquet(data_dir / "ticker_rows", ticker_rows)
+    ticker_rows = _write_ticker_rows_parquet(
+        data_dir / "ticker_rows", ticker_rows, append_existing=append_existing
+    )
     _write_ticker_manifest(
         data_dir / "ticker_manifest.json",
         run_id=run_id,
@@ -283,7 +293,9 @@ def _write_source_root(
         product_type=product_type,
         funding_by_symbol=funding_by_symbol,
     )
-    _write_funding_rows_parquet(data_dir / "funding_rows", funding_rows)
+    funding_rows = _write_funding_rows_parquet(
+        data_dir / "funding_rows", funding_rows, append_existing=append_existing
+    )
     _write_funding_manifest(
         data_dir / "funding_manifest.json",
         run_id=run_id,
@@ -355,10 +367,18 @@ def _ticker_rows(
     return rows
 
 
-def _write_ticker_rows_parquet(base_dir: Path, ticker_rows: list[dict[str, Any]]) -> None:
-    if not ticker_rows:
-        return
-    frame = pl.DataFrame(ticker_rows).with_columns(
+def _write_ticker_rows_parquet(
+    base_dir: Path, ticker_rows: list[dict[str, Any]], *, append_existing: bool = False
+) -> list[dict[str, Any]]:
+    rows = [
+        *_existing_parquet_rows(base_dir.glob("exchange=*/symbol=*/date=*/ticker_rows.parquet"))
+    ]
+    if not append_existing:
+        rows = []
+    rows = _dedupe_ticker_rows([*rows, *ticker_rows])
+    if not rows:
+        return []
+    frame = pl.DataFrame(rows).with_columns(
         pl.from_epoch("ts_exchange_ms", time_unit="ms").dt.strftime("%Y-%m-%d").alias("date")
     )
     for keys, group in frame.partition_by(
@@ -369,6 +389,7 @@ def _write_ticker_rows_parquet(base_dir: Path, ticker_rows: list[dict[str, Any]]
         out_dir = base_dir / f"exchange={exchange}" / f"symbol={symbol}" / f"date={date}"
         out_dir.mkdir(parents=True, exist_ok=True)
         group.drop("date").write_parquet(out_dir / "ticker_rows.parquet")
+    return rows
 
 
 def _write_ticker_manifest(
@@ -449,11 +470,22 @@ def _dedupe_ticker_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
         key = (
             str(row["exchange"]),
             str(row["symbol_canonical"]),
-            int(row["ts_exchange_ms"]),
+            _int_or_default(
+                row.get("ts_received_ms"), _int_or_default(row.get("ts_exchange_ms"), 0)
+            ),
             str(row["source_channel"]),
         )
         deduped[key] = row
-    return list(deduped.values())
+    return sorted(
+        deduped.values(),
+        key=lambda row: (
+            str(row["exchange"]),
+            str(row["symbol_canonical"]),
+            _int_or_default(row.get("ts_received_ms"), 0),
+            _int_or_default(row.get("ts_exchange_ms"), 0),
+            str(row["source_channel"]),
+        ),
+    )
 
 
 def _ticker_manifest_warnings(rows: list[dict[str, Any]], fields_present: set[str]) -> list[str]:
@@ -504,10 +536,18 @@ def _funding_rows(
     return _dedupe_funding_rows(rows)
 
 
-def _write_funding_rows_parquet(base_dir: Path, funding_rows: list[dict[str, Any]]) -> None:
-    if not funding_rows:
-        return
-    frame = pl.DataFrame(funding_rows).with_columns(
+def _write_funding_rows_parquet(
+    base_dir: Path, funding_rows: list[dict[str, Any]], *, append_existing: bool = False
+) -> list[dict[str, Any]]:
+    rows = [
+        *_existing_parquet_rows(base_dir.glob("exchange=*/symbol=*/date=*/funding_rows.parquet"))
+    ]
+    if not append_existing:
+        rows = []
+    rows = _dedupe_funding_rows([*rows, *funding_rows])
+    if not rows:
+        return []
+    frame = pl.DataFrame(rows).with_columns(
         pl.from_epoch("funding_time_ms", time_unit="ms").dt.strftime("%Y-%m-%d").alias("date")
     )
     for keys, group in frame.partition_by(
@@ -518,6 +558,7 @@ def _write_funding_rows_parquet(base_dir: Path, funding_rows: list[dict[str, Any
         out_dir = base_dir / f"exchange={exchange}" / f"symbol={symbol}" / f"date={date}"
         out_dir.mkdir(parents=True, exist_ok=True)
         group.drop("date").write_parquet(out_dir / "funding_rows.parquet")
+    return rows
 
 
 def _write_funding_manifest(
@@ -720,10 +761,16 @@ def _write_scanner_duckdb(
         con.close()
 
 
-def _write_candles_parquet(base_dir: Path, candle_rows: list[dict[str, Any]]) -> None:
-    if not candle_rows:
-        return
-    frame = pl.DataFrame(candle_rows).with_columns(
+def _write_candles_parquet(
+    base_dir: Path, candle_rows: list[dict[str, Any]], *, append_existing: bool = False
+) -> list[dict[str, Any]]:
+    rows = [*_existing_parquet_rows(base_dir.glob("date=*/candles.parquet"))]
+    if not append_existing:
+        rows = []
+    rows = _dedupe_candle_rows([*rows, *candle_rows])
+    if not rows:
+        return []
+    frame = pl.DataFrame(rows).with_columns(
         pl.from_epoch("ts", time_unit="ms").dt.strftime("%Y-%m-%d").alias("date")
     )
     for date, group in frame.partition_by("date", as_dict=True).items():
@@ -731,6 +778,7 @@ def _write_candles_parquet(base_dir: Path, candle_rows: list[dict[str, Any]]) ->
         out_dir = base_dir / f"date={date_value}"
         out_dir.mkdir(parents=True, exist_ok=True)
         group.drop("date").write_parquet(out_dir / "candles.parquet")
+    return rows
 
 
 def _write_latest_snapshot(
@@ -904,14 +952,38 @@ def _candle_output_row(row: dict[str, str]) -> dict[str, Any]:
     }
 
 
+def _existing_parquet_rows(paths) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for path in sorted(paths):
+        rows.extend(pl.read_parquet(path).to_dicts())
+    return rows
+
+
+def _dedupe_candle_rows(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    deduped: dict[tuple[str, int], dict[str, Any]] = {}
+    for row in rows:
+        key = (str(row["symbol"]).upper(), int(row["ts"]))
+        deduped[key] = {**row, "symbol": str(row["symbol"]).upper()}
+    return sorted(deduped.values(), key=lambda row: (str(row["symbol"]), int(row["ts"])))
+
+
 def _prepare_output(
     *,
     out_dir: Path,
     source_root: Path,
     manifest_path: Path,
     replace_existing: bool,
+    append_existing: bool,
 ) -> None:
-    if not replace_existing and (manifest_path.exists() or source_root.exists()):
+    if replace_existing and append_existing:
+        raise BitgetPublicSourceRefreshError(
+            "--append-existing and --replace-existing are mutually exclusive"
+        )
+    if (
+        not replace_existing
+        and not append_existing
+        and (manifest_path.exists() or source_root.exists())
+    ):
         raise BitgetPublicSourceOutputExistsError(f"output already exists: {out_dir}")
     if replace_existing and manifest_path.exists():
         manifest_path.unlink()

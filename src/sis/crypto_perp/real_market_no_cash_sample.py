@@ -38,6 +38,7 @@ PUBLIC_CANDLES_ONLY_GAP = "PUBLIC_MARKET_CANDLES_ONLY"
 LOCAL_SIMULATION_GAP = "LOCAL_SIMULATION_ONLY"
 NOT_ACTUAL_CASH_GAP = "NOT_ACTUAL_CASH"
 HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE = "HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE"
+TICKER_COVERED_EVENT_COUNT_BELOW_TARGET = "TICKER_COVERED_EVENT_COUNT_BELOW_TARGET"
 
 
 @dataclass(frozen=True)
@@ -160,9 +161,7 @@ def _write_input_csv(path: Path, rows: list[dict[str, str]]) -> None:
         writer.writerows(rows)
 
 
-def _selected_indices(
-    row_count: int, target_event_count: int, lookback_bars: int, horizon_bars: int
-) -> list[int]:
+def _eligible_indices(row_count: int, lookback_bars: int, horizon_bars: int) -> list[int]:
     first = lookback_bars
     last = row_count - horizon_bars - 1
     if last < first:
@@ -170,7 +169,10 @@ def _selected_indices(
             "not enough rows for lookback and horizon: "
             f"row_count={row_count} lookback_bars={lookback_bars} horizon_bars={horizon_bars}"
         )
-    eligible = list(range(first, last + 1))
+    return list(range(first, last + 1))
+
+
+def _evenly_spaced_indices(eligible: list[int], target_event_count: int) -> list[int]:
     if len(eligible) < target_event_count:
         raise ValueError(
             "not enough eligible event windows: "
@@ -182,6 +184,14 @@ def _selected_indices(
         eligible[round(i * (len(eligible) - 1) / (target_event_count - 1))]
         for i in range(target_event_count)
     ]
+
+
+def _selected_indices(
+    row_count: int, target_event_count: int, lookback_bars: int, horizon_bars: int
+) -> list[int]:
+    return _evenly_spaced_indices(
+        _eligible_indices(row_count, lookback_bars, horizon_bars), target_event_count
+    )
 
 
 def _price_window(
@@ -270,6 +280,53 @@ def _real_market_ticker_reason(reason: str) -> str:
     return reason
 
 
+def _candidate_event(
+    materialized_csv: Path,
+    symbol: str,
+    cutoff: datetime,
+    lookback_minutes: int,
+    source_refs: list[dict[str, str]],
+):
+    return build_market_window_event(
+        input_csv=materialized_csv,
+        symbol=symbol,
+        information_cutoff_at=cutoff,
+        lookback_minutes=lookback_minutes,
+        source_refs=source_refs,
+        producer_command=REAL_MARKET_NO_CASH_PRODUCER,
+    )
+
+
+def _ticker_covered_indices(
+    *,
+    rows: list[dict[str, str]],
+    candidate_indices: list[int],
+    materialized_csv: Path,
+    symbol: str,
+    source_refs: list[dict[str, str]],
+    ticker_source_root: Path | None,
+    ticker_max_staleness_seconds: int,
+    lookback_minutes: int,
+) -> tuple[list[int], set[str]]:
+    if ticker_source_root is None:
+        return [], {HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE}
+    covered: list[int] = []
+    missing_reasons: set[str] = set()
+    for row_index in candidate_indices:
+        cutoff = ensure_utc_aware("information_cutoff_at", rows[row_index]["available_at"])
+        event = _candidate_event(materialized_csv, symbol, cutoff, lookback_minutes, source_refs)
+        status = build_ticker_source_status(
+            event=event,
+            source_root=ticker_source_root,
+            max_staleness_seconds=ticker_max_staleness_seconds,
+        )
+        if status.row_count > 0:
+            covered.append(row_index)
+        else:
+            missing_reasons.add(_real_market_ticker_reason(status.reason))
+    return covered, missing_reasons
+
+
 def write_real_market_no_cash_sample(
     *,
     out_dir: Path,
@@ -279,6 +336,7 @@ def write_real_market_no_cash_sample(
     input_csv: Path | None = None,
     ticker_source_root: Path | None = None,
     ticker_max_staleness_seconds: int = 900,
+    require_ticker_coverage: bool = False,
     target_event_count: int = 30,
     lookback_minutes: int = 60,
     horizon_minutes: int = 60,
@@ -315,7 +373,6 @@ def write_real_market_no_cash_sample(
 
     lookback_bars = max(1, lookback_minutes // interval_minutes)
     horizon_bars = max(1, horizon_minutes // interval_minutes)
-    indices = _selected_indices(len(rows), target_event_count, lookback_bars, horizon_bars)
     source_refs = [
         _artifact_ref(
             materialized_csv, schema_version="bitget_public_candles_5m.input_projection.v1"
@@ -329,6 +386,31 @@ def write_real_market_no_cash_sample(
                     manifest, schema_version="strategy_idea_candidates_bitget_public_source.v1"
                 )
             )
+    candidate_indices = _eligible_indices(len(rows), lookback_bars, horizon_bars)
+    ticker_covered_candidate_count: int | None = None
+    ticker_coverage_missing_reasons: set[str] = set()
+    if require_ticker_coverage:
+        covered_indices, ticker_coverage_missing_reasons = _ticker_covered_indices(
+            rows=rows,
+            candidate_indices=candidate_indices,
+            materialized_csv=materialized_csv,
+            symbol=symbol,
+            source_refs=source_refs,
+            ticker_source_root=effective_ticker_source_root,
+            ticker_max_staleness_seconds=ticker_max_staleness_seconds,
+            lookback_minutes=lookback_minutes,
+        )
+        ticker_covered_candidate_count = len(covered_indices)
+        if ticker_covered_candidate_count < target_event_count:
+            reasons = ",".join(sorted(ticker_coverage_missing_reasons)) or "UNKNOWN"
+            raise ValueError(
+                f"{TICKER_COVERED_EVENT_COUNT_BELOW_TARGET}: "
+                f"covered={ticker_covered_candidate_count} target={target_event_count} "
+                f"missing_reasons={reasons}"
+            )
+        indices = _evenly_spaced_indices(covered_indices, target_event_count)
+    else:
+        indices = _evenly_spaced_indices(candidate_indices, target_event_count)
 
     events = []
     outcomes = []
@@ -483,10 +565,15 @@ def write_real_market_no_cash_sample(
         "event_count": len(pairs),
         "outcome_count": len(pairs),
         "source_availability_count": len(source_paths),
-        "selection_policy": "time_evenly_spaced_before_outcome; no outcome-favorable filtering",
+        "selection_policy": (
+            "time_evenly_spaced_before_outcome; no outcome-favorable filtering; "
+            f"require_ticker_coverage={str(require_ticker_coverage).lower()}"
+        ),
         "source_coverage": {
             "ticker_available_count": ticker_available_count,
             "funding_available_count": funding_available_count,
+            "require_ticker_coverage": require_ticker_coverage,
+            "ticker_covered_candidate_count": ticker_covered_candidate_count,
             "ticker_source_root": effective_ticker_source_root.as_posix()
             if effective_ticker_source_root is not None
             else None,

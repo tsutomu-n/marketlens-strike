@@ -39,11 +39,13 @@ def _write_ticker_source_root(
     *,
     row_count: int = 60,
     include_bid_ask: bool = True,
+    start_index: int = 0,
 ) -> Path:
     base = datetime(2026, 6, 27, 0, 0, tzinfo=timezone.utc)
     rows = []
     for index in range(row_count):
-        ts = base + timedelta(minutes=5 * index)
+        absolute_index = start_index + index
+        ts = base + timedelta(minutes=5 * absolute_index)
         ts_ms = int(ts.timestamp() * 1000)
         rows.append(
             {
@@ -54,17 +56,17 @@ def _write_ticker_source_root(
                 "ts_exchange_ms": ts_ms,
                 "ts_received_ms": ts_ms,
                 "source_channel": "rest_ticker",
-                "last_px": 60000.0 + index,
-                "bid_px": 59999.5 + index if include_bid_ask else None,
-                "ask_px": 60000.5 + index if include_bid_ask else None,
+                "last_px": 60000.0 + absolute_index,
+                "bid_px": 59999.5 + absolute_index if include_bid_ask else None,
+                "ask_px": 60000.5 + absolute_index if include_bid_ask else None,
                 "bid_sz": 1.0,
                 "ask_sz": 1.0,
-                "mid_px": 60000.0 + index,
-                "mark_px": 60000.2 + index,
-                "index_px": 60000.0 + index,
+                "mid_px": 60000.0 + absolute_index,
+                "mark_px": 60000.2 + absolute_index,
+                "index_px": 60000.0 + absolute_index,
                 "funding_rate": 0.0002,
                 "next_funding_time_ms": ts_ms + 28_800_000,
-                "open_interest": 10_000.0 + index,
+                "open_interest": 10_000.0 + absolute_index,
                 "volume_24h_base": 500.0,
                 "volume_24h_quote": 30_000_000.0,
                 "coverage_class": "native",
@@ -96,7 +98,8 @@ def _write_ticker_source_root(
                 "window": {
                     "start_ms": int(base.timestamp() * 1000),
                     "end_ms": int(
-                        (base + timedelta(minutes=5 * (row_count - 1))).timestamp() * 1000
+                        (base + timedelta(minutes=5 * (start_index + row_count - 1))).timestamp()
+                        * 1000
                     ),
                 },
                 "row_count_total": len(rows),
@@ -214,7 +217,8 @@ def test_real_market_no_cash_sample_uses_public_candles_without_fixture_marker(
     assert manifest["non_goal_flags"]["fixture_only"] is False
     assert "DOGFOOD_FIXTURE_NOT_REAL_MARKET_EVIDENCE" not in json.dumps(manifest)
     assert manifest["selection_policy"] == (
-        "time_evenly_spaced_before_outcome; no outcome-favorable filtering"
+        "time_evenly_spaced_before_outcome; no outcome-favorable filtering; "
+        "require_ticker_coverage=false"
     )
 
     pack_out = tmp_path / "pack"
@@ -357,6 +361,91 @@ def test_real_market_no_cash_sample_connects_ticker_and_funding_when_source_rows
     assert artifact["summary"]["paper_permission_granted"] is False
     assert artifact["summary"]["actual_cash_used"] is False
     assert "DOGFOOD_FIXTURE_NOT_REAL_MARKET_EVIDENCE" not in json.dumps(artifact)
+
+
+def test_real_market_no_cash_sample_requires_ticker_covered_event_windows(
+    tmp_path: Path,
+) -> None:
+    input_csv = _write_public_candle_csv(tmp_path / "BTCUSDT_5m_input.csv", row_count=90)
+    source_root = _write_funding_rows(
+        _write_ticker_source_root(tmp_path / "source_root", row_count=50, start_index=30),
+        row_count=90,
+    )
+    data_dir = tmp_path / "real_market_no_cash"
+
+    sample = runner.invoke(
+        app,
+        [
+            "crypto-perp-real-market-no-cash-sample",
+            "--input-csv",
+            str(input_csv),
+            "--ticker-source-root",
+            str(source_root),
+            "--require-ticker-coverage",
+            "--target-event-count",
+            "10",
+            "--out",
+            str(data_dir),
+        ],
+    )
+
+    assert sample.exit_code == 0, sample.stdout
+    assert "require_ticker_coverage=true" in sample.stdout
+    assert "ticker_available_count=10" in sample.stdout
+    assert "funding_available_count=10" in sample.stdout
+    manifest = json.loads((data_dir / "selection_manifest.json").read_text(encoding="utf-8"))
+    assert manifest["source_coverage"]["require_ticker_coverage"] is True
+    assert manifest["source_coverage"]["ticker_available_count"] == 10
+    assert manifest["source_coverage"]["funding_available_count"] == 10
+    assert manifest["source_coverage"]["ticker_covered_candidate_count"] >= 10
+    assert "HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE" not in manifest["known_gaps"]
+    assert "DOGFOOD_FIXTURE_NOT_REAL_MARKET_EVIDENCE" not in json.dumps(manifest)
+
+    first_source = json.loads(
+        Path(manifest["artifact_paths"]["source_availability"][0]).read_text(encoding="utf-8")
+    )
+    ticker_source = next(
+        source for source in first_source["source_statuses"] if source["source_id"] == "ticker"
+    )
+    assert ticker_source["available"] is True
+    assert ticker_source["metadata"]["ts_received_ms"] >= int(
+        datetime(2026, 6, 27, 2, 30, tzinfo=timezone.utc).timestamp() * 1000
+    )
+    assert manifest["non_goal_flags"]["paper_permission_granted"] is False
+    assert manifest["non_goal_flags"]["actual_cash_used"] is False
+    assert manifest["non_goal_flags"]["exchange_write_used"] is False
+    assert manifest["non_goal_flags"]["live_order_submitted"] is False
+
+
+def test_real_market_no_cash_sample_fails_when_ticker_covered_windows_below_target(
+    tmp_path: Path,
+) -> None:
+    input_csv = _write_public_candle_csv(tmp_path / "BTCUSDT_5m_input.csv", row_count=90)
+    source_root = _write_funding_rows(
+        _write_ticker_source_root(tmp_path / "source_root", row_count=2, start_index=60),
+        row_count=90,
+    )
+
+    sample = runner.invoke(
+        app,
+        [
+            "crypto-perp-real-market-no-cash-sample",
+            "--input-csv",
+            str(input_csv),
+            "--ticker-source-root",
+            str(source_root),
+            "--require-ticker-coverage",
+            "--target-event-count",
+            "30",
+            "--out",
+            str(tmp_path / "real_market_no_cash"),
+        ],
+    )
+
+    assert sample.exit_code == 2, sample.stdout
+    assert "status=fail" in sample.stdout
+    assert "TICKER_COVERED_EVENT_COUNT_BELOW_TARGET" in sample.stdout
+    assert "HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE" in sample.stdout
 
 
 def test_real_market_no_cash_sample_keeps_ticker_blocked_without_bid_ask(

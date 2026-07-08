@@ -48,6 +48,11 @@ def register_crypto_perp_real_market_no_cash_sample_commands(app: typer.Typer) -
             min=0,
             help="Maximum allowed ticker staleness at event cutoff.",
         ),
+        require_ticker_coverage: bool = typer.Option(
+            False,
+            "--require-ticker-coverage/--no-require-ticker-coverage",
+            help="Select only event windows with timestamp-safe ticker bid/ask coverage.",
+        ),
         target_event_count: int = typer.Option(30, "--target-event-count", min=1),
         lookback_minutes: int = typer.Option(60, "--lookback-minutes", min=1),
         horizon_minutes: int = typer.Option(60, "--horizon-minutes", min=1),
@@ -73,6 +78,7 @@ def register_crypto_perp_real_market_no_cash_sample_commands(app: typer.Typer) -
                 input_csv=input_csv,
                 ticker_source_root=ticker_source_root,
                 ticker_max_staleness_seconds=ticker_max_staleness_seconds,
+                require_ticker_coverage=require_ticker_coverage,
                 target_event_count=target_event_count,
                 lookback_minutes=lookback_minutes,
                 horizon_minutes=horizon_minutes,
@@ -104,6 +110,7 @@ def register_crypto_perp_real_market_no_cash_sample_commands(app: typer.Typer) -
         typer.echo(f"source_availability_count={result.source_availability_count}")
         typer.echo(f"ticker_available_count={result.ticker_available_count}")
         typer.echo(f"funding_available_count={result.funding_available_count}")
+        typer.echo(f"require_ticker_coverage={str(require_ticker_coverage).lower()}")
         typer.echo(f"input_csv_path={result.input_csv_path.as_posix()}")
         typer.echo(f"rows_path={result.rows_path.as_posix()}")
         typer.echo(f"guard_path={result.guard_path.as_posix()}")

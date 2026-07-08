@@ -270,6 +270,142 @@ def test_refresh_generates_prep_watchdeck_compatible_source_root(tmp_path: Path)
     assert funding["funding_rate"] == 0.0002
 
 
+def test_refresh_append_existing_preserves_forward_ticker_history(tmp_path: Path) -> None:
+    first_now = datetime(2026, 6, 17, 12, 3, tzinfo=timezone.utc)
+    second_now = datetime(2026, 6, 17, 12, 8, tzinfo=timezone.utc)
+    out_dir = tmp_path / "bitget_source"
+
+    refresh_bitget_public_source(
+        symbols=["BTCUSDT"],
+        product_type="USDT-FUTURES",
+        granularity="5m",
+        limit=8,
+        out_dir=out_dir,
+        network=True,
+        transport=_source_transport(now=first_now, history_requests=[]),
+        now=first_now,
+    )
+    result = refresh_bitget_public_source(
+        symbols=["BTCUSDT"],
+        product_type="USDT-FUTURES",
+        granularity="5m",
+        limit=8,
+        out_dir=out_dir,
+        network=True,
+        append_existing=True,
+        transport=_source_transport(now=second_now, history_requests=[]),
+        now=second_now,
+    )
+
+    ticker_parquet = next(
+        (result.source_root / "data/ticker_rows").glob(
+            "exchange=bitget/symbol=BTCUSDT/date=*/ticker_rows.parquet"
+        )
+    )
+    ticker_rows = pl.read_parquet(ticker_parquet).sort("ts_received_ms")
+    assert ticker_rows.height == 2
+    assert ticker_rows["ts_received_ms"].to_list() == [_utc_ms(first_now), _utc_ms(second_now)]
+    assert ticker_rows["bid_px"].to_list() == [100.4, 100.4]
+    assert result.manifest["row_counts"]["ticker_rows"] == 2
+
+    ticker_manifest = json.loads(
+        (result.source_root / "data/ticker_manifest.json").read_text(encoding="utf-8")
+    )
+    assert ticker_manifest["row_count_after_dedupe"] == 2
+
+
+def test_refresh_append_existing_dedupes_same_received_timestamp(tmp_path: Path) -> None:
+    now = datetime(2026, 6, 17, 12, 3, tzinfo=timezone.utc)
+    out_dir = tmp_path / "bitget_source"
+
+    refresh_bitget_public_source(
+        symbols=["BTCUSDT"],
+        product_type="USDT-FUTURES",
+        granularity="5m",
+        limit=8,
+        out_dir=out_dir,
+        network=True,
+        transport=_source_transport(now=now, history_requests=[]),
+        now=now,
+    )
+    result = refresh_bitget_public_source(
+        symbols=["BTCUSDT"],
+        product_type="USDT-FUTURES",
+        granularity="5m",
+        limit=8,
+        out_dir=out_dir,
+        network=True,
+        append_existing=True,
+        transport=_source_transport(now=now, history_requests=[]),
+        now=now,
+    )
+
+    assert result.manifest["row_counts"]["ticker_rows"] == 1
+    ticker_manifest = json.loads(
+        (result.source_root / "data/ticker_manifest.json").read_text(encoding="utf-8")
+    )
+    assert ticker_manifest["row_count_after_dedupe"] == 1
+
+
+def test_refresh_replace_existing_clears_forward_ticker_history(tmp_path: Path) -> None:
+    first_now = datetime(2026, 6, 17, 12, 3, tzinfo=timezone.utc)
+    second_now = datetime(2026, 6, 17, 12, 8, tzinfo=timezone.utc)
+    out_dir = tmp_path / "bitget_source"
+
+    refresh_bitget_public_source(
+        symbols=["BTCUSDT"],
+        product_type="USDT-FUTURES",
+        granularity="5m",
+        limit=8,
+        out_dir=out_dir,
+        network=True,
+        transport=_source_transport(now=first_now, history_requests=[]),
+        now=first_now,
+    )
+    result = refresh_bitget_public_source(
+        symbols=["BTCUSDT"],
+        product_type="USDT-FUTURES",
+        granularity="5m",
+        limit=8,
+        out_dir=out_dir,
+        network=True,
+        replace_existing=True,
+        transport=_source_transport(now=second_now, history_requests=[]),
+        now=second_now,
+    )
+
+    assert result.manifest["row_counts"]["ticker_rows"] == 1
+    ticker_parquet = next(
+        (result.source_root / "data/ticker_rows").glob(
+            "exchange=bitget/symbol=BTCUSDT/date=*/ticker_rows.parquet"
+        )
+    )
+    ticker_rows = pl.read_parquet(ticker_parquet)
+    assert ticker_rows["ts_received_ms"].to_list() == [_utc_ms(second_now)]
+
+
+def test_refresh_rejects_append_and_replace_together(tmp_path: Path) -> None:
+    now = datetime(2026, 6, 17, 12, 3, tzinfo=timezone.utc)
+
+    try:
+        refresh_bitget_public_source(
+            symbols=["BTCUSDT"],
+            product_type="USDT-FUTURES",
+            granularity="5m",
+            limit=8,
+            out_dir=tmp_path / "bitget_source",
+            network=True,
+            replace_existing=True,
+            append_existing=True,
+            transport=_source_transport(now=now, history_requests=[]),
+            now=now,
+        )
+    except ValueError as exc:
+        assert "mutually exclusive" in str(exc)
+    else:
+        raise AssertionError("expected append/replace rejection")
+
+
 def test_refresh_paginates_history_candles_beyond_single_request_limit(tmp_path: Path) -> None:
     now = datetime(2026, 6, 17, 12, 3, tzinfo=timezone.utc)
     history_requests: list[httpx.Request] = []

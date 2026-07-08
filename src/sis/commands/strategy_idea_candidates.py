@@ -565,6 +565,11 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
             "--replace-existing/--no-replace-existing",
             help="Replace existing source refresh artifacts.",
         ),
+        append_existing: bool = typer.Option(
+            False,
+            "--append-existing/--no-append-existing",
+            help="Append to existing source_root parquet history instead of replacing it.",
+        ),
     ) -> None:
         settings = get_settings()
         try:
@@ -576,6 +581,7 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
                 out_dir=_resolve_workspace_path(out, settings.data_dir),
                 network=network,
                 replace_existing=replace_existing,
+                append_existing=append_existing,
             )
         except BitgetPublicSourceNetworkOptInError as exc:
             typer.echo("network_attempted=false")
@@ -601,7 +607,10 @@ def register_strategy_idea_candidate_commands(app: typer.Typer) -> None:
         typer.echo(f"manifest_path={result.manifest_path.as_posix()}")
         typer.echo(f"contracts={row_counts['contracts']}")
         typer.echo(f"tickers_snapshot={row_counts['tickers_snapshot']}")
+        typer.echo(f"ticker_rows={row_counts['ticker_rows']}")
+        typer.echo(f"funding_rows={row_counts['funding_rows']}")
         typer.echo(f"candles_5m={row_counts['candles_5m']}")
+        typer.echo(f"append_existing={str(append_existing).lower()}")
         typer.echo(f"known_gap_count={len(result.manifest['known_gaps'])}")
 
 
