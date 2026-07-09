@@ -27,6 +27,9 @@ from sis.commands.crypto_perp_profit_readiness import (
 from sis.commands.crypto_perp_real_market_no_cash_sample import (
     register_crypto_perp_real_market_no_cash_sample_commands,
 )
+from sis.commands.crypto_perp_real_market_ticker_coverage_status import (
+    register_crypto_perp_real_market_ticker_coverage_status_commands,
+)
 from sis.commands.crypto_perp_records import register_crypto_perp_record_commands
 from sis.commands.crypto_perp_risk_taker_review import (
     register_crypto_perp_risk_taker_review_commands,
@@ -62,6 +65,7 @@ def register_crypto_perp_commands(app: typer.Typer) -> None:
     register_crypto_perp_no_cash_backtest_gate_commands(app)
     register_crypto_perp_no_cash_backtest_sample_commands(app)
     register_crypto_perp_real_market_no_cash_sample_commands(app)
+    register_crypto_perp_real_market_ticker_coverage_status_commands(app)
     register_crypto_perp_risk_taker_review_commands(app)
     register_crypto_perp_config_commands(
         app,
