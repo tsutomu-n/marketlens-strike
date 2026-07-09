@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "crypto_perp_no_trade_kill_report.v1"
+    },
+    "artifact_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "const": "sis"
+        },
+        "command": {
+          "const": "crypto-perp-no-trade-kill-report"
+        }
+      },
+      "required": [
+        "tool",
+        "command"
+      ]
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "permits_live_order": {
+          "const": false
+        },
+        "live_conversion_allowed": {
+          "const": false
+        },
+        "wallet_used": {
+          "const": false
+        },
+        "signing_used": {
+          "const": false
+        },
+        "exchange_write_used": {
+          "const": false
+        },
+        "live_order_submitted": {
+          "const": false
+        }
+      },
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ]
+    },
+    "input_artifacts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "event_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "trade_event_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "no_trade_win_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "trade_action_win_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "selected_action_counts": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "integer"
+      }
+    },
+    "cost_adjusted_delta_vs_no_trade": {
+      "type": "string"
+    },
+    "stress_delta_vs_no_trade": {
+      "type": "string"
+    },
+    "fee_drag": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "funding_drag": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "slippage_drag": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "largest_win_concentration": {
+      "type": "string"
+    },
+    "top2_win_concentration": {
+      "type": "string"
+    },
+    "largest_loss_concentration": {
+      "type": "string"
+    },
+    "total_loss_usd": {
+      "type": "string"
+    },
+    "largest_loss_to_total_result_ratio": {
+      "type": "string"
+    },
+    "kill_decision": {
+      "enum": [
+        "KILL_NO_TRADE_LEADER",
+        "KILL_AFTER_COST_NEGATIVE",
+        "KILL_STRESS_NEGATIVE",
+        "KILL_LOSS_CONCENTRATION",
+        "REVISE_SOURCE_OR_SIGNAL",
+        "COLLECT_MORE_DATA",
+        "HOLD_FOR_LEADERBOARD"
+      ]
+    },
+    "reason_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "thresholds": {
+      "type": "object"
+    },
+    "summary": {
+      "type": "object"
+    },
+    "known_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "paper_permission_granted": {
+      "const": false
+    },
+    "permits_paper_order": {
+      "const": false
+    },
+    "permits_live_order": {
+      "const": false
+    },
+    "actual_cash_used": {
+      "const": false
+    },
+    "profit_proven": {
+      "const": false
+    },
+    "wallet_used": {
+      "const": false
+    },
+    "signing_used": {
+      "const": false
+    },
+    "exchange_write_used": {
+      "const": false
+    },
+    "live_order_submitted": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "created_at",
+    "producer",
+    "source_refs",
+    "boundary",
+    "input_artifacts",
+    "event_count",
+    "trade_event_count",
+    "no_trade_win_count",
+    "trade_action_win_count",
+    "selected_action_counts",
+    "cost_adjusted_delta_vs_no_trade",
+    "stress_delta_vs_no_trade",
+    "fee_drag",
+    "funding_drag",
+    "slippage_drag",
+    "largest_win_concentration",
+    "top2_win_concentration",
+    "largest_loss_concentration",
+    "total_loss_usd",
+    "largest_loss_to_total_result_ratio",
+    "kill_decision",
+    "reason_codes",
+    "thresholds",
+    "summary",
+    "known_gaps",
+    "paper_permission_granted",
+    "permits_paper_order",
+    "permits_live_order",
+    "actual_cash_used",
+    "profit_proven",
+    "wallet_used",
+    "signing_used",
+    "exchange_write_used",
+    "live_order_submitted"
+  ]
+}
