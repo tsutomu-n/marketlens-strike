@@ -68,7 +68,15 @@ def register_crypto_perp_real_market_ticker_coverage_status_commands(
         typer.echo(f"coverage_passed={str(result.coverage_passed).lower()}")
         typer.echo(f"ticker_covered_candidate_count={result.ticker_covered_candidate_count}")
         typer.echo(f"target_event_count={result.target_event_count}")
+        typer.echo(f"coverage_shortfall={payload['coverage_shortfall']}")
+        typer.echo(f"diagnosis={payload['diagnosis']}")
         typer.echo(f"valid_bid_ask_row_count={payload['valid_bid_ask_row_count']}")
+        typer.echo(f"matured_ticker_row_count={payload['matured_ticker_row_count']}")
+        typer.echo(
+            f"future_unmatured_ticker_row_count={payload['future_unmatured_ticker_row_count']}"
+        )
+        typer.echo(f"latest_candle_ts_ms={payload['latest_candle_ts_ms']}")
+        typer.echo(f"latest_matured_event_cutoff_ms={payload['latest_matured_event_cutoff_ms']}")
         typer.echo(f"latest_ticker_ts_received_ms={payload['latest_ticker_ts_received_ms']}")
         typer.echo(f"json_path={result.json_path.as_posix()}")
         typer.echo(f"markdown_path={result.markdown_path.as_posix()}")
