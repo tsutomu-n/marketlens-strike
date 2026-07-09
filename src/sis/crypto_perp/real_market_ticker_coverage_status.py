@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal, cast
 
@@ -35,6 +35,14 @@ TickerCoverageDecision = Literal[
     "SOURCE_ROOT_MISSING",
     "NO_CANDLES",
     "NO_TICKER_ROWS",
+]
+
+TickerCoverageDiagnosis = Literal[
+    "COLLECT_MORE_TICKER_ROWS",
+    "WAIT_FOR_HORIZON_MATURITY",
+    "CANDLES_NOT_ADVANCING",
+    "TICKER_ROWS_STALE",
+    "READY_FOR_TICKER_REQUIRED_SAMPLE",
 ]
 
 
@@ -144,12 +152,36 @@ def build_real_market_ticker_coverage_status(
             next_command=_append_refresh_command(root, symbol_upper),
         )
 
-    ticker_inventory = _ticker_inventory(root, symbol_upper, created)
+    latest_candle_ts_ms = _dt_ms(ensure_utc_aware("latest_candle_at", rows[-1]["available_at"]))
+    latest_matured_event_cutoff_ms = _dt_ms(
+        ensure_utc_aware(
+            "latest_matured_event_cutoff_at",
+            rows[candidate_indices[-1]]["available_at"],
+        )
+    )
+    ticker_inventory = _ticker_inventory(
+        root,
+        symbol_upper,
+        created,
+        latest_matured_event_cutoff_ms=latest_matured_event_cutoff_ms,
+    )
     base["candidate_window_count"] = len(candidate_indices)
+    base["latest_candle_ts_ms"] = latest_candle_ts_ms
+    base["latest_matured_event_cutoff_ms"] = latest_matured_event_cutoff_ms
+    base["earliest_ticker_ts_received_ms"] = ticker_inventory["earliest_ticker_ts_received_ms"]
     base["latest_ticker_ts_received_ms"] = ticker_inventory["latest_ticker_ts_received_ms"]
     base["latest_ticker_age_seconds"] = ticker_inventory["latest_ticker_age_seconds"]
     base["valid_bid_ask_row_count"] = ticker_inventory["valid_bid_ask_row_count"]
+    base["matured_ticker_row_count"] = ticker_inventory["matured_ticker_row_count"]
+    base["future_unmatured_ticker_row_count"] = ticker_inventory[
+        "future_unmatured_ticker_row_count"
+    ]
     base["ticker_row_count"] = ticker_inventory["ticker_row_count"]
+    base["next_maturity_hint"] = _next_maturity_hint(
+        latest_ticker_ts_received_ms=ticker_inventory["latest_ticker_ts_received_ms"],
+        latest_candle_ts_ms=latest_candle_ts_ms,
+        horizon_minutes=horizon_minutes,
+    )
 
     if ticker_inventory["ticker_row_count"] == 0:
         base["missing_reason_counts"][HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE] = len(
@@ -188,6 +220,17 @@ def build_real_market_ticker_coverage_status(
 
     base["ticker_covered_candidate_count"] = covered_count
     base["funding_available_candidate_count"] = funding_available_count
+    base["coverage_shortfall"] = max(0, target_event_count - covered_count)
+    base["diagnosis"] = _diagnose_coverage(
+        covered_count=covered_count,
+        target_event_count=target_event_count,
+        valid_bid_ask_row_count=int(base["valid_bid_ask_row_count"]),
+        future_unmatured_ticker_row_count=int(base["future_unmatured_ticker_row_count"]),
+        missing_reason_counts=cast(dict[str, int], base["missing_reason_counts"]),
+        latest_ticker_ts_received_ms=base["latest_ticker_ts_received_ms"],
+        latest_candle_ts_ms=base["latest_candle_ts_ms"],
+        horizon_minutes=horizon_minutes,
+    )
     if covered_count >= target_event_count:
         return _finish_payload(
             base,
@@ -236,6 +279,8 @@ def _base_payload(
         "horizon_minutes": horizon_minutes,
         "interval_minutes": interval_minutes,
         "candidate_window_count": 0,
+        "latest_candle_ts_ms": None,
+        "latest_matured_event_cutoff_ms": None,
         "ticker_covered_candidate_count": 0,
         "funding_available_candidate_count": 0,
         "coverage_passed": False,
@@ -244,9 +289,15 @@ def _base_payload(
             TICKER_SOURCE_STALE: 0,
             HISTORICAL_TICKER_BID_ASK_NOT_AVAILABLE: 0,
         },
+        "earliest_ticker_ts_received_ms": None,
         "latest_ticker_ts_received_ms": None,
         "latest_ticker_age_seconds": None,
         "valid_bid_ask_row_count": 0,
+        "matured_ticker_row_count": 0,
+        "future_unmatured_ticker_row_count": 0,
+        "coverage_shortfall": target_event_count,
+        "next_maturity_hint": None,
+        "diagnosis": "COLLECT_MORE_TICKER_ROWS",
         "ticker_row_count": 0,
         "next_actions": [],
         "boundary_flags": _boundary_flags(),
@@ -262,10 +313,15 @@ def _finish_payload(
     coverage_passed = decision == "READY_FOR_TICKER_REQUIRED_SAMPLE"
     payload["decision"] = decision
     payload["coverage_passed"] = coverage_passed
+    if coverage_passed:
+        payload["diagnosis"] = "READY_FOR_TICKER_REQUIRED_SAMPLE"
+    payload["coverage_shortfall"] = max(
+        0, int(payload["target_event_count"]) - int(payload["ticker_covered_candidate_count"])
+    )
     payload["next_actions"] = [
         {
-            "key": (
-                "run_ticker_required_sample" if coverage_passed else "append_public_ticker_snapshot"
+            "key": _next_action_key(
+                cast(TickerCoverageDiagnosis, payload["diagnosis"]), coverage_passed
             ),
             "command": next_command,
             "network_allowed": not coverage_passed,
@@ -276,7 +332,17 @@ def _finish_payload(
     return payload
 
 
-def _ticker_inventory(source_root: Path, symbol: str, created_at: datetime) -> dict[str, Any]:
+def _dt_ms(value: datetime) -> int:
+    return int(value.timestamp() * 1000)
+
+
+def _ticker_inventory(
+    source_root: Path,
+    symbol: str,
+    created_at: datetime,
+    *,
+    latest_matured_event_cutoff_ms: int | None = None,
+) -> dict[str, Any]:
     paths = sorted(
         (source_root / "data" / "ticker_rows").glob(
             f"exchange=*/symbol={symbol}/date=*/ticker_rows.parquet"
@@ -299,22 +365,37 @@ def _ticker_inventory(source_root: Path, symbol: str, created_at: datetime) -> d
     if rows.is_empty():
         return _empty_ticker_inventory()
     latest_value = rows.select(pl.col("ts_received_ms").max()).item()
-    if latest_value is None:
+    earliest_value = rows.select(pl.col("ts_received_ms").min()).item()
+    if latest_value is None or earliest_value is None:
         return _empty_ticker_inventory()
     latest = int(cast(int, latest_value))
+    earliest = int(cast(int, earliest_value))
     valid_bid_ask_count = 0
+    matured_ticker_row_count = 0
+    future_unmatured_ticker_row_count = 0
     if "bid_px" in rows.columns and "ask_px" in rows.columns:
-        valid_bid_ask_count = rows.filter(
+        valid_rows = rows.filter(
             pl.col("bid_px").is_not_null()
             & pl.col("ask_px").is_not_null()
             & (pl.col("bid_px").cast(pl.Float64) > 0)
             & (pl.col("ask_px").cast(pl.Float64) > 0)
             & (pl.col("ask_px").cast(pl.Float64) >= pl.col("bid_px").cast(pl.Float64))
-        ).height
+        )
+        valid_bid_ask_count = valid_rows.height
+        if latest_matured_event_cutoff_ms is not None:
+            matured_ticker_row_count = valid_rows.filter(
+                pl.col("ts_received_ms") <= latest_matured_event_cutoff_ms
+            ).height
+            future_unmatured_ticker_row_count = valid_rows.filter(
+                pl.col("ts_received_ms") > latest_matured_event_cutoff_ms
+            ).height
     created_ms = int(created_at.timestamp() * 1000)
     return {
         "ticker_row_count": rows.height,
         "valid_bid_ask_row_count": valid_bid_ask_count,
+        "matured_ticker_row_count": matured_ticker_row_count,
+        "future_unmatured_ticker_row_count": future_unmatured_ticker_row_count,
+        "earliest_ticker_ts_received_ms": earliest,
         "latest_ticker_ts_received_ms": latest,
         "latest_ticker_age_seconds": (created_ms - latest) / 1000,
     }
@@ -324,9 +405,80 @@ def _empty_ticker_inventory() -> dict[str, Any]:
     return {
         "ticker_row_count": 0,
         "valid_bid_ask_row_count": 0,
+        "matured_ticker_row_count": 0,
+        "future_unmatured_ticker_row_count": 0,
+        "earliest_ticker_ts_received_ms": None,
         "latest_ticker_ts_received_ms": None,
         "latest_ticker_age_seconds": None,
     }
+
+
+def _next_maturity_hint(
+    *,
+    latest_ticker_ts_received_ms: int | None,
+    latest_candle_ts_ms: int | None,
+    horizon_minutes: int,
+) -> dict[str, Any] | None:
+    if latest_ticker_ts_received_ms is None or latest_candle_ts_ms is None:
+        return None
+    required_candle_ts_ms = latest_ticker_ts_received_ms + int(
+        timedelta(minutes=horizon_minutes).total_seconds() * 1000
+    )
+    remaining_seconds = max(0, (required_candle_ts_ms - latest_candle_ts_ms) // 1000)
+    return {
+        "latest_ticker_ts_received_ms": latest_ticker_ts_received_ms,
+        "required_candle_ts_ms": required_candle_ts_ms,
+        "latest_candle_ts_ms": latest_candle_ts_ms,
+        "remaining_seconds_until_latest_ticker_matures": remaining_seconds,
+    }
+
+
+def _diagnose_coverage(
+    *,
+    covered_count: int,
+    target_event_count: int,
+    valid_bid_ask_row_count: int,
+    future_unmatured_ticker_row_count: int,
+    missing_reason_counts: dict[str, int],
+    latest_ticker_ts_received_ms: object,
+    latest_candle_ts_ms: object,
+    horizon_minutes: int,
+) -> TickerCoverageDiagnosis:
+    if covered_count >= target_event_count:
+        return "READY_FOR_TICKER_REQUIRED_SAMPLE"
+    if valid_bid_ask_row_count < target_event_count:
+        return "COLLECT_MORE_TICKER_ROWS"
+    if (
+        isinstance(latest_ticker_ts_received_ms, int)
+        and isinstance(latest_candle_ts_ms, int)
+        and latest_candle_ts_ms < latest_ticker_ts_received_ms
+    ):
+        return "CANDLES_NOT_ADVANCING"
+    if future_unmatured_ticker_row_count > 0:
+        return "WAIT_FOR_HORIZON_MATURITY"
+    if missing_reason_counts.get(TICKER_SOURCE_STALE, 0) > 0:
+        return "TICKER_ROWS_STALE"
+    if (
+        isinstance(latest_ticker_ts_received_ms, int)
+        and isinstance(latest_candle_ts_ms, int)
+        and latest_candle_ts_ms
+        < latest_ticker_ts_received_ms
+        + int(timedelta(minutes=horizon_minutes).total_seconds() * 1000)
+    ):
+        return "WAIT_FOR_HORIZON_MATURITY"
+    return "COLLECT_MORE_TICKER_ROWS"
+
+
+def _next_action_key(diagnosis: TickerCoverageDiagnosis, coverage_passed: bool) -> str:
+    if coverage_passed:
+        return "run_ticker_required_sample"
+    if diagnosis == "WAIT_FOR_HORIZON_MATURITY":
+        return "wait_for_horizon_then_append_public_ticker_snapshot"
+    if diagnosis == "CANDLES_NOT_ADVANCING":
+        return "refresh_public_candles_and_ticker_snapshot"
+    if diagnosis == "TICKER_ROWS_STALE":
+        return "increase_ticker_snapshot_cadence"
+    return "append_public_ticker_snapshot"
 
 
 def _append_refresh_command(source_root: Path, symbol: str) -> str:
@@ -384,7 +536,17 @@ def _render_markdown(payload: dict[str, Any]) -> str:
 - coverage_passed: `{str(payload["coverage_passed"]).lower()}`
 - ticker_covered_candidate_count: `{payload["ticker_covered_candidate_count"]}`
 - target_event_count: `{payload["target_event_count"]}`
+- coverage_shortfall: `{payload["coverage_shortfall"]}`
+- diagnosis: `{payload["diagnosis"]}`
 - valid_bid_ask_row_count: `{payload["valid_bid_ask_row_count"]}`
+- matured_ticker_row_count: `{payload["matured_ticker_row_count"]}`
+- future_unmatured_ticker_row_count: `{payload["future_unmatured_ticker_row_count"]}`
+
+## Maturity Hint
+
+```json
+{payload["next_maturity_hint"]}
+```
 
 ## Missing Reasons
 

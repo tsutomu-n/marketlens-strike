@@ -101,6 +101,8 @@ def test_ticker_coverage_status_reports_no_ticker_rows(tmp_path: Path) -> None:
     assert status["decision"] == "NO_TICKER_ROWS"
     assert status["coverage_passed"] is False
     assert status["ticker_covered_candidate_count"] == 0
+    assert status["coverage_shortfall"] == 30
+    assert status["diagnosis"] == "COLLECT_MORE_TICKER_ROWS"
     assert status["missing_reason_counts"]["HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE"] > 0
     assert "--append-existing" in status["next_actions"][0]["command"]
 
@@ -117,7 +119,42 @@ def test_ticker_coverage_status_rejects_future_only_rows(tmp_path: Path) -> None
 
     assert status["decision"] == "COLLECT_TICKER_SNAPSHOTS"
     assert status["ticker_covered_candidate_count"] == 0
+    assert status["diagnosis"] == "COLLECT_MORE_TICKER_ROWS"
+    assert status["future_unmatured_ticker_row_count"] == 1
     assert status["missing_reason_counts"]["HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE"] > 0
+
+
+def test_ticker_coverage_status_waits_for_horizon_maturity(tmp_path: Path) -> None:
+    source_root = _write_candles(tmp_path / "source_root")
+    _write_tickers(source_root, indices=[65])
+
+    status = build_real_market_ticker_coverage_status(
+        source_root=source_root,
+        created_at="2026-06-27T06:00:00Z",
+        target_event_count=1,
+    )
+
+    assert status["decision"] == "COLLECT_TICKER_SNAPSHOTS"
+    assert status["diagnosis"] == "WAIT_FOR_HORIZON_MATURITY"
+    assert status["future_unmatured_ticker_row_count"] == 1
+    assert status["next_actions"][0]["key"] == "wait_for_horizon_then_append_public_ticker_snapshot"
+    assert status["next_maturity_hint"]["remaining_seconds_until_latest_ticker_matures"] > 0
+
+
+def test_ticker_coverage_status_reports_candles_not_advancing(tmp_path: Path) -> None:
+    source_root = _write_candles(tmp_path / "source_root", row_count=50)
+    _write_tickers(source_root, indices=[60])
+
+    status = build_real_market_ticker_coverage_status(
+        source_root=source_root,
+        created_at="2026-06-27T06:00:00Z",
+        target_event_count=1,
+    )
+
+    assert status["decision"] == "COLLECT_TICKER_SNAPSHOTS"
+    assert status["diagnosis"] == "CANDLES_NOT_ADVANCING"
+    assert status["latest_candle_ts_ms"] < status["latest_ticker_ts_received_ms"]
+    assert status["next_actions"][0]["key"] == "refresh_public_candles_and_ticker_snapshot"
 
 
 def test_ticker_coverage_status_rejects_stale_rows(tmp_path: Path) -> None:
@@ -133,6 +170,7 @@ def test_ticker_coverage_status_rejects_stale_rows(tmp_path: Path) -> None:
 
     assert status["decision"] == "COLLECT_TICKER_SNAPSHOTS"
     assert status["ticker_covered_candidate_count"] == 0
+    assert status["diagnosis"] == "TICKER_ROWS_STALE"
     assert status["missing_reason_counts"]["TICKER_SOURCE_STALE"] > 0
 
 
@@ -148,6 +186,7 @@ def test_ticker_coverage_status_rejects_rows_without_bid_ask(tmp_path: Path) -> 
 
     assert status["decision"] == "COLLECT_TICKER_SNAPSHOTS"
     assert status["valid_bid_ask_row_count"] == 0
+    assert status["diagnosis"] == "COLLECT_MORE_TICKER_ROWS"
     assert status["missing_reason_counts"]["HISTORICAL_TICKER_BID_ASK_NOT_AVAILABLE"] > 0
 
 
@@ -163,6 +202,8 @@ def test_ticker_coverage_status_ready_when_target_windows_are_covered(tmp_path: 
 
     assert status["decision"] == "READY_FOR_TICKER_REQUIRED_SAMPLE"
     assert status["coverage_passed"] is True
+    assert status["diagnosis"] == "READY_FOR_TICKER_REQUIRED_SAMPLE"
+    assert status["coverage_shortfall"] == 0
     assert status["ticker_covered_candidate_count"] >= 30
     assert "--require-ticker-coverage" in status["next_actions"][0]["command"]
     assert status["boundary_flags"]["paper_permission_granted"] is False
@@ -190,10 +231,15 @@ def test_ticker_coverage_status_cli_writes_artifacts(tmp_path: Path) -> None:
     assert result.exit_code == 0, result.stdout
     assert "decision=READY_FOR_TICKER_REQUIRED_SAMPLE" in result.stdout
     assert "coverage_passed=true" in result.stdout
+    assert "diagnosis=READY_FOR_TICKER_REQUIRED_SAMPLE" in result.stdout
+    assert "coverage_shortfall=0" in result.stdout
     assert "network_attempted=false" in result.stdout
     assert "exchange_write_used=false" in result.stdout
     assert "profit_proven=false" in result.stdout
     payload = json.loads((out / "ticker_coverage_status.json").read_text(encoding="utf-8"))
     assert payload["schema_version"] == "crypto_perp_real_market_ticker_coverage_status.v1"
     assert payload["coverage_passed"] is True
+    assert payload["latest_candle_ts_ms"] is not None
+    assert payload["latest_matured_event_cutoff_ms"] is not None
+    assert payload["matured_ticker_row_count"] >= 30
     assert (out / "ticker_coverage_status.md").exists()

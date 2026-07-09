@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-08_20:10 JST
-更新日: 2026-07-08_20:10 JST
+更新日: 2026-07-09_15:14 JST
 -->
 
 # No-Cash Backtest Goal Implementation Plan 2026-07-08
@@ -37,6 +37,25 @@ real-market public/local source
 - live order
 - profit proof
 - production order readiness
+
+## 完成時の機能面
+
+完成形は実運用 Bot ではなく、real-market no-cash backtest を人間レビューへ渡せる状態にするための機能群です。
+
+必要な機能面:
+
+1. Public market source 取得・蓄積: candle / funding / ticker snapshot を区別し、ticker は `ts_received_ms` と bid/ask 付きで append / dedupe できる。
+2. Timestamp-safe source availability: event ごとの `information_cutoff_at` 以前に利用可能な ticker / funding だけを available とし、0 埋めしない。
+3. Real-market no-cash event/outcome set 生成: fixture ではなく public/local source 起点で 30 件以上の matured event/outcome を作る。
+4. Feature / edge / action evaluation: ticker/funding source が揃う場合だけ trade action 評価へ進み、`NO_TRADE` を同一 event set で比較する。
+5. Cost model / execution assumption: fee / funding / slippage / stress を normal project assumption と混同せず反映する。
+6. Backtest Candidate Pack: real-market ticker-covered sample から decision / source ledger / no-lookahead / backtest / stress / stability artifacts を生成する。
+7. PBO / rolling stability / stress 評価: sample insufficient ではなく、PBO / rolling / stress を machine-readable に評価する。
+8. No-cash Backtest Gate: `NO_CASH_BACKTEST_HOLD` までの4 decisionだけを出し、paper/live/actual cash permission は出さない。
+9. Known gaps / blocker management: books / trades / replay などを 0 埋めせず known gap とし、HOLDしない場合は次 blocker class を1つだけ切り出す。
+10. Human review 引き渡し準備: HOLD後に human review packet 計画へ進めるが、Paper Observation そのものは開始しない。
+
+一文で言えば、timestamp-safe な real-market ticker/funding 付き 30 件以上の event/outcome で、費用・stress・PBO・rolling stability・`NO_TRADE` 比較を通し、no-cash gate が `NO_CASH_BACKTEST_HOLD` を出すが、paper/live/actual cash の許可は一切出さない状態です。
 
 ## 現在地
 
@@ -131,6 +150,12 @@ gh pr merge 33 --squash --delete-branch
 
 ### CP1: ticker snapshot collection を運用可能にする
 
+状態:
+
+- PR #33 / PR #34 後に完了扱い。
+- `--append-existing` による forward ticker snapshot 蓄積と、`crypto-perp-real-market-ticker-coverage-status` による local status 判定は実装済み。
+- issue #29 は open のまま維持する。ticker-covered 30 events と gate 結果が確認できるまで close しない。
+
 目的:
 
 - future event 用の timestamp-safe ticker rows を蓄積する。
@@ -172,10 +197,11 @@ SIS_ALLOW_PUBLIC_NETWORK=1 uv run sis strategy-idea-candidates-bitget-source-ref
   --limit 200 \
   --out data/strategy_idea_candidates/btc-perp/bitget_public_source \
   --append-existing
-uv run sis crypto-perp-real-market-no-cash-sample \
+uv run sis crypto-perp-real-market-ticker-coverage-status \
   --source-root data/strategy_idea_candidates/btc-perp/bitget_public_source/source_root \
-  --require-ticker-coverage \
-  --out data/crypto_perp/real_market_no_cash/ticker_required
+  --target-event-count 30 \
+  --ticker-max-staleness-seconds 900 \
+  --out data/crypto_perp/real_market_no_cash/ticker_coverage_status/latest
 uv run pytest tests/strategy_idea_candidates/test_bitget_public_source.py tests/crypto_perp/test_real_market_no_cash_sample.py -q
 ```
 
@@ -189,19 +215,31 @@ uv run pytest tests/strategy_idea_candidates/test_bitget_public_source.py tests/
 
 - forward collection には時間が必要。
 - 現在の single snapshot だけでは過去 cutoff を満たせない。
+- 1 回の `--append-existing` で 30 covered events に到達する前提を置かない。
+- 5 分足で 30 covered windows を作るには、複数回の ticker snapshot 収集と、default `horizon_minutes=60` の outcome 成熟待ちが必要。
 - 30 covered event 到達まで待つことは正常な stop condition であり、失敗ではない。
 
-実装タスク:
+運用タスク:
 
-1. `--require-ticker-coverage` の selector が outcome 生成前に coverage を確認する。
-2. selected event の `information_cutoff_at` と selected ticker row の `ts_received_ms` / staleness を manifest に残す。
-3. coverage不足時は何件足りないかを出す。
-4. covered events だけを選ぶときも、outcome を見てから有利な event を選ばない。
-5. losing event を落とさない。選択基準は source/timestamp coverage のみ。
+1. baseline として `crypto-perp-real-market-ticker-coverage-status` を実行する。
+2. decision が `COLLECT_TICKER_SNAPSHOTS` なら、5 分間隔を目安に `strategy-idea-candidates-bitget-source-refresh --append-existing` を繰り返す。
+3. 各 append の直後に status を再実行し、`ticker_covered_candidate_count`、`valid_bid_ask_row_count`、`missing_reason_counts` を読む。
+4. decision が `READY_FOR_TICKER_REQUIRED_SAMPLE` になるまで、`crypto-perp-real-market-no-cash-sample --require-ticker-coverage` は実行しない。
+5. 最大目安は 48 回、約 4 時間。途中で ready になれば停止する。
+6. 48 回後も 30 covered events 未満なら、gate へ進まず原因を 1 class に分類する。
+
+原因分類:
+
+- `valid_bid_ask_row_count` が増えない: refresh / merge / source 品質の問題。
+- `TICKER_SOURCE_STALE` が増える: 収集間隔が粗い、または timestamp 整合の問題。
+- `HISTORICAL_TICKER_BID_ASK_NOT_AVAILABLE` が出る: bid/ask 欠落 source 品質の問題。
+- `valid_bid_ask_row_count` は増えるが covered だけ増えない: 60 分 horizon 未成熟、または candidate window 整合の問題。
 
 完了条件:
 
-- `ticker_covered_event_count >= 30`。
+- status artifact が `READY_FOR_TICKER_REQUIRED_SAMPLE`。
+- status artifact が `diagnosis` と maturity fields で CP2 の未達理由を説明できる。
+- `ticker_covered_candidate_count >= 30`。
 - `event_count=30`、`outcome_count=30`。
 - `ticker_available_count=30`。
 - `funding_available_count=30` または precise funding blocker。
@@ -210,11 +248,20 @@ uv run pytest tests/strategy_idea_candidates/test_bitget_public_source.py tests/
 検証:
 
 ```bash
+uv run sis crypto-perp-real-market-ticker-coverage-status \
+  --source-root data/strategy_idea_candidates/btc-perp/bitget_public_source/source_root \
+  --target-event-count 30 \
+  --ticker-max-staleness-seconds 900 \
+  --out data/crypto_perp/real_market_no_cash/ticker_coverage_status/latest
+jq '{decision, coverage_passed, ticker_covered_candidate_count, target_event_count, latest_ticker_age_seconds, valid_bid_ask_row_count, missing_reason_counts}' \
+  data/crypto_perp/real_market_no_cash/ticker_coverage_status/latest/ticker_coverage_status.json
+
+# Only when decision is READY_FOR_TICKER_REQUIRED_SAMPLE.
 uv run sis crypto-perp-real-market-no-cash-sample \
   --source-root data/strategy_idea_candidates/btc-perp/bitget_public_source/source_root \
   --require-ticker-coverage \
   --out data/crypto_perp/real_market_no_cash/ticker_required
-jq '{summary, known_gaps, source_refs}' data/crypto_perp/real_market_no_cash/ticker_required/manifest.json
+jq '{summary, known_gaps, source_refs, source_coverage}' data/crypto_perp/real_market_no_cash/ticker_required/selection_manifest.json
 ```
 
 ### CP3: ticker-covered pack で backtest candidate pack を再生成する
