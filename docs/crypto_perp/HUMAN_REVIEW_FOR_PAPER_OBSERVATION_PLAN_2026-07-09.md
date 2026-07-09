@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-09_19:01 JST
-更新日: 2026-07-09_20:05 JST
+更新日: 2026-07-09_22:02 JST
 -->
 
 # Human Review Plan For Crypto Perp Paper Observation Candidate
@@ -16,6 +16,7 @@
 - no-cash gate: `data/crypto_perp/real_market_no_cash/no_cash_backtest_gate/latest`
 - NO_TRADE kill report: `data/crypto_perp/real_market_no_cash/no_trade_kill_report/latest`
 - candidate leaderboard: `data/crypto_perp/real_market_no_cash/candidate_leaderboard/latest`
+- human review packet: `data/crypto_perp/real_market_no_cash/human_review_packet/latest`
 
 ## Current Evidence
 
@@ -57,9 +58,10 @@
 2. Is the `NO_TRADE` comparison sufficient to justify planning observation, not execution?
 3. Does the NO_TRADE kill report keep the candidate alive after cost, stress, and concentration checks?
 4. Does the candidate leaderboard rank the active candidate as `HOLD_FOR_HUMAN_REVIEW` rather than kill/revise/collect more data?
-5. Are drawdown and loss concentration acceptable for a no-cash candidate?
-6. Are cost assumptions acceptable as no-cash simulation assumptions?
-7. Is any additional source coverage required before planning Paper Observation?
+5. Does the human review packet keep `paper_permission_granted=false`, `permits_paper_order=false`, `actual_cash_used=false`, and `profit_proven=false`?
+6. Are drawdown and loss concentration acceptable for a no-cash candidate?
+7. Are cost assumptions acceptable as no-cash simulation assumptions?
+8. Is any additional source coverage required before planning Paper Observation?
 
 ## Required Outcome
 

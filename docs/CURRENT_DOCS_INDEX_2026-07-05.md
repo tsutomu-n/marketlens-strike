@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-05_11:55 JST
-更新日: 2026-07-09_20:05 JST
+更新日: 2026-07-09_22:02 JST
 -->
 
 # Current Docs Index 2026-07-05
@@ -31,6 +31,7 @@
 | Crypto Perp real-market no-cash sample | [crypto_perp/REAL_MARKET_NO_CASH_SAMPLE_V1.md](crypto_perp/REAL_MARKET_NO_CASH_SAMPLE_V1.md) |
 | Crypto Perp forward ticker coverage status | [crypto_perp/REAL_MARKET_TICKER_COVERAGE_STATUS_V1.md](crypto_perp/REAL_MARKET_TICKER_COVERAGE_STATUS_V1.md) |
 | Crypto Perp human review plan for no-cash HOLD | [crypto_perp/HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLAN_2026-07-09.md](crypto_perp/HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLAN_2026-07-09.md) |
+| Crypto Perp human review packet | [crypto_perp/HUMAN_REVIEW_PACKET_V1.md](crypto_perp/HUMAN_REVIEW_PACKET_V1.md) |
 | Crypto Perp NO_TRADE kill report | [crypto_perp/NO_TRADE_KILL_REPORT_V1.md](crypto_perp/NO_TRADE_KILL_REPORT_V1.md) |
 | Crypto Perp candidate leaderboard | [crypto_perp/CANDIDATE_LEADERBOARD_V1.md](crypto_perp/CANDIDATE_LEADERBOARD_V1.md) |
 | Crypto Perp cost model assumptions | [../configs/cost_models/crypto_perp_bitget_usdt_futures.yaml](../configs/cost_models/crypto_perp_bitget_usdt_futures.yaml) |

@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-09_20:05 JST
+更新日: 2026-07-09_22:02 JST
 -->
 
 # Final Summary
@@ -26,6 +26,7 @@
 | Crypto Perp real-market no-cash sample | [crypto_perp/REAL_MARKET_NO_CASH_SAMPLE_V1.md](crypto_perp/REAL_MARKET_NO_CASH_SAMPLE_V1.md) | public candle source event/outcome generator for no-cash gate; not paper permission |
 | Crypto Perp real-market no-cash HOLD | [crypto_perp/HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLAN_2026-07-09.md](crypto_perp/HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLAN_2026-07-09.md) | ticker/funding-covered real-market no-cash gate reached `NO_CASH_BACKTEST_HOLD`; human review planning only, no paper permission |
 | Crypto Perp no-cash review artifacts | [crypto_perp/NO_TRADE_KILL_REPORT_V1.md](crypto_perp/NO_TRADE_KILL_REPORT_V1.md), [crypto_perp/CANDIDATE_LEADERBOARD_V1.md](crypto_perp/CANDIDATE_LEADERBOARD_V1.md) | NO_TRADE/cost/stress/concentration kill report plus one-candidate leaderboard for human review; no paper permission |
+| Crypto Perp human review packet | [crypto_perp/HUMAN_REVIEW_PACKET_V1.md](crypto_perp/HUMAN_REVIEW_PACKET_V1.md) | bundles no-cash HOLD, kill report, leaderboard, known gaps, and review questions for human review planning; no paper permission |
 | No-cash goal progress split | [NO_CASH_GOAL_PROGRESS_2026-07-05.md](NO_CASH_GOAL_PROGRESS_2026-07-05.md) | implementation/routing, evidence quality, and overall no-cash progress split |
 | Residual docs risk split | [APP_CURRENT_STATE_OVERVIEW_2026-07-05.md](APP_CURRENT_STATE_OVERVIEW_2026-07-05.md), [APP_TERMS_GLOSSARY_2026-07-05.md](APP_TERMS_GLOSSARY_2026-07-05.md), [CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md](CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md) | current replacements remain active |
 
@@ -45,6 +46,7 @@ Use these instead of old final-summary addenda:
 - human review plan for no-cash HOLD: [crypto_perp/HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLAN_2026-07-09.md](crypto_perp/HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLAN_2026-07-09.md)
 - NO_TRADE kill report CLI: `uv run sis crypto-perp-no-trade-kill-report`
 - candidate leaderboard CLI: `uv run sis crypto-perp-candidate-leaderboard`
+- human review packet CLI: `uv run sis crypto-perp-human-review-packet`
 - CLI catalog: [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md)
 - archive ledger: [archive/README.md](archive/README.md)
 
@@ -86,6 +88,7 @@ Current Crypto Perp no-cash HOLD proof for the active real-market run:
 - `data/crypto_perp/real_market_no_cash/no_cash_backtest_gate/latest/no_cash_backtest_gate.json`
 - `data/crypto_perp/real_market_no_cash/no_trade_kill_report/latest/no_trade_kill_report.json`
 - `data/crypto_perp/real_market_no_cash/candidate_leaderboard/latest/candidate_leaderboard.json`
+- `data/crypto_perp/real_market_no_cash/human_review_packet/latest/human_review_packet.json`
 
 Observed current result:
 
