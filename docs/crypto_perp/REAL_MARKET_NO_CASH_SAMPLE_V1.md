@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-07_18:06 JST
-更新日: 2026-07-08_07:20 JST
+更新日: 2026-07-09_10:48 JST
 -->
 
 # Crypto Perp Real-Market No-Cash Sample v1
@@ -78,6 +78,8 @@ The command selects eligible windows before evaluating the future outcome. It do
 Current public candle-only runs can build 30+ matured event/outcome pairs and make PBO / rolling stability estimable. Ticker coverage is marked available only when a local public ticker row has `ts_received_ms <= information_cutoff_at`, is within `--ticker-max-staleness-seconds`, and includes valid `bid_px` / `ask_px`. A current ticker snapshot is not treated as if it existed before older event cutoffs. Historical price, mark, or index candles alone are not bid/ask ticker coverage.
 
 `strategy-idea-candidates-bitget-source-refresh` records current Bitget REST ticker snapshots, historical market candles, and historical funding rows. `--append-existing` preserves existing parquet history and appends newly fetched ticker snapshots so future event cutoffs can become covered after time passes. A single append run normally does not clear old event cutoffs; ticker coverage is only usable when the saved row's `ts_received_ms` is at or before the event cutoff and within staleness bounds.
+
+Use `crypto-perp-real-market-ticker-coverage-status` before `--require-ticker-coverage` to check whether forward-collected ticker rows have reached the requested target event count. If the status decision is `COLLECT_TICKER_SNAPSHOTS`, continue manual public refresh with `--append-existing`; if it is `READY_FOR_TICKER_REQUIRED_SAMPLE`, rerun this command with `--require-ticker-coverage`.
 
 The refresh also records `CURRENT_TICKER_SNAPSHOT_ONLY`, `HISTORICAL_BID_ASK_TICKER_NOT_AVAILABLE_FROM_BITGET_PUBLIC_REST`, and `PRICE_MARK_INDEX_CANDLES_NOT_BID_ASK_TICKER_COVERAGE` so downstream review can see that public REST candles are not native historical bid/ask ticker rows. The relevant public docs are current ticker (`/api/v2/mix/market/ticker`), historical market candles (`/api/v2/mix/market/history-candles`), historical mark candles (`/api/v2/mix/market/history-mark-candles`), and historical index candles (`/api/v2/mix/market/history-index-candles`). None of those candle endpoints clear bid/ask ticker coverage by themselves.
 

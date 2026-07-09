@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-07-07_19:12 JST
-更新日: 2026-07-08_07:20 JST
+更新日: 2026-07-09_10:48 JST
 -->
 
 # Issue 29 Ticker/Funding Source Coverage Plan
 
 ## Checkpoint
 
-CP6: forward-collect public ticker snapshots and select only ticker-covered future no-cash event windows when requested.
+CP7: add a local status artifact that monitors whether forward-collected public ticker snapshots are sufficient for ticker-required no-cash sample selection.
 
 ## Purpose
 
@@ -30,11 +30,11 @@ No credentialed API, wallet/signing, exchange write, paper/live order, actual ca
 
 ## Implementation
 
-Use `build_ticker_source_status` to select the latest valid ticker row with `ts_received_ms <= information_cutoff_at`, valid `bid_px`, and valid `ask_px`. Add `--append-existing` to `strategy-idea-candidates-bitget-source-refresh` so repeated public refreshes preserve ticker row history instead of replacing it. Add `--require-ticker-coverage` to `crypto-perp-real-market-no-cash-sample` so selected event windows can be restricted to timestamp-safe ticker-covered cutoffs. If covered candidate windows are below target, fail with `TICKER_COVERED_EVENT_COUNT_BELOW_TARGET`. Keep funding independent through `build_funding_source_status`. Leave books/trades/replay as known gaps.
+Use `build_ticker_source_status` to keep the existing timestamp-safe ticker rules. `crypto-perp-real-market-ticker-coverage-status` reads local candles and ticker rows, counts ticker-covered candidate windows, and emits either `COLLECT_TICKER_SNAPSHOTS` with an exact `--append-existing` command or `READY_FOR_TICKER_REQUIRED_SAMPLE` with an exact `--require-ticker-coverage` command. Keep funding independent as reference-only status. Leave books/trades/replay as known gaps.
 
 ## Tests
 
-Add deterministic append-mode and local ticker/funding fixtures. Verify append preserves forward ticker snapshots, replace clears history, append+replace is rejected, `--require-ticker-coverage` filters uncovered windows, insufficient covered windows fail precisely, funding stays independent, and fixture markers remain absent. Run focused tests, docs checks, CLI catalog check, `git diff --check`, and `./scripts/check`.
+Add deterministic ticker coverage status fixtures. Verify no ticker rows, future-only rows, stale rows, missing bid/ask rows, insufficient covered windows, ready covered windows, CLI stdout, JSON/Markdown output, boundary flags, docs checks, CLI catalog check, `git diff --check`, and `./scripts/check`.
 
 ## Failure Conditions
 

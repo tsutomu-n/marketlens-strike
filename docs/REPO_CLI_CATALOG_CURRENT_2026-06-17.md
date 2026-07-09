@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-07-07_18:06 JST
+更新日: 2026-07-09_10:48 JST
 -->
 
 # Repo CLI Catalog Current
@@ -148,6 +148,7 @@ uv run python scripts/check_current_docs.py
 - `crypto-perp-no-cash-backtest-gate`
 - `crypto-perp-no-cash-backtest-sample`
 - `crypto-perp-real-market-no-cash-sample`
+- `crypto-perp-real-market-ticker-coverage-status`
 - `crypto-perp-source-availability`
 - `crypto-perp-replay-slice`
 - `crypto-perp-feature-pack`
@@ -168,7 +169,7 @@ uv run python scripts/check_current_docs.py
 - `crypto-perp-truth-cycle-dogfood-pack`
 - `crypto-perp-truth-cycle-status`
 
-M10 の cash ledger、execution replay、calibration と M11 の Workbench bridge は Python/schema artifact surface です。M11 の hypothesis tournament は `crypto-perp-tournament-report` で同一event setのactual cash比較reportを生成できます。profit-readiness 追加層は `crypto-perp-profit-readiness-inventory`、`crypto-perp-profit-readiness-plan`、`crypto-perp-profit-readiness-run-local`、`crypto-perp-backtest-candidate-pack`、`crypto-perp-source-availability`、`crypto-perp-replay-slice`、`crypto-perp-feature-pack`、`crypto-perp-edge-score`、`crypto-perp-tournament-rows-v2`、`crypto-perp-bias-guard`、`crypto-perp-risk-taker-review`、`crypto-perp-cash-ledger`、`crypto-perp-actual-cash-rows-build`、`crypto-perp-actual-cash-report-gate`、`crypto-perp-tiny-live-review-packet`、`crypto-perp-tiny-live-shadow-readiness`、`crypto-perp-tiny-live-shadow` で local artifact を作ります。`crypto-perp-backtest-candidate-pack` は actual cash なしの timestamp-safe simulation evidence pack を作る command で、profit proof や live order permission ではありません。`crypto-perp-no-cash-backtest-gate` はその pack を Paper Observation 手前で読む local gate で、paper order permission は出しません。`crypto-perp-no-cash-backtest-sample` は gate dogfood 用の fixture-only no-cash sample を生成する入口で、real-market evidence、profit proof、paper order permission、actual cash readiness、live readiness は主張しません。`crypto-perp-real-market-no-cash-sample` は public market candle source から no-cash event/outcome set を生成する入口で、fixture-only marker を使わず、ticker / funding / books / trades / replay 欠落を blocker または known gap として残します。pre-actual-cash の4択 decision gate は内部 builder / schema surface です。`crypto-perp-risk-taker-review` は human risk review 用の分類 artifact であり、live order permissionではありません。`crypto-perp-tournament-gate` は report を読んで next action を分けるlocal gateであり、live order permissionではありません。`crypto-perp-truth-cycle-status` は既存artifactから次に欠けているlocal stepとstop reasonを出すだけで、network / order / live permissionではありません。`crypto-perp-truth-cycle-dogfood-pack` は fixture-only の status / Daily Brief / Workbench Viewer pack を生成するlocal確認入口です。
+M10 の cash ledger、execution replay、calibration と M11 の Workbench bridge は Python/schema artifact surface です。M11 の hypothesis tournament は `crypto-perp-tournament-report` で同一event setのactual cash比較reportを生成できます。profit-readiness 追加層は `crypto-perp-profit-readiness-inventory`、`crypto-perp-profit-readiness-plan`、`crypto-perp-profit-readiness-run-local`、`crypto-perp-backtest-candidate-pack`、`crypto-perp-source-availability`、`crypto-perp-replay-slice`、`crypto-perp-feature-pack`、`crypto-perp-edge-score`、`crypto-perp-tournament-rows-v2`、`crypto-perp-bias-guard`、`crypto-perp-risk-taker-review`、`crypto-perp-cash-ledger`、`crypto-perp-actual-cash-rows-build`、`crypto-perp-actual-cash-report-gate`、`crypto-perp-tiny-live-review-packet`、`crypto-perp-tiny-live-shadow-readiness`、`crypto-perp-tiny-live-shadow` で local artifact を作ります。`crypto-perp-backtest-candidate-pack` は actual cash なしの timestamp-safe simulation evidence pack を作る command で、profit proof や live order permission ではありません。`crypto-perp-no-cash-backtest-gate` はその pack を Paper Observation 手前で読む local gate で、paper order permission は出しません。`crypto-perp-no-cash-backtest-sample` は gate dogfood 用の fixture-only no-cash sample を生成する入口で、real-market evidence、profit proof、paper order permission、actual cash readiness、live readiness は主張しません。`crypto-perp-real-market-no-cash-sample` は public market candle source から no-cash event/outcome set を生成する入口で、fixture-only marker を使わず、ticker / funding / books / trades / replay 欠落を blocker または known gap として残します。`crypto-perp-real-market-ticker-coverage-status` は forward-collected ticker rows が ticker-required sample に足りるかを読む local status artifact で、network / order / live permission は出しません。pre-actual-cash の4択 decision gate は内部 builder / schema surface です。`crypto-perp-risk-taker-review` は human risk review 用の分類 artifact であり、live order permissionではありません。`crypto-perp-tournament-gate` は report を読んで next action を分けるlocal gateであり、live order permissionではありません。`crypto-perp-truth-cycle-status` は既存artifactから次に欠けているlocal stepとstop reasonを出すだけで、network / order / live permissionではありません。`crypto-perp-truth-cycle-dogfood-pack` は fixture-only の status / Daily Brief / Workbench Viewer pack を生成するlocal確認入口です。
 
 ### Trade[XYZ] / Quotes / Data Readiness
 
