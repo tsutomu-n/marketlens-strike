@@ -1,0 +1,522 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "crypto_perp_human_review_packet.v1"
+    },
+    "artifact_id": {
+      "type": "string"
+    },
+    "created_at": {
+      "type": "string"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "const": "sis"
+        },
+        "command": {
+          "const": "crypto-perp-human-review-packet"
+        }
+      },
+      "required": [
+        "tool",
+        "command"
+      ]
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "permits_live_order": {
+          "const": false
+        },
+        "live_conversion_allowed": {
+          "const": false
+        },
+        "wallet_used": {
+          "const": false
+        },
+        "signing_used": {
+          "const": false
+        },
+        "exchange_write_used": {
+          "const": false
+        },
+        "live_order_submitted": {
+          "const": false
+        }
+      },
+      "required": [
+        "permits_live_order",
+        "live_conversion_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted"
+      ]
+    },
+    "input_artifacts": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "packet_decision": {
+      "enum": [
+        "READY_FOR_HUMAN_REVIEW_PLANNING",
+        "BLOCKED_BY_BOUNDARY_VIOLATION",
+        "BLOCKED_BY_ARTIFACT_LINEAGE",
+        "BLOCKED_BY_CANDIDATE",
+        "BLOCKED_BY_BIAS_GUARD",
+        "BLOCKED_BY_PBO",
+        "BLOCKED_BY_GATE",
+        "BLOCKED_BY_KILL_REPORT",
+        "BLOCKED_BY_LEADERBOARD"
+      ]
+    },
+    "reason_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "review_inputs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          },
+          "required_for_review": {
+            "const": true
+          }
+        },
+        "required": [
+          "name",
+          "path",
+          "required_for_review"
+        ]
+      }
+    },
+    "current_evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "candidate_decision": {
+          "type": "string"
+        },
+        "artifact_lineage_status": {
+          "type": "string"
+        },
+        "gate_decision": {
+          "type": "string"
+        },
+        "kill_decision": {
+          "type": "string"
+        },
+        "leaderboard_top_next_action": {
+          "type": "string"
+        },
+        "event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "outcome_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ticker_available_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "funding_available_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "critical_missing_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unknown_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "executed_trade_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "pbo_status": {
+          "type": "string"
+        },
+        "pbo_computed": {
+          "type": "boolean"
+        },
+        "bias_guard_status": {
+          "type": "string"
+        },
+        "bias_guard_artifact_id": {
+          "type": "string"
+        },
+        "bias_guard_warning_codes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "profit_robustness": {
+          "type": "object"
+        },
+        "rolling_stability_status": {
+          "type": "string"
+        },
+        "backtest_total_result_usd": {
+          "type": "string"
+        },
+        "stress_total_result_usd": {
+          "type": "string"
+        },
+        "strongest_evidence_level": {
+          "type": "string"
+        },
+        "pbo_evidence_verified": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "candidate_decision",
+        "gate_decision",
+        "kill_decision",
+        "leaderboard_top_next_action",
+        "event_count",
+        "outcome_count",
+        "ticker_available_count",
+        "funding_available_count",
+        "critical_missing_count",
+        "unknown_count",
+        "executed_trade_count",
+        "pbo_status",
+        "rolling_stability_status",
+        "backtest_total_result_usd",
+        "stress_total_result_usd",
+        "strongest_evidence_level"
+      ]
+    },
+    "review_questions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "known_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "required_human_review": {
+      "const": true
+    },
+    "next_action": {
+      "enum": [
+        "HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLANNING",
+        "FIX_REVIEW_PACKET_BLOCKERS"
+      ]
+    },
+    "summary": {
+      "type": "object"
+    },
+    "paper_permission_granted": {
+      "const": false
+    },
+    "permits_paper_order": {
+      "const": false
+    },
+    "permits_live_order": {
+      "const": false
+    },
+    "actual_cash_used": {
+      "const": false
+    },
+    "profit_proven": {
+      "const": false
+    },
+    "wallet_used": {
+      "const": false
+    },
+    "signing_used": {
+      "const": false
+    },
+    "exchange_write_used": {
+      "const": false
+    },
+    "live_order_submitted": {
+      "const": false
+    },
+    "input_contract_version": {
+      "const": "crypto_perp_human_review_packet_inputs.v2"
+    }
+  },
+  "required": [
+    "schema_version",
+    "artifact_id",
+    "created_at",
+    "producer",
+    "source_refs",
+    "boundary",
+    "input_artifacts",
+    "packet_decision",
+    "reason_codes",
+    "review_inputs",
+    "current_evidence",
+    "review_questions",
+    "known_gaps",
+    "required_human_review",
+    "next_action",
+    "summary",
+    "paper_permission_granted",
+    "permits_paper_order",
+    "permits_live_order",
+    "actual_cash_used",
+    "profit_proven",
+    "wallet_used",
+    "signing_used",
+    "exchange_write_used",
+    "live_order_submitted"
+  ],
+  "allOf": [
+    {
+      "if": {
+        "required": [
+          "input_contract_version"
+        ]
+      },
+      "then": {
+        "properties": {
+          "input_artifacts": {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "selection_manifest": {
+                "type": "string"
+              },
+              "decision": {
+                "type": "string"
+              },
+              "tournament_rows": {
+                "type": "string"
+              },
+              "bias_guard": {
+                "type": "string"
+              },
+              "data_availability": {
+                "type": "string"
+              },
+              "signal_rows": {
+                "type": "string"
+              },
+              "backtest": {
+                "type": "string"
+              },
+              "stress": {
+                "type": "string"
+              },
+              "rolling_stability": {
+                "type": "string"
+              },
+              "gate": {
+                "type": "string"
+              },
+              "kill_report": {
+                "type": "string"
+              },
+              "leaderboard": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "selection_manifest",
+              "decision",
+              "tournament_rows",
+              "bias_guard",
+              "data_availability",
+              "signal_rows",
+              "backtest",
+              "stress",
+              "rolling_stability",
+              "gate",
+              "kill_report",
+              "leaderboard"
+            ]
+          },
+          "review_inputs": {
+            "minItems": 12,
+            "maxItems": 12,
+            "prefixItems": [
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "const": "selection_manifest"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "const": "decision"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "const": "tournament_rows"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "const": "bias_guard"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "const": "data_availability"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "const": "signal_rows"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "const": "backtest"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "const": "stress"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "const": "rolling_stability"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "const": "gate"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "const": "kill_report"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "const": "leaderboard"
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            ]
+          },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "review_input_count": {
+                "const": 12
+              }
+            },
+            "required": [
+              "review_input_count"
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

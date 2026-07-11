@@ -155,6 +155,32 @@ def _detector_config_hash(config: EventDetectorConfig) -> str:
     return stable_hash(["crypto-perp-detector-config", config.model_dump(mode="json")])
 
 
+def validate_event_identity(event: CryptoPerpEvent) -> None:
+    """Reject persisted event identities that do not match their immutable key fields."""
+    if event.producer.command == "crypto-perp-no-cash-backtest-sample":
+        artifact_namespace = "no-cash-backtest-dogfood-event-artifact"
+    elif event.event_family == "market_window_v1":
+        artifact_namespace = "crypto-perp-market-window-event-artifact"
+    else:
+        artifact_namespace = "crypto-perp-event-artifact"
+    expected_artifact_id = stable_hash([artifact_namespace, event.event_id])
+    if event.artifact_id != expected_artifact_id:
+        raise ValueError(f"EVENT_ARTIFACT_IDENTITY_MISMATCH: {event.event_id}")
+    if (
+        event.producer.command == "crypto-perp-no-cash-backtest-sample"
+        or event.event_family == "market_window_v1"
+    ):
+        return
+    expected_event_id = _event_id(
+        provider_id=event.provider_id,
+        native_symbol=event.native_symbol,
+        detector_version=event.detector_version,
+        first_detected_at=event.first_detected_at,
+    )
+    if event.event_id != expected_event_id:
+        raise ValueError(f"EVENT_IDENTITY_MISMATCH: {event.event_id}")
+
+
 def _source_refs(source_refs: Sequence[dict[str, Any]] | None) -> list[EventSourceRef]:
     return [EventSourceRef.model_validate(item) for item in source_refs or []]
 

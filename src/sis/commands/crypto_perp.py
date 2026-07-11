@@ -16,6 +16,9 @@ from sis.commands.crypto_perp_candidate_leaderboard import (
     register_crypto_perp_candidate_leaderboard_commands,
 )
 from sis.commands.crypto_perp_config import register_crypto_perp_config_commands
+from sis.commands.crypto_perp_human_review_packet import (
+    register_crypto_perp_human_review_packet_commands,
+)
 from sis.commands.crypto_perp_no_cash_backtest_gate import (
     register_crypto_perp_no_cash_backtest_gate_commands,
 )
@@ -70,6 +73,7 @@ def register_crypto_perp_commands(app: typer.Typer) -> None:
     register_crypto_perp_backtest_candidate_pack_commands(app)
     register_crypto_perp_no_trade_kill_report_commands(app)
     register_crypto_perp_candidate_leaderboard_commands(app)
+    register_crypto_perp_human_review_packet_commands(app)
     register_crypto_perp_no_cash_backtest_gate_commands(app)
     register_crypto_perp_no_cash_backtest_sample_commands(app)
     register_crypto_perp_real_market_no_cash_sample_commands(app)

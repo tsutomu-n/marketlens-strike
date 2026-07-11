@@ -1,0 +1,285 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "crypto_perp_real_market_no_cash_sample.v1"
+    },
+    "created_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "const": "sis"
+        },
+        "command": {
+          "const": "crypto-perp-real-market-no-cash-sample"
+        }
+      },
+      "required": [
+        "tool",
+        "command"
+      ]
+    },
+    "symbol": {
+      "type": "string"
+    },
+    "target_event_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "event_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "outcome_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "selection_policy": {
+      "type": "string"
+    },
+    "source_coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "ticker_available_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "funding_available_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "require_ticker_coverage": {
+          "type": "boolean"
+        },
+        "ticker_covered_candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ticker_source_root": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "funding_source_root": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ticker_max_staleness_seconds": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "ticker_available_count",
+        "funding_available_count",
+        "require_ticker_coverage",
+        "ticker_covered_candidate_count",
+        "ticker_source_root",
+        "funding_source_root",
+        "ticker_max_staleness_seconds"
+      ]
+    },
+    "source_availability_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "event_set": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "outcome_set": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "artifact_paths": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "input_csv": {
+          "type": "string"
+        },
+        "tournament_rows_v2": {
+          "type": "string"
+        },
+        "bias_guard": {
+          "type": "string"
+        },
+        "source_availability": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "input_csv",
+        "tournament_rows_v2",
+        "bias_guard",
+        "source_availability"
+      ]
+    },
+    "known_gaps": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "non_goal_flags": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "paper_permission_granted": {
+          "const": false
+        },
+        "actual_cash_used": {
+          "const": false
+        },
+        "wallet_used": {
+          "const": false
+        },
+        "signing_used": {
+          "const": false
+        },
+        "exchange_write_used": {
+          "const": false
+        },
+        "live_order_submitted": {
+          "const": false
+        },
+        "profit_proven": {
+          "const": false
+        },
+        "real_market_public_source_used": {
+          "const": true
+        },
+        "fixture_only": {
+          "const": false
+        }
+      },
+      "required": [
+        "paper_permission_granted",
+        "actual_cash_used",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used",
+        "live_order_submitted",
+        "profit_proven",
+        "real_market_public_source_used",
+        "fixture_only"
+      ]
+    },
+    "execution_windows": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "outcome_id": {
+            "type": "string"
+          },
+          "information_cutoff_at": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+          },
+          "entry_at": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+          },
+          "settled_at": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+          },
+          "horizon_minutes": {
+            "type": "integer",
+            "minimum": 1
+          }
+        },
+        "required": [
+          "event_id",
+          "outcome_id",
+          "information_cutoff_at",
+          "entry_at",
+          "settled_at",
+          "horizon_minutes"
+        ]
+      }
+    },
+    "execution_window_coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "raw_candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "eligible_candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rejected_candidate_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "rejection_reason_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "entry_policy": {
+          "const": "first_complete_bar_open_exactly_one_interval_after_cutoff"
+        },
+        "full_horizon_contiguous_required": {
+          "const": true
+        }
+      },
+      "required": [
+        "raw_candidate_count",
+        "eligible_candidate_count",
+        "rejected_candidate_count",
+        "rejection_reason_counts",
+        "entry_policy",
+        "full_horizon_contiguous_required"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "created_at",
+    "producer",
+    "symbol",
+    "target_event_count",
+    "event_count",
+    "outcome_count",
+    "selection_policy",
+    "source_coverage",
+    "source_availability_count",
+    "event_set",
+    "outcome_set",
+    "artifact_paths",
+    "known_gaps",
+    "non_goal_flags",
+    "execution_windows",
+    "execution_window_coverage"
+  ]
+}

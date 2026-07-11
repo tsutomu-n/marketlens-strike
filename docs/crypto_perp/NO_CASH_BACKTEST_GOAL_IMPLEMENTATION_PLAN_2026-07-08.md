@@ -1,9 +1,15 @@
 <!--
 作成日: 2026-07-08_20:10 JST
-更新日: 2026-07-09_15:14 JST
+更新日: 2026-07-11_18:35 JST
 -->
 
 # No-Cash Backtest Goal Implementation Plan 2026-07-08
+
+> **Status: SUPERSEDED / HISTORICAL.** 以下の本文は当時の計画と判断根拠を保存するために残しています。現在の運用契約として実行しません。
+>
+> 2026-07-11現在、default `fold_count=0`でguardは`BLOCKED`、PBOは`NOT_ESTIMABLE`です。現chainはcandidate/gate REJECT、kill/leaderboard KILL、strict 12-input packetは`BLOCKED_BY_BIAS_GUARD`です。position overlapも未考慮です。
+>
+> 現行の実行手順は[Crypto Perp Truth-Cycle Runbook](../runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md)、実装hardeningは[Crypto Perp Profit Evidence Hardening Plan](../plans/CRYPTO_PERP_PROFIT_EVIDENCE_HARDENING_2026-07-11.md)を参照してください。
 
 ## 結論
 

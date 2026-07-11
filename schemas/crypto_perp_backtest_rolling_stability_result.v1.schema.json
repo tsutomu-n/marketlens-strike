@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "crypto_perp_backtest_rolling_stability_result.v1"
+    },
+    "status": {
+      "enum": [
+        "complete",
+        "sample_insufficient"
+      ]
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "min_events_for_stability": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "final_cumulative_result_usd": {
+          "type": "string"
+        },
+        "min_cumulative_result_usd": {
+          "type": "string"
+        },
+        "max_cumulative_result_usd": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "event_count",
+        "min_events_for_stability",
+        "final_cumulative_result_usd",
+        "min_cumulative_result_usd",
+        "max_cumulative_result_usd"
+      ]
+    },
+    "points": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "cumulative_result_usd": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "index",
+          "event_id",
+          "cumulative_result_usd"
+        ]
+      }
+    },
+    "paper_only": {
+      "const": true
+    },
+    "permits_live_order": {
+      "const": false
+    },
+    "live_conversion_allowed": {
+      "const": false
+    },
+    "wallet_used": {
+      "const": false
+    },
+    "exchange_write_used": {
+      "const": false
+    },
+    "live_order_submitted": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "status",
+    "summary",
+    "points",
+    "paper_only",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used",
+    "live_order_submitted"
+  ]
+}

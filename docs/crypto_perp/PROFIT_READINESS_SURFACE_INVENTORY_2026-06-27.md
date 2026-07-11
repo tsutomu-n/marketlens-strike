@@ -1,9 +1,15 @@
 <!--
 作成日: 2026-06-27_19:01 JST
-更新日: 2026-07-05_13:26 JST
+更新日: 2026-07-11_18:35 JST
 -->
 
 # Crypto Perp Profit-Readiness Surface Inventory
+
+## 現行判定チェーン
+
+新規Human Review Packetは`input_contract_version=crypto_perp_human_review_packet_inputs.v2`を持ち、selection manifestからleaderboardまで固定12入力を個別schema、raw SHA、event/outcome pair、execution window、decision chain、nested boundaryで検査します。旧v1はinput contract fieldがない場合だけreader互換です。
+
+現在はguard `BLOCKED`、PBO `NOT_ESTIMABLE`、candidate/gate REJECT、kill/leaderboard KILL、packet `BLOCKED_BY_BIAS_GUARD`です。名目14 trades / 10 winsでも、position overlap、5 episodes、single-position負、always-long未達により進めません。
 
 ## 既存 surface
 
@@ -30,10 +36,14 @@
 | `crypto_perp_feature_pack.v1` | 最小feature packをaction決定から分離する | optional OFI/trade/depth features remain null when absent |
 | `crypto_perp_edge_score.v1` | deterministic ruleで行動候補を比較する | ML/prediction claimではない |
 | `crypto_perp_tournament_rows.v2` | fee/funding/slippage/operator cost込みのestimate rowsを作る | estimate fields are not actual cash |
-| `crypto_perp_bias_guard.v1` | sample不足、lookahead、recursive warmup、concentrationを止める | `NOT_ESTIMABLE` is a valid result |
+| `crypto_perp_bias_guard.v1` | exact event/action set、pack-local rows SHA、lookahead、recursive warmup、sample/PBO入力条件を検査する | `INPUT_THRESHOLD_MET`はPBO計算済みではない。進行には`COMPUTED_PASS`が必要 |
 | `crypto_perp_profit_readiness_run.v1` | 1 event/outcome の local run manifest と known gaps を記録する | run manifest status is not profit proof or actual cash readiness |
 | `crypto_perp_pre_actual_cash_decision.v1` | 複数event/outcomeのpre-actual-cash evidenceを4択decisionへ集約する | decision is not profit proof, actual cash readiness, or live permission |
-| `crypto_perp_backtest_candidate_pack.v1` | actual cashなしのtimestamp-safe simulation evidence packを4択BACKTEST decisionへ集約する | backtest candidate decision is not profit proof, paper permission, tiny-live readiness, or live readiness |
+| `crypto_perp_backtest_candidate_pack.v1` | `ts+5m`可用時刻、next-bar open、cost identity、pack-local rows/guard、profit robustnessを4択BACKTEST decisionへ集約する | position overlap未考慮、PBO未計算の正値はprofit proofではない |
+| `crypto_perp_no_cash_backtest_gate.v1` | candidateとbias/PBO/rolling/source statusを独立再検査するpositive-whitelist gate | 未知status、PBO未計算、blocker残存時はHOLDしない |
+| `crypto_perp_no_trade_kill_report.v1` | 必須gate入力を取り込み、NO_TRADE/cost/stress/集中評価へ停止理由を伝播する | gateがHOLD以外ならhuman-review HOLDへ進めない |
+| `crypto_perp_candidate_leaderboard.v1` | gateとkill reportを再検査して候補の次actionを固定する | gate/killの矛盾をHOLDへ昇格しない |
+| `crypto_perp_human_review_packet.v1` | strict v2 12入力のschema/lineage、boundary、candidate/gate/kill/leaderboard、bias/PBOをfail-closedで集約する | `BLOCKED_BY_BIAS_GUARD`も`BLOCKED_BY_PBO`もPaper Observation permissionではない |
 | `crypto_perp_tiny_live_shadow.v1` | tiny-live前の非発注shadow preflightを記録する | exchange write and live order are always false |
 
 ## 入口

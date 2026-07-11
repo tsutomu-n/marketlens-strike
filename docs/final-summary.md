@@ -1,114 +1,200 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-09_20:05 JST
+更新日: 2026-07-11_19:45 JST
 -->
 
 # Final Summary
 
 ## 結論
 
-この文書は最新の完了状態だけを読む入口です。旧版の長い addendum ledger や過去の pass count、branch、artifact snapshot は historical record です。
+Crypto Perp no-cash判定チェーンの偽READY経路は閉じました。現在の実artifactは、guard `BLOCKED`、candidate/gate REJECT、kill/leaderboard KILL、Human Review Packet `BLOCKED_BY_BIAS_GUARD`です。artifact lineageは`PASS`、next actionは`FIX_REVIEW_PACKET_BLOCKERS`です。
 
-履歴を探す場合は [archive/README.md](archive/README.md) から辿ります。現在値は `src/`, `tests/`, `schemas/`, CLI help, current artifact, checker を再確認します。
+利益仮説は捨てる段階ではありません。14 trades / 10 wins、名目`+3.042366783076564551621614274 USD`は追跡価値があります。しかし5 episode bootstrapは0を跨ぎ、single-position近似は負、selectorはalways-long未達、50 bps slippageで損益は負です。現実的な判断は「攻める候補は残すが、Paperへは進めない」です。
 
-## Latest Completed Work
+## Goal / Branch / Status
 
-| 作業 | 現在の入口 | 状態 |
-|---|---|---|
-| Current-only docs refresh | [CURRENT_GOAL_AND_DIRECTION_2026-07-05.md](CURRENT_GOAL_AND_DIRECTION_2026-07-05.md), [CURRENT_DOCS_INDEX_2026-07-05.md](CURRENT_DOCS_INDEX_2026-07-05.md) | completed in local worktree |
-| Current-direction routing second pass | [CODE_STATUS.md](CODE_STATUS.md), [REPO_CAPABILITIES_CURRENT_2026-06-16.md](REPO_CAPABILITIES_CURRENT_2026-06-16.md), [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md) | current direction split from external input checklist |
-| Runbook and beginner-guide safety pass | [runbooks/README.md](runbooks/README.md), [trade_xyz_bot_beginner_guide.md](trade_xyz_bot_beginner_guide.md), [trade_xyz_bot_beginner_guide.html](trade_xyz_bot_beginner_guide.html) | current direction added and HTML safety bullets aligned with Markdown |
-| Crypto Perp Backtest Candidate Pack v1 | [crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md) | current no-actual-cash endpoint |
-| Crypto Perp Backtest Candidate Pack evidence grade | [crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md) | optional `evidence_grade_summary` and 0.04% default fee alignment |
-| Crypto Perp cost model default unification | [../configs/cost_models/crypto_perp_bitget_usdt_futures.yaml](../configs/cost_models/crypto_perp_bitget_usdt_futures.yaml), [crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md) | normal project assumption wired for targeted local simulation surfaces |
-| Crypto Perp no-cash backtest gate | [crypto_perp/NO_CASH_BACKTEST_GATE_V1.md](crypto_perp/NO_CASH_BACKTEST_GATE_V1.md) | local gate before human review for Paper Observation; no paper permission granted |
-| Crypto Perp no-cash backtest sample dogfood | [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md) | fixture-only sample generator for gate prerequisites; not real-market evidence |
-| Crypto Perp real-market no-cash sample | [crypto_perp/REAL_MARKET_NO_CASH_SAMPLE_V1.md](crypto_perp/REAL_MARKET_NO_CASH_SAMPLE_V1.md) | public candle source event/outcome generator for no-cash gate; not paper permission |
-| Crypto Perp real-market no-cash HOLD | [crypto_perp/HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLAN_2026-07-09.md](crypto_perp/HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLAN_2026-07-09.md) | ticker/funding-covered real-market no-cash gate reached `NO_CASH_BACKTEST_HOLD`; human review planning only, no paper permission |
-| Crypto Perp no-cash review artifacts | [crypto_perp/NO_TRADE_KILL_REPORT_V1.md](crypto_perp/NO_TRADE_KILL_REPORT_V1.md), [crypto_perp/CANDIDATE_LEADERBOARD_V1.md](crypto_perp/CANDIDATE_LEADERBOARD_V1.md) | NO_TRADE/cost/stress/concentration kill report plus one-candidate leaderboard for human review; no paper permission |
-| No-cash goal progress split | [NO_CASH_GOAL_PROGRESS_2026-07-05.md](NO_CASH_GOAL_PROGRESS_2026-07-05.md) | implementation/routing, evidence quality, and overall no-cash progress split |
-| Residual docs risk split | [APP_CURRENT_STATE_OVERVIEW_2026-07-05.md](APP_CURRENT_STATE_OVERVIEW_2026-07-05.md), [APP_TERMS_GLOSSARY_2026-07-05.md](APP_TERMS_GLOSSARY_2026-07-05.md), [CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md](CURRENT_ARTIFACT_SURFACE_REFERENCE_2026-07-05.md) | current replacements remain active |
+- goal: Crypto Perp判定チェーンをfail-closed化し、薄い利益証拠をREADYへ誤昇格させない。
+- 作業ref: `ai/human-review-packet-20260709-2200`
+- merge status: hold
+- commit / push / merge / cherry-pick: 未実施
+- runtime `data/`、`.tmp/`、`.ai-work/`: Git差分対象外
+- Paper、actual cash、wallet、signing、exchange write、live order: 対象外、全flag false
 
-## Current Proof
-
-Use these instead of old final-summary addenda:
-
-- repo current state: [CURRENT_STATE.md](CURRENT_STATE.md)
-- current goal and direction: [CURRENT_GOAL_AND_DIRECTION_2026-07-05.md](CURRENT_GOAL_AND_DIRECTION_2026-07-05.md)
-- no-cash goal progress: [NO_CASH_GOAL_PROGRESS_2026-07-05.md](NO_CASH_GOAL_PROGRESS_2026-07-05.md)
-- docs index: [CURRENT_DOCS_INDEX_2026-07-05.md](CURRENT_DOCS_INDEX_2026-07-05.md)
-- implemented surfaces: [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md)
-- crypto perp cost model reference: [../configs/cost_models/crypto_perp_bitget_usdt_futures.yaml](../configs/cost_models/crypto_perp_bitget_usdt_futures.yaml)
-- no-cash backtest gate: [crypto_perp/NO_CASH_BACKTEST_GATE_V1.md](crypto_perp/NO_CASH_BACKTEST_GATE_V1.md)
-- no-cash backtest sample CLI: `uv run sis crypto-perp-no-cash-backtest-sample`
-- real-market no-cash sample CLI: `uv run sis crypto-perp-real-market-no-cash-sample`
-- human review plan for no-cash HOLD: [crypto_perp/HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLAN_2026-07-09.md](crypto_perp/HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLAN_2026-07-09.md)
-- NO_TRADE kill report CLI: `uv run sis crypto-perp-no-trade-kill-report`
-- candidate leaderboard CLI: `uv run sis crypto-perp-candidate-leaderboard`
-- CLI catalog: [REPO_CLI_CATALOG_CURRENT_2026-06-17.md](REPO_CLI_CATALOG_CURRENT_2026-06-17.md)
-- archive ledger: [archive/README.md](archive/README.md)
-
-## Verification Commands
-
-Current-only docs refresh でこちらが確認済み:
-
-- `uv run python scripts/check_current_docs.py`
-- `uv run python scripts/check_cli_catalog.py`
-- `git diff --check`
-- `uv run sis --help`
-- `./scripts/check`
-
-再確認する時の command:
-
-```bash
-uv run sis crypto-perp-no-cash-backtest-sample
-uv run sis crypto-perp-backtest-candidate-pack
-uv run sis crypto-perp-no-cash-backtest-gate \
-  --decision data/crypto_perp/backtest_candidate_pack/latest/decision.json \
-  --data-availability data/crypto_perp/backtest_candidate_pack/latest/data_availability_ledger.json \
-  --backtest data/crypto_perp/backtest_candidate_pack/latest/backtest_result.json \
-  --stress data/crypto_perp/backtest_candidate_pack/latest/stress_result.json \
-  --rolling-stability data/crypto_perp/backtest_candidate_pack/latest/rolling_stability_result.json \
-  --out data/crypto_perp/no_cash_backtest_gate/latest
-uv run python scripts/check_current_docs.py
-uv run python scripts/check_cli_catalog.py
-git diff --check
-uv run sis --help
-./scripts/check
-```
-
-Do not treat old command counts, test pass counts, branch names, or artifact snapshots in historical docs as current proof.
-
-Current Crypto Perp no-cash HOLD proof for the active real-market run:
-
-- `data/crypto_perp/real_market_no_cash/ticker_required/selection_manifest.json`
-- `data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/decision.json`
-- `data/crypto_perp/real_market_no_cash/no_cash_backtest_gate/latest/no_cash_backtest_gate.json`
-- `data/crypto_perp/real_market_no_cash/no_trade_kill_report/latest/no_trade_kill_report.json`
-- `data/crypto_perp/real_market_no_cash/candidate_leaderboard/latest/candidate_leaderboard.json`
-
-Observed current result:
+## Current Artifact Chain
 
 ```text
-gate_decision=NO_CASH_BACKTEST_HOLD
-blocker_count=0
-event_count=30
-outcome_count=30
-ticker_available_count=30
-funding_available_count=30
-critical_missing_count=0
-unknown_count=0
-executed_trade_count=13
-pbo_status=ESTIMATED
-rolling_stability_status=complete
+bias_guard_status=BLOCKED
+bias_guard_stop_reason=BIAS_GUARD_FAILED_sample_sufficient_for_pbo
+bias_guard_warning=BIAS_GUARD_WARNING_stress_cash_non_negative
+fold_count=0
+pbo_status=NOT_ESTIMABLE
+pbo_computed=false
+pbo_evidence_verified=false
+candidate_decision=BACKTEST_REJECT
+candidate_reasons=BIAS_GUARD_BLOCKED,
+                  BIAS_GUARD_FAILED_sample_sufficient_for_pbo,
+                  POSITION_OVERLAP_NOT_ACCOUNTED,
+                  INDEPENDENT_MARKET_EPISODE_SAMPLE_NOT_MET,
+                  SELECTOR_DOES_NOT_BEAT_BEST_STATIC_ACTION
+gate_decision=NO_CASH_BACKTEST_REJECT
+kill_decision=KILL_UPSTREAM_GATE_REJECTED
+leaderboard_next_action=KILL
+packet_decision=BLOCKED_BY_BIAS_GUARD
+next_action=FIX_REVIEW_PACKET_BLOCKERS
+artifact_lineage_status=PASS
+input_contract_version=crypto_perp_human_review_packet_inputs.v2
+review_input_count=12
+```
+
+安全flag:
+
+```text
+paper_permission_granted=false
 permits_paper_order=false
 permits_live_order=false
 actual_cash_used=false
 profit_proven=false
+wallet_used=false
+signing_used=false
+exchange_write_used=false
+live_order_submitted=false
 ```
 
-## Boundary
+## Profit Evidence
 
-The latest Crypto Perp cost-model work changes local simulation defaults for targeted estimate surfaces: normal project assumption is `fee_rate=0.0004`, `funding_rate=0.0001`, and `slippage_bps=2`; zero-cost tournament rows are rejected.
+| Metric | Value | 現実的な読み方 |
+|---|---:|---|
+| events / trades / wins | 30 / 14 / 10 | trade数は独立標本数ではない |
+| backtest total | 3.042366783076564551621614274 USD | overlap込みlocal estimate |
+| stress total | 2.762366783076564551621614274 USD | actual fillではない |
+| peak concurrent positions | 6 | 資本拘束未反映 |
+| episodes / wins | 5 / 3 | minimum 10未達 |
+| single-position total | -0.4618201695034107750204885438 USD | 重複を除く近似は負 |
+| always-long total | 5.816219911337534249441041925 USD | selectorの追加価値未証明 |
+| score/result correlation | -0.2902937515082110915592253119 | ranking signalを支持しない |
+| short sleeve | 2 losses / -0.4939911498820537167728313263 USD | short edge未証明 |
+| naive iid t | 2.0179 | overlap依存を無視 |
+| one-sided sign p | 0.0898 | 通常の5%水準を満たさない |
+| trade iid bootstrap total 95% | +0.1069 to +5.7882 USD | 独立仮定で見栄えが良い |
+| episode bootstrap total 95% | -1.9182 to +9.2413 USD | 0を跨ぎ不確実 |
+| episode largest / top-2 positive concentration | about 0.716 / 0.997 | 0.60 / 0.80閾値を超える |
 
-The no-cash backtest gate adds a local artifact before human review for Paper Observation. It does not grant paper order permission. The no-cash sample command only writes fixture-only local dogfood artifacts and must not be treated as real-market evidence. The real-market no-cash sample command uses public candle source data but still does not grant paper permission, prove profit, or use actual cash. These surfaces do not change dependencies, secrets, external services, wallet/signing paths, exchange writes, or live order submission. They do not claim profit proof, actual cash readiness, tiny-live readiness, or live readiness.
+trade-levelの見た目改善とepisode-levelの不確実性を分離して読みます。前者は仮説の継続理由、後者は昇格を止める理由です。
+
+## Data Selection Reality
+
+- symbol: BTCUSDTのみ
+- cutoff span: 約35時間15分
+- date concentration: 2026-07-07 UTCが3件、2026-07-09 UTCが27件
+- raw / eligible / rejected windows: `491 / 467 / 24`
+- reject内訳: entry不一致2、full horizon非連続11、lookback非連続11
+- ticker-covered eligible: 30ちょうど、headroom 0
+- entry: cutoff+5分の最初の完全bar open
+- holding: 連続60分full horizon
+- candle rows: unique strict-increasing timestamp、`available_at >= ts + interval`、連続lookback必須
+- OHLC: finite and positive; high/low contains open/close; base/quote volume is non-negative
+- invalid settings: interval非整除のlookback/horizonはexit code 2
+- outcome integrity: duplicate event ID / 同一eventの複数matured outcomeはexit code 2
+
+books、trades、replayは欠損しています。candle local simulationはqueue、partial fill、latency、動的spreadを再現しません。
+
+## Cost Sensitivity
+
+| Case | Backtest total |
+|---|---:|
+| slippage 2 bps / notional 100 USD | +3.04237 USD |
+| slippage 50 bps / notional 100 USD | -3.67763 USD |
+| slippage 2 bps / notional 1000 USD | +30.42367 USD |
+
+各caseの`tournament_rows_v2.json` SHA-256はすべて異なります。既存derived rowsは再利用せず、毎回matured outcomesから計算します。fee/funding/slippageはproject既定を下限とし、高コスト感応度だけを許可します。ただし50 bpsで負になるため、実摩擦への耐性は弱いままです。operator labor costも0です。
+
+## Implemented Changes
+
+- 既存derived tournament rowsを再利用せず、matured outcomesから常時再計算
+- pack-local rows/guardとcomponent raw SHA refsを保存
+- current non-recursive guardを毎回再計算し、外部guardを信用しない
+- candidate/gateでguard BLOCKED、missing、unknownをfail-closed処理
+- gateをpositive whitelist化し、kill/leaderboard/packetへ停止理由を伝播
+- Kill Reportの`--gate` / `--tournament-rows`を必須化し、pack-local rowsとleader_actionを検証
+- Human Review Packetをstrict v2固定12入力、個別schema、event/outcome/window、nested boundary検査へ強化
+- `COMPUTED_PASS`文字列だけではPBO通過させず、専用証跡未実装中は`pbo_evidence_verified=false`
+- candle validationをnext complete bar、連続lookback、連続full horizon、available_at contractへ強化
+- candle OHLCの有限性・正値・包絡関係と非負volumeを検証
+- duplicate event/multiple outcome、interval非整除、project cost floor未満をexit code 2で拒否
+- public event/outcome、selection manifest、source availabilityをraw candle/ticker/funding filesから再構築して検証
+- duplicate source availability、derived flag/summary改変、horizon count/holding不一致を拒否
+- 全market_windowをmutable labelに依存せずraw検証し、非marketの未検証provenanceとdogfood fixtureをCOLLECT
+- ticker/funding availableをraw再計算statusと完全照合
+- Kill Reportで必須gate/rowsとleader_action整合を検査し、不明leaderはCOLLECT
+- Kill Reportでmarket episode profit concentrationを別検査し、missing/invalidはCOLLECT、高集中はREVISE
+- Kill Reportでexecution windows+backtest resultsからepisode totalsを再計算し、reported totals不一致をCOLLECT
+- action/episode/single-position、static benchmark、cost sensitivityを利益判断へ露出
+
+主要入口:
+
+- [Backtest Candidate Pack](crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md)
+- [No-Cash Gate](crypto_perp/NO_CASH_BACKTEST_GATE_V1.md)
+- [Human Review Packet](crypto_perp/HUMAN_REVIEW_PACKET_V1.md)
+- [Current Explainer](crypto_perp/CURRENT_NO_CASH_HUMAN_REVIEW_EXPLAINER_2026-07-11.md)
+- [Truth-Cycle Runbook](runbooks/CRYPTO_PERP_TRUTH_CYCLE_RUNBOOK.md)
+- [Profit Evidence Hardening Plan](plans/CRYPTO_PERP_PROFIT_EVIDENCE_HARDENING_2026-07-11.md)
+
+## Public Contract / Migration
+
+- `crypto-perp-no-trade-kill-report --gate PATH --tournament-rows PATH`は両方必須です。旧呼び出しにはgateとpack-local rows pathを追加します。
+- Human Review Packetの出力schema名はreader互換のためv1を維持します。
+- 新規packetは`input_contract_version=crypto_perp_human_review_packet_inputs.v2`を出し、固定12入力を強制します。
+- `input_contract_version`を持たない旧v1だけは従来required fieldでread-compatibleです。旧v1を新規v2と同じlineage強度とは扱いません。
+- runtime latestはcandidate packからpacketまで同一runで順番に再生成します。
+
+破壊的なDB/schema migration、依存追加、外部送信はありません。`pyproject.toml` / lockfileの変更もありません。
+
+## Verification
+
+```text
+focused contract list    = PASS; count=249; elapsed=11.80s
+targeted hostile review  = PASS; count=44; elapsed=2.56s
+hostile findings         = 3 resolved; no new blockers
+./scripts/check          = PASS
+Python                   = 3.13.12
+Ruff lint                = PASS
+Ruff format check        = 1681 files already formatted
+current docs             = 160 PASS
+CLI catalog              = 241 PASS
+Pyrefly                  = 0 errors (175 warnings not shown)
+ty                       = PASS
+Pytest                   = PASS; count=3134; elapsed=97.74s
+git diff --check         = PASS
+sis --help               = PASS
+runtime validator        = PASS
+artifact lineage         = PASS
+safety flags             = all false
+runtime chain            = unchanged BLOCKED / REJECT / KILL
+```
+
+hostile re-reviewの3 findingsはすべて解消し、新規blockerはありません。
+
+## Rollback
+
+本checkpointの関連差分だけを手動で戻し、runbookの順序でruntime latestを再生成します。`git reset --hard`などの破壊的操作は使いません。旧artifactへ戻す場合も、v2 packetと混在させず別runとして扱います。
+
+## Residual Risk
+
+- 30 events / 5 episodesの小標本
+- 同一symbol、約35時間、27/30が同一UTC日
+- ticker eligibleが30ちょうどで余裕なし
+- books/trades/replay欠損
+- position overlap、資本拘束、position limit未反映
+- episode bootstrapが0を跨ぐ
+- positive episode利益の約71.6%が最大1 episode、約99.7%が上位2 episodesへ集中
+- selectorがalways-longを下回る
+- short sleeve 2/2 loss
+- 50 bps slippageで負
+- operator labor未計上
+- production PBO計算・専用証跡producer未実装
+- local simulationと実約定条件の差
+- raw SHAと再構築はlocal artifact改変を検出するが、取引所側データの完全性・配信欠落・上流真正性を独立証明しない
+
+## Merge Conditions
+
+authoritative full verification、runtime validator、hostile re-reviewは完了し、3 findingsは解消済みです。merge holdは維持し、明示的な人間レビュー、cleanなcommit対象確認、merge判断を別途行います。自動commit、push、merge、cherry-pickは行いません。

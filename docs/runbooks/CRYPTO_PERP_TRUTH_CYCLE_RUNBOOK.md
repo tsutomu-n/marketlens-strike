@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-21_18:29 JST
-更新日: 2026-07-06_18:03 JST
+更新日: 2026-07-11_18:53 JST
 -->
 
 # Crypto Perp Truth-Cycle Runbook
@@ -25,62 +25,85 @@ Crypto Perp Truth-Cycle の post-MVP 実務runbookです。目的は、candidate
 - [../crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md](../crypto_perp/PROFIT_READINESS_SURFACE_INVENTORY_2026-06-27.md)
 - [../crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md](../crypto_perp/PROFIT_READINESS_ACCEPTANCE_VOCABULARY.md)
 
-## P-1: actual cashなしのbacktest candidate packを作る
+## P-1: current no-cash判定チェーンを同一runで再生成する
 
-actual cash、tiny-live、live order を扱わず、既存 local artifact から timestamp-safe な simulation evidence を作る場合は、Backtest Candidate Pack v1 を生成します。
+この手順はactual cash、Paper Observation、tiny-live、live orderを許可しません。default `fold_count=0`を含む現行設定で、pack-local rows/guardと各下流artifactのSHA-256 lineageをHuman Review Packetまでつなぎます。
 
-進捗は [../NO_CASH_GOAL_PROGRESS_2026-07-05.md](../NO_CASH_GOAL_PROGRESS_2026-07-05.md) を読みます。Backtest Candidate Pack の command が動くことと、証拠品質が十分であることは分けて扱います。
+Candidate Packは既存derived rowsを再利用せず、matured outcomesから常時再計算します。同一eventの複数matured outcome/duplicate event ID、project floor未満のfee/funding/slippage、intervalで割り切れないlookback/horizonはexit code 2です。
 
 ```bash
-uv run sis crypto-perp-backtest-candidate-pack
+uv run sis crypto-perp-backtest-candidate-pack \
+  --data-dir data/crypto_perp/real_market_no_cash/ticker_required \
+  --out data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest
+
+uv run sis crypto-perp-no-cash-backtest-gate \
+  --decision data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/decision.json \
+  --data-availability data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/data_availability_ledger.json \
+  --backtest data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/backtest_result.json \
+  --stress data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/stress_result.json \
+  --rolling-stability data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/rolling_stability_result.json \
+  --out data/crypto_perp/real_market_no_cash/no_cash_backtest_gate/latest
+
+uv run sis crypto-perp-no-trade-kill-report \
+  --gate data/crypto_perp/real_market_no_cash/no_cash_backtest_gate/latest/no_cash_backtest_gate.json \
+  --signal-rows data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/signal_rows.jsonl \
+  --backtest data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/backtest_result.json \
+  --stress data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/stress_result.json \
+  --tournament-rows data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/tournament_rows_v2.json \
+  --out data/crypto_perp/real_market_no_cash/no_trade_kill_report/latest
+
+uv run sis crypto-perp-candidate-leaderboard \
+  --decision data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/decision.json \
+  --backtest data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/backtest_result.json \
+  --stress data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/stress_result.json \
+  --kill-report data/crypto_perp/real_market_no_cash/no_trade_kill_report/latest/no_trade_kill_report.json \
+  --gate data/crypto_perp/real_market_no_cash/no_cash_backtest_gate/latest/no_cash_backtest_gate.json \
+  --signal-rows data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/signal_rows.jsonl \
+  --out data/crypto_perp/real_market_no_cash/candidate_leaderboard/latest
+
+uv run sis crypto-perp-human-review-packet \
+  --selection-manifest data/crypto_perp/real_market_no_cash/ticker_required/selection_manifest.json \
+  --decision data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/decision.json \
+  --tournament-rows data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/tournament_rows_v2.json \
+  --bias-guard data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/bias_guard.json \
+  --data-availability data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/data_availability_ledger.json \
+  --signal-rows data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/signal_rows.jsonl \
+  --backtest data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/backtest_result.json \
+  --stress data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/stress_result.json \
+  --rolling-stability data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/rolling_stability_result.json \
+  --gate data/crypto_perp/real_market_no_cash/no_cash_backtest_gate/latest/no_cash_backtest_gate.json \
+  --kill-report data/crypto_perp/real_market_no_cash/no_trade_kill_report/latest/no_trade_kill_report.json \
+  --leaderboard data/crypto_perp/real_market_no_cash/candidate_leaderboard/latest/candidate_leaderboard.json \
+  --out data/crypto_perp/real_market_no_cash/human_review_packet/latest
 ```
 
-生成先:
+Kill Reportは`--gate`と`--tournament-rows`が必須です。rowsはselection側aggregateではなくpack-local latestを使い、leader_actionとの整合も検証します。Human Review Packetは`crypto_perp_human_review_packet_inputs.v2`の固定12入力を要求します。`input_contract_version`がない旧v1はreader互換ですが、新規runのlineage証拠として流用しません。
 
-- `data/crypto_perp/backtest_candidate_pack/latest/signal_rows.jsonl`
-- `data/crypto_perp/backtest_candidate_pack/latest/data_availability_ledger.json`
-- `data/crypto_perp/backtest_candidate_pack/latest/execution_assumptions.json`
-- `data/crypto_perp/backtest_candidate_pack/latest/no_lookahead_report.json`
-- `data/crypto_perp/backtest_candidate_pack/latest/backtest_result.json`
-- `data/crypto_perp/backtest_candidate_pack/latest/stress_result.json`
-- `data/crypto_perp/backtest_candidate_pack/latest/decision.json`
-- `data/crypto_perp/backtest_candidate_pack/latest/decision.md`
+現在のruntime結果:
+
+```text
+bias guard         = BLOCKED
+pbo status         = NOT_ESTIMABLE
+candidate pack     = BACKTEST_REJECT
+no-cash gate       = NO_CASH_BACKTEST_REJECT
+kill report        = KILL_UPSTREAM_GATE_REJECTED
+leaderboard        = KILL
+human review packet= BLOCKED_BY_BIAS_GUARD
+artifact lineage   = PASS
+review input count = 12
+```
 
 見るもの:
 
-- `decision`
-- `reason_codes`
-- `summary.selected_action_counts`
-- `summary.no_lookahead.failed_count`
-- `summary.no_lookahead.unverified_count`
+- guard stop reasonが`BIAS_GUARD_FAILED_sample_sufficient_for_pbo`
+- candidate reasonにguard、position overlap、episode不足、static benchmark未達がある
+- gate以降がREJECT/KILLをHOLDへ戻していない
+- packetがstrict v2 12入力、lineage PASS、`pbo_evidence_verified=false`
+- 30/14、nominal `3.042366783076564551621614274`、stress `2.762366783076564551621614274`
+- peak6、episodes 5/3、single-position `-0.4618201695034107750204885438`
+- Paper、actual cash、wallet、signing、exchange write、live orderの全flagがfalse
 
-次に直接 Paper Observation へ進めず、no-cash backtest gate に通します。
-
-```bash
-uv run sis crypto-perp-no-cash-backtest-gate \
-  --decision data/crypto_perp/backtest_candidate_pack/latest/decision.json \
-  --data-availability data/crypto_perp/backtest_candidate_pack/latest/data_availability_ledger.json \
-  --backtest data/crypto_perp/backtest_candidate_pack/latest/backtest_result.json \
-  --stress data/crypto_perp/backtest_candidate_pack/latest/stress_result.json \
-  --rolling-stability data/crypto_perp/backtest_candidate_pack/latest/rolling_stability_result.json \
-  --out data/crypto_perp/no_cash_backtest_gate/latest
-```
-
-`NO_CASH_BACKTEST_HOLD` は human review に残すだけで、paper order permission ではありません。
-- `summary.backtest.unknown_count`
-- `boundary`
-- `non_goal_flags`
-
-止める条件:
-
-- `decision=BACKTEST_COLLECT_MORE_DATA`
-- `summary.no_lookahead.failed_count > 0`
-- `summary.no_lookahead.unverified_count > 0`
-- `summary.backtest.unknown_count > 0`
-- `non_goal_flags.profit_proven=true`
-- `boundary.permits_live_order=true`
-
-この pack は simulation evidence です。`BACKTEST_CANDIDATE_HOLD` でも profit proof、actual cash readiness、paper permission、tiny-live readiness、live readiness ではありません。
+`COMPUTED_PASS`文字列だけではREADYへ進めません。専用PBO計算証跡の検証経路が実装されるまで、PacketはPBO evidenceをfalseとして扱います。
 
 ## P00: tournament rows からreportを再生成する
 

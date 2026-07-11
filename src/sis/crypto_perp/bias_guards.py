@@ -15,7 +15,12 @@ from sis.crypto_perp.tournament_rows import CostAwareTournamentRow
 
 BIAS_GUARD_SCHEMA_VERSION = "crypto_perp_bias_guard.v1"
 BiasGuardStatus = Literal["PASS", "BLOCKED"]
-PboStatus = Literal["ESTIMATED", "NOT_ESTIMABLE"]
+PboStatus = Literal[
+    "COMPUTED_PASS",
+    "INPUT_THRESHOLD_MET",
+    "NOT_ESTIMABLE",
+    "ESTIMATED",
+]
 
 
 class BiasGuardCheck(BaseModel):
@@ -41,6 +46,7 @@ class CryptoPerpBiasGuard(BaseModel):
     guard_status: BiasGuardStatus
     pbo_status: PboStatus
     event_count: int = Field(ge=0)
+    event_set: list[str] = Field(default_factory=list)
     min_events_for_pbo: int = Field(gt=0)
     fold_count: int = Field(ge=0)
     max_profit_concentration: DecimalValue
@@ -67,17 +73,36 @@ class CryptoPerpBiasGuard(BaseModel):
         )
 
 
-def _check(check_id: str, passed: bool, observed: object, required: object) -> BiasGuardCheck:
+def _check(
+    check_id: str,
+    passed: bool,
+    observed: object,
+    required: object,
+    *,
+    severity: Literal["error", "warning"] = "error",
+) -> BiasGuardCheck:
     return BiasGuardCheck(
         check_id=check_id,
         passed=passed,
         observed=str(observed),
         required=str(required),
+        severity=severity,
     )
 
 
 def _event_set(rows: Sequence[CostAwareTournamentRow]) -> list[str]:
     return sorted({row.event_id for row in rows})
+
+
+def _has_exact_action_set(rows: Sequence[CostAwareTournamentRow]) -> bool:
+    actions_by_event: dict[str, list[TournamentAction]] = {}
+    for row in rows:
+        actions_by_event.setdefault(row.event_id, []).append(row.action)
+    expected = sorted(TOURNAMENT_ACTIONS)
+    return bool(actions_by_event) and all(
+        len(actions) == len(expected) and sorted(actions) == expected
+        for actions in actions_by_event.values()
+    )
 
 
 def _profit_concentration(
@@ -122,16 +147,18 @@ def build_bias_guard(
     event_set = _event_set(rows)
     event_count = len(event_set)
     pbo_status: PboStatus = (
-        "ESTIMATED" if event_count >= min_events_for_pbo and fold_count >= 2 else "NOT_ESTIMABLE"
+        "INPUT_THRESHOLD_MET"
+        if event_count >= min_events_for_pbo and fold_count >= 2
+        else "NOT_ESTIMABLE"
     )
     min_stress = min(row.stress_cash_estimate_usd for row in rows if row.action != "NO_TRADE")
     concentration = _max_concentration(rows)
     checks = [
         _check(
             "same_event_set_has_three_actions",
-            len(rows) == event_count * 3,
+            _has_exact_action_set(rows),
             len(rows),
-            event_count * 3,
+            f"{event_count} events x {len(TOURNAMENT_ACTIONS)} unique actions",
         ),
         _check("lookahead_absent", not lookahead_violation, lookahead_violation, False),
         _check(
@@ -140,8 +167,19 @@ def build_bias_guard(
             recursive_warmup_violation,
             False,
         ),
-        _check("sample_sufficient_for_pbo", pbo_status == "ESTIMATED", pbo_status, "ESTIMATED"),
-        _check("stress_cash_non_negative", min_stress >= 0, min_stress, ">= 0"),
+        _check(
+            "sample_sufficient_for_pbo",
+            pbo_status in {"INPUT_THRESHOLD_MET", "COMPUTED_PASS"},
+            pbo_status,
+            "INPUT_THRESHOLD_MET",
+        ),
+        _check(
+            "stress_cash_non_negative",
+            min_stress >= 0,
+            min_stress,
+            ">= 0",
+            severity="warning",
+        ),
         _check(
             "profit_concentration_within_limit",
             concentration <= max_profit_concentration,
@@ -149,13 +187,19 @@ def build_bias_guard(
             f"<= {max_profit_concentration}",
         ),
     ]
-    stop_reasons: list[str] = []
-    for check in checks:
-        if not check.passed:
-            stop_reasons.append(f"BIAS_GUARD_FAILED_{check.check_id}")
-    computed_gaps = list(known_gaps or [])
+    failed_error_checks = [
+        check for check in checks if not check.passed and check.severity == "error"
+    ]
+    failed_warning_checks = [
+        check for check in checks if not check.passed and check.severity == "warning"
+    ]
+    stop_reasons = [f"BIAS_GUARD_FAILED_{check.check_id}" for check in failed_error_checks]
+    warning_codes = [f"BIAS_GUARD_WARNING_{check.check_id}" for check in failed_warning_checks]
+    computed_gaps = [*list(known_gaps or []), *warning_codes]
     if pbo_status == "NOT_ESTIMABLE":
         computed_gaps.append("PBO_NOT_ESTIMABLE_SAMPLE_INSUFFICIENT")
+    elif pbo_status != "COMPUTED_PASS":
+        computed_gaps.append("PBO_NOT_COMPUTED")
     computed_gaps = list(dict.fromkeys(computed_gaps))
     guard_status: BiasGuardStatus = "BLOCKED" if stop_reasons else "PASS"
     guard_id = stable_hash(
@@ -173,8 +217,11 @@ def build_bias_guard(
     summary = {
         "guard_status": guard_status,
         "pbo_status": pbo_status,
+        "pbo_computed": pbo_status == "COMPUTED_PASS",
         "event_count": event_count,
-        "failed_check_count": len(stop_reasons),
+        "failed_check_count": len(failed_error_checks) + len(failed_warning_checks),
+        "failed_error_check_count": len(failed_error_checks),
+        "failed_warning_check_count": len(failed_warning_checks),
         "min_stress_cash_estimate_usd": min_stress,
         "max_profit_concentration_observed": concentration,
     }
@@ -187,6 +234,7 @@ def build_bias_guard(
         guard_status=guard_status,
         pbo_status=pbo_status,
         event_count=event_count,
+        event_set=event_set,
         min_events_for_pbo=min_events_for_pbo,
         fold_count=fold_count,
         max_profit_concentration=max_profit_concentration,

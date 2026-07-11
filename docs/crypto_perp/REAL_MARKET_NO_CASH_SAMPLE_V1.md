@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-07_18:06 JST
-更新日: 2026-07-09_10:48 JST
+更新日: 2026-07-11_19:42 JST
 -->
 
 # Crypto Perp Real-Market No-Cash Sample v1
@@ -73,9 +73,33 @@ The default event selection policy is `time_evenly_spaced_before_outcome; no out
 
 The command selects eligible windows before evaluating the future outcome. It does not select only favorable outcomes, drop losing events, or replace `NO_TRADE` with a trade action. With `--require-ticker-coverage`, candidate windows are filtered before outcome construction to those whose `information_cutoff_at` already has timestamp-safe ticker bid/ask coverage. If fewer than the requested target count are covered, the command fails with `TICKER_COVERED_EVENT_COUNT_BELOW_TARGET` instead of silently using uncovered events.
 
+## Timestamp and entry contract
+
+source-root candleの`ts`は5分bucket開始時刻です。source rowsとCSV rowsはtimestampがuniqueかつstrict increasingで、`available_at >= ts + interval`でなければ拒否します。lookback / horizonがintervalで割り切れない設定もexit code 2です。event lookback candlesも5分間隔で連続していることを要求し、bar内の将来high/low/closeをsignalへ混ぜません。
+
+OHLCは全て有限かつ`> 0`を要求します。`high >= max(open, close)`、`low <= min(open, close)`でなければ`CANDLE_OHLC_INVALID`、`base_vol`または`quote_vol`が負なら`CANDLE_VOLUME_INVALID`です。NaN/Infinityや数値変換不能は`CANDLE_NUMERIC_FIELD_INVALID`として拒否します。volumeの0は許容します。
+
+entryは`information_cutoff_at + 5 minutes`に始まる最初の完全barのopenです。holdingはentryから60分で、full horizon candlesも5分間隔で連続していなければeligibleにしません。現在のmanifestではraw491、eligible467、reject24で、内訳はentry不一致2、full horizon非連続11、lookback非連続11です。
+
+## Current Local Sample
+
+現在のticker/funding-covered BTCUSDT sampleは30 events / 30 matured outcomesです。ticker-covered eligibleはtargetと同じ30件だけで、1件の余裕もありません。cutoff spanは約35時間15分、日付別は2026-07-07 UTCが3件、2026-07-09 UTCが27件です。
+
+現行packでは14 trades / 10 wins、nominal `+3.042366783076564551621614274 USD`、stress `+2.762366783076564551621614274 USD`ですが、guardはdefault `fold_count=0`のPBO sample条件でBLOCKEDです。5 episodes、single-position負、always-long未達、books/trades/replay欠損のため、30件を十分な独立標本または利益証明とは扱いません。
+
+## Downstream artifact integrity contract
+
+このsampleが出すevent/outcome、selection manifest、source availabilityはCandidate Packでraw sourceから再検証されます。public candle CSVの実SHAとrowからevent feature・ID・outcome算術・execution windowを再構築し、ticker/fundingはselection manifestが指すraw parquetからstatusとmarket featureを再構築します。
+
+この検証はevent family=`market_window_v1`を基準に強制され、producer commandやsource-ref schema labelの書換えでは回避できません。ticker/fundingのavailableもraw statusと完全一致が必要です。
+
+`event_set` / `outcome_set` / count / execution window不一致、duplicate source availability、derived `can_compute_*` flagやsummaryの改変、matured horizonが1件でない、または`max_holding_minutes`不一致はfail-closedです。sample JSONの自己申告だけを信頼しません。
+
+fixture-only `crypto-perp-no-cash-backtest-sample`は`market_window_v1`を生成せず、`DOGFOOD_FIXTURE_NOT_REAL_MARKET_EVIDENCE`でCOLLECTします。非market eventも再構築可能なraw provenanceがなければ`EVENT_SOURCE_PROVENANCE_NOT_VERIFIABLE`でCOLLECTします。
+
 ## Expected Gaps
 
-Current public candle-only runs can build 30+ matured event/outcome pairs and make PBO / rolling stability estimable. Ticker coverage is marked available only when a local public ticker row has `ts_received_ms <= information_cutoff_at`, is within `--ticker-max-staleness-seconds`, and includes valid `bid_px` / `ask_px`. A current ticker snapshot is not treated as if it existed before older event cutoffs. Historical price, mark, or index candles alone are not bid/ask ticker coverage.
+Current public candle-only runs can build 30+ matured event/outcome pairs and satisfy the PBO input threshold / rolling-stability sample threshold. This does not compute PBO; only `COMPUTED_PASS` may advance. Ticker coverage is marked available only when a local public ticker row has `ts_received_ms <= information_cutoff_at`, is within `--ticker-max-staleness-seconds`, and includes valid `bid_px` / `ask_px`. A current ticker snapshot is not treated as if it existed before older event cutoffs. Historical price, mark, or index candles alone are not bid/ask ticker coverage.
 
 `strategy-idea-candidates-bitget-source-refresh` records current Bitget REST ticker snapshots, historical market candles, and historical funding rows. `--append-existing` preserves existing parquet history and appends newly fetched ticker snapshots so future event cutoffs can become covered after time passes. A single append run normally does not clear old event cutoffs; ticker coverage is only usable when the saved row's `ts_received_ms` is at or before the event cutoff and within staleness bounds.
 

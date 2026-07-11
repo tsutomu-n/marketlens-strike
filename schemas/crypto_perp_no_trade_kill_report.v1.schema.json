@@ -139,6 +139,7 @@
         "KILL_AFTER_COST_NEGATIVE",
         "KILL_STRESS_NEGATIVE",
         "KILL_LOSS_CONCENTRATION",
+        "KILL_UPSTREAM_GATE_REJECTED",
         "REVISE_SOURCE_OR_SIGNAL",
         "COLLECT_MORE_DATA",
         "HOLD_FOR_LEADERBOARD"
@@ -188,6 +189,36 @@
     },
     "live_order_submitted": {
       "const": false
+    },
+    "upstream_gate_decision": {
+      "type": "string"
+    },
+    "upstream_reason_codes": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "upstream_blockers": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "episode_concentration_estimated": {
+      "type": "boolean"
+    },
+    "episode_largest_win_concentration": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "episode_top2_win_concentration": {
+      "type": [
+        "string",
+        "null"
+      ]
     }
   },
   "required": [
@@ -210,6 +241,9 @@
     "slippage_drag",
     "largest_win_concentration",
     "top2_win_concentration",
+    "episode_concentration_estimated",
+    "episode_largest_win_concentration",
+    "episode_top2_win_concentration",
     "largest_loss_concentration",
     "total_loss_usd",
     "largest_loss_to_total_result_ratio",

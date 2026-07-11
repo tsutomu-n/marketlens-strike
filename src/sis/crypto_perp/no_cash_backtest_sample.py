@@ -151,7 +151,7 @@ def _build_fixture_pair(
 ) -> tuple[CryptoPerpEvent, Any]:
     event_return = _fixture_return(index)
     family = (
-        "market_window_v1"
+        "near_miss_v1"
         if abs(event_return) < Decimal("0.01")
         else ("fast_pump_1h_v1" if index % 2 else "slow_pump_74h_v1")
     )
@@ -252,7 +252,9 @@ def write_no_cash_backtest_sample(
     if target_event_count < 1:
         raise ValueError("target_event_count must be positive")
     if fold_count < 2:
-        raise ValueError("fold_count must be at least 2 for an estimable dogfood PBO guard")
+        raise ValueError(
+            "fold_count must be at least 2 for the dogfood PBO input-threshold assessment"
+        )
     created = ensure_utc_aware("created_at", created_at)
     out_dir.mkdir(parents=True, exist_ok=True)
 

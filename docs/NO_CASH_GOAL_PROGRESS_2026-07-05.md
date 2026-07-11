@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-05_13:13 JST
-更新日: 2026-07-05_13:13 JST
+更新日: 2026-07-11_18:35 JST
 -->
 
 # No-Cash Goal Progress 2026-07-05
@@ -38,8 +38,8 @@
 | C9 bridge | 部分到達 | shortlisted 5 件のうち 3 件が `BRIDGED`、2 件が `BLOCKED_UNSUPPORTED_FAMILY_MAPPING`。candidate-scoped artifact と blocker は残っている。 | 対応 family の拡張より先に、blocked を stop result としてレビューし、bridged 3 件の証拠品質を厚くする。 |
 | Bitget public source | 部分到達 | BTCUSDT / USDT-FUTURES / 5m / 200 rows の public source refresh artifact がある。credentials、exchange write、live order は使っていない。 | orderbook depth、measured slippage、websocket、deep backfill は未取得。 |
 | ticker-aware / source availability | 部分到達 | Backtest Candidate Pack に data availability ledger がある。critical missing は 0、future signal source は 0。 | books、trades、replay が missing。cash ledger / live measurement は no-cash 段階では非目標だが、欠損として表示される。 |
-| Backtest Candidate Pack | 到達済みだが判断未達 | `crypto-perp-backtest-candidate-pack` は local pack を生成し、decision は `BACKTEST_COLLECT_MORE_DATA`。no-lookahead failed は 0。 | PBO と rolling stability が sample insufficient。`BACKTEST_CANDIDATE_HOLD` ではない。 |
-| evidence quality | 未達寄り | 10 events / 10 outcomes、`NO_TRADE=8`、`REVERSAL_SHORT=2`。cost-adjusted estimate はあるが sample が薄い。 | event 数、source coverage、books/trades/replay、rolling stability / PBO 評価可能性を増やす。 |
+| Backtest Candidate Pack | 到達済みだが判断未達 | 30 events / 14 tradesを生成し、decisionは`BACKTEST_REJECT`。guardはPBO sample条件でBLOCKED、no-lookahead failedは0。 | PBO専用証跡、position overlap、独立episode、selector benchmarkが未達。 |
+| evidence quality | 未達寄り | 30 events / 14 trades / 10 winsだが、5 episodes、single-position負、30件中27件が同一UTC日。 | PBO計算、position accounting、期間/regime分散、books/trades/replayを増やす。 |
 | live / actual cash boundary | 到達済み | artifacts は `permits_live_order=false`、`live_conversion_allowed=false`、wallet/signing/exchange write/live order は false。 | 境界は維持する。actual cash や tiny live へ進めない。 |
 
 ## 前回答からの補正
@@ -65,7 +65,7 @@
 ## 進めてはいけないこと
 
 - actual cash ledger を未接続のまま profit proof と呼ぶ。
-- 10 event の local backtest を実利益証明と読む。
+- 30 event / 5 episode のlocal backtestを実利益証明と読む。
 - `BRIDGED` を alpha proof、paper permission、live permission と読む。
 - `BACKTEST_COLLECT_MORE_DATA` を candidate hold や live 近接と読む。
 - missing books / trades / replay を zero-fill で埋めて通す。

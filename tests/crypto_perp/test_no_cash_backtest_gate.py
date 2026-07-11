@@ -5,10 +5,14 @@ from pathlib import Path
 from typing import Any
 
 from jsonschema import Draft202012Validator
+import pytest
 from typer.testing import CliRunner
 
 from sis.cli import app
-from sis.crypto_perp.no_cash_backtest_gate import build_no_cash_backtest_gate
+from sis.crypto_perp.no_cash_backtest_gate import (
+    GateThresholds,
+    build_no_cash_backtest_gate,
+)
 from .test_profit_readiness_local_automation import _schema
 
 
@@ -24,7 +28,10 @@ def _decision_payload(
     future_signal_source_count: int = 0,
     simulated_trade_count: int = 10,
     overall_grade: str = "local_simulation_from_existing_artifacts",
-    pbo_status: str = "ESTIMATED",
+    pbo_status: str = "COMPUTED_PASS",
+    bias_guard_status: str | None = "PASS",
+    bias_guard_stop_reasons: list[str] | None = None,
+    bias_guard_warning_codes: list[str] | None = None,
     include_evidence_grade: bool = True,
 ) -> dict[str, Any]:
     payload: dict[str, Any] = {
@@ -47,7 +54,12 @@ def _decision_payload(
         "event_count": event_count,
         "outcome_count": outcome_count,
         "artifact_paths": {},
-        "summary": {"pbo_status": pbo_status, "bias_guard_status": "PASS"},
+        "summary": {
+            "pbo_status": pbo_status,
+            **({"bias_guard_status": bias_guard_status} if bias_guard_status is not None else {}),
+            "bias_guard_stop_reasons": bias_guard_stop_reasons or [],
+            "bias_guard_warning_codes": bias_guard_warning_codes or [],
+        },
         "non_goal_flags": {
             "actual_cash_used": False,
             "profit_proven": False,
@@ -227,6 +239,135 @@ def test_backtest_collect_more_data_decision_collects_more_data() -> None:
 
     assert gate.gate_decision == "NO_CASH_BACKTEST_COLLECT_MORE_DATA"
     assert "BACKTEST_CANDIDATE_PACK_COLLECT_MORE_DATA" in gate.reason_codes
+
+
+def test_blocked_bias_guard_rejects_even_when_candidate_decision_is_hold() -> None:
+    gate = _build_gate(
+        decision=_decision_payload(
+            bias_guard_status="BLOCKED",
+            bias_guard_stop_reasons=["BIAS_GUARD_FAILED_stress_cash_non_negative"],
+        )
+    )
+
+    assert gate.gate_decision == "NO_CASH_BACKTEST_REJECT"
+    assert "BIAS_GUARD_BLOCKED" in gate.reason_codes
+    assert "BIAS_GUARD_FAILED_stress_cash_non_negative" in gate.reason_codes
+    assert gate.summary["bias_guard_status"] == "BLOCKED"
+
+
+def test_blocked_bias_guard_rejects_even_with_collect_blockers() -> None:
+    gate = _build_gate(
+        decision=_decision_payload(
+            decision="BACKTEST_COLLECT_MORE_DATA",
+            bias_guard_status="BLOCKED",
+            bias_guard_stop_reasons=["BIAS_GUARD_FAILED_profit_concentration"],
+            pbo_status="INPUT_THRESHOLD_MET",
+        )
+    )
+
+    assert gate.gate_decision == "NO_CASH_BACKTEST_REJECT"
+    assert "BIAS_GUARD_BLOCKED" in gate.reason_codes
+    assert "BIAS_GUARD_FAILED_profit_concentration" in gate.reason_codes
+
+
+def test_bias_guard_warning_is_preserved_without_blocking_existing_gate_checks() -> None:
+    warning = "BIAS_GUARD_WARNING_stress_cash_non_negative"
+    gate = _build_gate(
+        decision=_decision_payload(bias_guard_warning_codes=[warning]),
+        data_availability=_availability_payload(missing_optional_market_sources=False),
+    )
+
+    assert gate.gate_decision == "NO_CASH_BACKTEST_HOLD"
+    assert gate.summary["bias_guard_status"] == "PASS"
+    assert gate.summary["bias_guard_warning_codes"] == [warning]
+    assert warning in gate.known_gaps
+    assert warning not in gate.reason_codes
+
+
+@pytest.mark.parametrize("status", [None, "NOT_RUN", "UNKNOWN"])
+def test_missing_or_unknown_bias_guard_collects_more_data(status: str | None) -> None:
+    gate = _build_gate(decision=_decision_payload(bias_guard_status=status))
+
+    assert gate.gate_decision == "NO_CASH_BACKTEST_COLLECT_MORE_DATA"
+    assert "BIAS_GUARD_STATUS_MISSING_OR_UNKNOWN" in gate.reason_codes
+
+
+@pytest.mark.parametrize(
+    ("decision", "rolling_status", "pbo_status"),
+    [
+        ("GARBAGE", "complete", "ESTIMATED"),
+        ("BACKTEST_CANDIDATE_HOLD", "GARBAGE", "ESTIMATED"),
+        ("BACKTEST_CANDIDATE_HOLD", "complete", "GARBAGE"),
+    ],
+)
+def test_unknown_required_gate_state_never_holds(
+    decision: str,
+    rolling_status: str,
+    pbo_status: str,
+) -> None:
+    gate = _build_gate(
+        decision=_decision_payload(decision=decision, pbo_status=pbo_status),
+        rolling_stability=_rolling_payload(status=rolling_status),
+    )
+
+    assert gate.gate_decision == "NO_CASH_BACKTEST_COLLECT_MORE_DATA"
+    assert gate.blockers
+
+
+def test_unknown_evidence_grade_never_holds() -> None:
+    gate = _build_gate(
+        decision=_decision_payload(overall_grade="MYSTERY"),
+        data_availability=_availability_payload(missing_optional_market_sources=False),
+    )
+
+    assert gate.gate_decision == "NO_CASH_BACKTEST_COLLECT_MORE_DATA"
+    assert "EVIDENCE_GRADE_STATUS_MISSING_OR_UNKNOWN" in gate.reason_codes
+
+
+def test_required_books_trades_replay_blockers_never_hold() -> None:
+    payloads = {
+        "decision": _decision_payload(),
+        "data_availability": _availability_payload(missing_optional_market_sources=True),
+        "backtest": _backtest_payload(),
+        "stress": _stress_payload(),
+        "rolling_stability": _rolling_payload(),
+    }
+    gate = build_no_cash_backtest_gate(
+        **payloads,
+        created_at="2026-07-06T08:00:00Z",
+        input_artifacts={},
+        thresholds=GateThresholds(require_books_trades_replay=True),
+    )
+
+    assert gate.gate_decision == "NO_CASH_BACKTEST_COLLECT_MORE_DATA"
+    assert gate.blockers
+
+
+def test_candidate_non_hold_reason_codes_propagate_through_gate() -> None:
+    decision = _decision_payload(
+        decision="BACKTEST_COLLECT_MORE_DATA", pbo_status="INPUT_THRESHOLD_MET"
+    )
+    decision["reason_codes"] = ["PBO_NOT_COMPUTED", "POSITION_OVERLAP_NOT_ACCOUNTED"]
+
+    gate = _build_gate(
+        decision=decision,
+        data_availability=_availability_payload(missing_optional_market_sources=False),
+    )
+
+    assert gate.gate_decision == "NO_CASH_BACKTEST_COLLECT_MORE_DATA"
+    assert "POSITION_OVERLAP_NOT_ACCOUNTED" in gate.reason_codes
+    blocker_codes = [blocker.code for blocker in gate.blockers]
+    assert len(blocker_codes) == len(set(blocker_codes))
+
+
+def test_pbo_input_threshold_without_computation_never_holds() -> None:
+    gate = _build_gate(
+        decision=_decision_payload(pbo_status="INPUT_THRESHOLD_MET"),
+        data_availability=_availability_payload(missing_optional_market_sources=False),
+    )
+
+    assert gate.gate_decision == "NO_CASH_BACKTEST_COLLECT_MORE_DATA"
+    assert "PBO_NOT_COMPUTED" in gate.reason_codes
 
 
 def test_critical_missing_source_collects_more_data() -> None:

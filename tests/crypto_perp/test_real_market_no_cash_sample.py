@@ -8,6 +8,12 @@ import polars as pl
 from typer.testing import CliRunner
 
 from sis.cli import app
+from sis.crypto_perp.real_market_no_cash_sample import (
+    _execution_window,
+    _full_horizon_eligible_indices,
+    _price_window,
+    _source_root_candle_rows,
+)
 
 
 runner = CliRunner()
@@ -26,8 +32,9 @@ def _write_public_candle_csv(path: Path, *, row_count: int = 60) -> Path:
         high = max(open_price, close) + 7.5
         low = min(open_price, close) - 7.5
         price = close
+        available_at = ts + timedelta(minutes=5)
         lines.append(
-            f"{ts.strftime('%Y-%m-%dT%H:%M:%SZ')},{ts.strftime('%Y-%m-%dT%H:%M:%SZ')},"
+            f"{ts.strftime('%Y-%m-%dT%H:%M:%SZ')},{available_at.strftime('%Y-%m-%dT%H:%M:%SZ')},"
             f"BTCUSDT,{open_price:.1f},{high:.1f},{low:.1f},{close:.1f},10,{close * 10:.1f}"
         )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -187,6 +194,173 @@ def _write_funding_rows(source_root: Path, *, row_count: int = 60) -> Path:
     return source_root
 
 
+def test_source_root_candle_is_available_only_after_bucket_close(tmp_path: Path) -> None:
+    source_root = tmp_path / "source_root"
+    candle_dir = source_root / "data/candles_5m/date=2026-06-27"
+    candle_dir.mkdir(parents=True)
+    ts = datetime(2026, 6, 27, 0, 0, tzinfo=timezone.utc)
+    pl.DataFrame(
+        [
+            {
+                "ts": int(ts.timestamp() * 1000),
+                "symbol": "BTCUSDT",
+                "open": 100.0,
+                "high": 102.0,
+                "low": 99.0,
+                "close": 101.0,
+                "base_vol": 10.0,
+                "quote_vol": 1010.0,
+            }
+        ]
+    ).write_parquet(candle_dir / "candles.parquet")
+
+    rows = _source_root_candle_rows(source_root, "BTCUSDT")
+
+    assert rows[0]["ts"] == "2026-06-27T00:00:00Z"
+    assert rows[0]["available_at"] == "2026-06-27T00:05:00Z"
+
+
+def test_price_window_skips_bar_open_at_signal_cutoff() -> None:
+    rows = [
+        {
+            "ts": "2026-06-27T00:00:00Z",
+            "available_at": "2026-06-27T00:05:00Z",
+            "open": "95",
+            "high": "102",
+            "low": "94",
+            "close": "100",
+        },
+        {
+            "ts": "2026-06-27T00:05:00Z",
+            "available_at": "2026-06-27T00:10:00Z",
+            "open": "103",
+            "high": "106",
+            "low": "101",
+            "close": "105",
+        },
+        {
+            "ts": "2026-06-27T00:10:00Z",
+            "available_at": "2026-06-27T00:15:00Z",
+            "open": "107",
+            "high": "110",
+            "low": "106",
+            "close": "109",
+        },
+        {
+            "ts": "2026-06-27T00:15:00Z",
+            "available_at": "2026-06-27T00:20:00Z",
+            "open": "109",
+            "high": "112",
+            "low": "108",
+            "close": "111",
+        },
+    ]
+
+    reference, close, high, low = _price_window(rows, 0, 2)
+
+    assert reference == 107
+    assert close == 111
+    assert high == 112
+    assert low == 106
+
+
+def test_execution_window_settles_after_full_horizon_when_input_availability_is_early() -> None:
+    rows = [
+        {
+            "ts": "2026-06-27T00:00:00Z",
+            "available_at": "2026-06-27T00:00:00Z",
+            "open": "100",
+            "high": "101",
+            "low": "99",
+            "close": "100",
+        },
+        {
+            "ts": "2026-06-27T00:05:00Z",
+            "available_at": "2026-06-27T00:05:00Z",
+            "open": "100",
+            "high": "102",
+            "low": "99",
+            "close": "101",
+        },
+        {
+            "ts": "2026-06-27T00:10:00Z",
+            "available_at": "2026-06-27T00:10:00Z",
+            "open": "101",
+            "high": "103",
+            "low": "100",
+            "close": "102",
+        },
+    ]
+
+    *_, entry_at, settled_at = _execution_window(rows, 0, 2)
+
+    assert entry_at.isoformat() == "2026-06-27T00:05:00+00:00"
+    assert settled_at.isoformat() == "2026-06-27T00:15:00+00:00"
+
+
+def test_full_horizon_selection_excludes_gap_crossing_and_delayed_entry_windows() -> None:
+    timestamps = [0, 5, 10, 30, 35, 40, 45]
+    rows = [
+        {
+            "ts": f"2026-06-27T00:{minute:02d}:00Z",
+            "available_at": f"2026-06-27T00:{minute:02d}:00Z",
+            "open": "100",
+            "high": "101",
+            "low": "99",
+            "close": "100",
+        }
+        for minute in timestamps
+    ]
+
+    eligible, rejected = _full_horizon_eligible_indices(
+        rows=rows,
+        candidate_indices=[0, 1, 2, 3],
+        horizon_bars=2,
+        interval_minutes=5,
+    )
+
+    assert eligible == [0, 3]
+    assert rejected == {
+        "FULL_HORIZON_CANDLES_NOT_CONTIGUOUS": 1,
+        "ENTRY_NOT_NEXT_COMPLETE_BAR": 1,
+    }
+
+
+def test_real_market_sample_rejects_when_full_horizon_eligible_count_is_below_target(
+    tmp_path: Path,
+) -> None:
+    input_csv = tmp_path / "gapped.csv"
+    lines = ["ts,available_at,symbol,open,high,low,close,base_vol,quote_vol"]
+    for minute in (0, 20, 40, 60, 80, 100, 120, 140):
+        ts = datetime(2026, 6, 27, tzinfo=timezone.utc) + timedelta(minutes=minute)
+        timestamp = ts.strftime("%Y-%m-%dT%H:%M:%SZ")
+        available_at = (ts + timedelta(minutes=5)).strftime("%Y-%m-%dT%H:%M:%SZ")
+        lines.append(f"{timestamp},{available_at},BTCUSDT,100,101,99,100,10,1000")
+    input_csv.write_text("\n".join(lines) + "\n", encoding="utf-8")
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-real-market-no-cash-sample",
+            "--input-csv",
+            str(input_csv),
+            "--out",
+            str(tmp_path / "out"),
+            "--target-event-count",
+            "1",
+            "--lookback-minutes",
+            "5",
+            "--horizon-minutes",
+            "10",
+            "--interval-minutes",
+            "5",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "FULL_HORIZON_ELIGIBLE_EVENT_COUNT_BELOW_TARGET" in result.stdout
+
+
 def test_real_market_no_cash_sample_uses_public_candles_without_fixture_marker(
     tmp_path: Path,
 ) -> None:
@@ -217,9 +391,34 @@ def test_real_market_no_cash_sample_uses_public_candles_without_fixture_marker(
     assert manifest["non_goal_flags"]["fixture_only"] is False
     assert "DOGFOOD_FIXTURE_NOT_REAL_MARKET_EVIDENCE" not in json.dumps(manifest)
     assert manifest["selection_policy"] == (
-        "time_evenly_spaced_before_outcome; no outcome-favorable filtering; "
-        "require_ticker_coverage=false"
+        "full_horizon_eligible_then_time_evenly_spaced_before_outcome; "
+        "no outcome-favorable filtering; require_ticker_coverage=false"
     )
+    event_ids = sorted(
+        json.loads(path.read_text(encoding="utf-8"))["event_id"]
+        for path in (data_dir / "events").glob("event_*.json")
+    )
+    outcome_ids = sorted(
+        json.loads(path.read_text(encoding="utf-8"))["artifact_id"]
+        for path in (data_dir / "outcomes").glob("outcome_*.json")
+    )
+    assert manifest["event_set"] == event_ids
+    assert manifest["outcome_set"] == outcome_ids
+    assert manifest["execution_window_coverage"] == {
+        "raw_candidate_count": 35,
+        "eligible_candidate_count": 35,
+        "rejected_candidate_count": 0,
+        "rejection_reason_counts": {},
+        "entry_policy": "first_complete_bar_open_exactly_one_interval_after_cutoff",
+        "full_horizon_contiguous_required": True,
+    }
+    assert len(manifest["execution_windows"]) == 30
+    for window in manifest["execution_windows"]:
+        cutoff = datetime.fromisoformat(window["information_cutoff_at"].replace("Z", "+00:00"))
+        entry_at = datetime.fromisoformat(window["entry_at"].replace("Z", "+00:00"))
+        settled_at = datetime.fromisoformat(window["settled_at"].replace("Z", "+00:00"))
+        assert cutoff < entry_at
+        assert settled_at - entry_at == timedelta(minutes=window["horizon_minutes"])
 
     pack_out = tmp_path / "pack"
     pack = runner.invoke(
@@ -234,17 +433,30 @@ def test_real_market_no_cash_sample_uses_public_candles_without_fixture_marker(
     )
 
     assert pack.exit_code == 0, pack.stdout
-    assert "decision=BACKTEST_COLLECT_MORE_DATA" in pack.stdout
+    assert "decision=BACKTEST_REJECT" in pack.stdout
     decision = json.loads((pack_out / "decision.json").read_text(encoding="utf-8"))
     assert decision["event_count"] == 30
     assert decision["outcome_count"] == 30
-    assert decision["summary"]["pbo_status"] == "ESTIMATED"
+    assert decision["summary"]["pbo_status"] == "NOT_ESTIMABLE"
     assert decision["summary"]["rolling_stability"]["event_count"] == 30
     evidence = decision["evidence_grade_summary"]
     assert evidence["critical_missing_count"] > 0
     assert "HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE" in evidence["known_limits"]
     assert "HISTORICAL_FUNDING_SOURCE_NOT_AVAILABLE" in evidence["known_limits"]
     assert "DOGFOOD_FIXTURE_NOT_REAL_MARKET_EVIDENCE" not in json.dumps(decision)
+    signal_rows = [
+        json.loads(line)
+        for line in (pack_out / "signal_rows.jsonl").read_text(encoding="utf-8").splitlines()
+    ]
+    assert all(
+        datetime.fromisoformat(row["information_cutoff_at"].replace("Z", "+00:00"))
+        < datetime.fromisoformat(row["entry_at"].replace("Z", "+00:00"))
+        for row in signal_rows
+    )
+    backtest = json.loads((pack_out / "backtest_result.json").read_text(encoding="utf-8"))
+    robustness = backtest["summary"]["profit_robustness"]
+    assert robustness["holding_minutes_source"] == ("tournament_rows.summary.execution_windows")
+    assert robustness["execution_windows_verified"] is True
 
     gate_out = tmp_path / "gate"
     gate = runner.invoke(
@@ -268,7 +480,8 @@ def test_real_market_no_cash_sample_uses_public_candles_without_fixture_marker(
 
     assert gate.exit_code == 0, gate.stdout
     artifact = json.loads((gate_out / "no_cash_backtest_gate.json").read_text(encoding="utf-8"))
-    assert artifact["gate_decision"] == "NO_CASH_BACKTEST_COLLECT_MORE_DATA"
+    assert artifact["gate_decision"] == "NO_CASH_BACKTEST_REJECT"
+    assert "BIAS_GUARD_BLOCKED" in artifact["reason_codes"]
     blocker_codes = {blocker["code"] for blocker in artifact["blockers"]}
     assert "CRITICAL_SIGNAL_SOURCE_MISSING" in blocker_codes
     assert "CRITICAL_SIGNAL_SOURCE_MISSING_TICKER" in blocker_codes

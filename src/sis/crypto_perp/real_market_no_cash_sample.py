@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 import csv
 import hashlib
@@ -25,6 +25,10 @@ from sis.crypto_perp.funding_source import (
 )
 from sis.crypto_perp.io import write_json_artifact
 from sis.crypto_perp.outcomes import OutcomePriceWindow, build_outcome
+from sis.crypto_perp.real_market_candle_validation import (
+    validate_candle_rows,
+    validate_signal_lookback_window,
+)
 from sis.crypto_perp.source_availability import build_source_availability
 from sis.crypto_perp.ticker_source import (
     TICKER_SOURCE_MISSING_BEFORE_CUTOFF,
@@ -39,6 +43,7 @@ LOCAL_SIMULATION_GAP = "LOCAL_SIMULATION_ONLY"
 NOT_ACTUAL_CASH_GAP = "NOT_ACTUAL_CASH"
 HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE = "HISTORICAL_TICKER_SOURCE_NOT_AVAILABLE"
 TICKER_COVERED_EVENT_COUNT_BELOW_TARGET = "TICKER_COVERED_EVENT_COUNT_BELOW_TARGET"
+FULL_HORIZON_ELIGIBLE_EVENT_COUNT_BELOW_TARGET = "FULL_HORIZON_ELIGIBLE_EVENT_COUNT_BELOW_TARGET"
 
 
 @dataclass(frozen=True)
@@ -105,7 +110,7 @@ def _source_root_candle_rows(source_root: Path, symbol: str) -> list[dict[str, s
         rows.append(
             {
                 "ts": serialize_utc_z(ts),
-                "available_at": serialize_utc_z(ts),
+                "available_at": serialize_utc_z(ts + timedelta(minutes=5)),
                 "symbol": str(row["symbol"]),
                 "open": _decimal_text(row["open"]),
                 "high": _decimal_text(row["high"]),
@@ -163,7 +168,9 @@ def _write_input_csv(path: Path, rows: list[dict[str, str]]) -> None:
 
 def _eligible_indices(row_count: int, lookback_bars: int, horizon_bars: int) -> list[int]:
     first = lookback_bars
-    last = row_count - horizon_bars - 1
+    # A source row can become available exactly when the following candle opens.
+    # Reserve one additional row so entry is always strictly after the signal cutoff.
+    last = row_count - horizon_bars - 2
     if last < first:
         raise ValueError(
             "not enough rows for lookback and horizon: "
@@ -194,14 +201,90 @@ def _selected_indices(
     )
 
 
-def _price_window(
-    rows: list[dict[str, str]], index: int, horizon_bars: int
-) -> tuple[Decimal, Decimal, Decimal, Decimal]:
-    reference = Decimal(rows[index]["close"])
-    horizon = rows[index + 1 : index + horizon_bars + 1]
+def _execution_window(
+    rows: list[dict[str, str]],
+    index: int,
+    horizon_bars: int,
+    interval_minutes: int | None = None,
+) -> tuple[Decimal, Decimal, Decimal, Decimal, datetime, datetime]:
+    cutoff = ensure_utc_aware("information_cutoff_at", rows[index]["available_at"])
+    entry_index = index + 1
+    while entry_index < len(rows):
+        entry_at = ensure_utc_aware("entry_at", rows[entry_index]["ts"])
+        if entry_at > cutoff:
+            break
+        entry_index += 1
+    horizon = rows[entry_index : entry_index + horizon_bars]
+    if len(horizon) != horizon_bars:
+        raise ValueError(
+            "not enough complete bars strictly after signal cutoff: "
+            f"index={index} horizon_bars={horizon_bars}"
+        )
+    entry_at = ensure_utc_aware("entry_at", horizon[0]["ts"])
+    if entry_at <= cutoff:
+        raise ValueError("entry_at must be strictly after information_cutoff_at")
+    adjacent_index = entry_index + 1 if entry_index + 1 < len(rows) else entry_index - 1
+    if adjacent_index < 0:
+        raise ValueError("cannot infer candle interval from a single row")
+    adjacent_at = ensure_utc_aware("adjacent_at", rows[adjacent_index]["ts"])
+    interval = adjacent_at - entry_at if adjacent_index > entry_index else entry_at - adjacent_at
+    if interval <= timedelta(0):
+        raise ValueError("FULL_HORIZON_CANDLES_NOT_CONTIGUOUS: timestamps not increasing")
+    expected_interval = (
+        timedelta(minutes=interval_minutes) if interval_minutes is not None else interval
+    )
+    if interval != expected_interval:
+        raise ValueError(
+            "FULL_HORIZON_CANDLES_NOT_CONTIGUOUS: candle interval does not match configured interval"
+        )
+    if entry_at - cutoff != expected_interval:
+        raise ValueError(
+            "ENTRY_NOT_NEXT_COMPLETE_BAR: entry must be exactly one interval after cutoff"
+        )
+    for offset, row in enumerate(horizon):
+        row_at = ensure_utc_aware("horizon_row_at", row["ts"])
+        if row_at != entry_at + (expected_interval * offset):
+            raise ValueError("FULL_HORIZON_CANDLES_NOT_CONTIGUOUS: gap inside execution window")
+    settled_at = entry_at + (expected_interval * horizon_bars)
+    last_available_at = ensure_utc_aware("last_available_at", horizon[-1]["available_at"])
+    if last_available_at > settled_at:
+        raise ValueError(
+            "FULL_HORIZON_BAR_NOT_AVAILABLE_BY_END: final bar availability exceeds horizon"
+        )
+    reference = Decimal(horizon[0]["open"])
     close = Decimal(horizon[-1]["close"])
     high = max(Decimal(row["high"]) for row in horizon)
     low = min(Decimal(row["low"]) for row in horizon)
+    return reference, close, high, low, entry_at, settled_at
+
+
+def _full_horizon_eligible_indices(
+    *,
+    rows: list[dict[str, str]],
+    candidate_indices: list[int],
+    horizon_bars: int,
+    interval_minutes: int,
+    lookback_bars: int | None = None,
+) -> tuple[list[int], dict[str, int]]:
+    eligible: list[int] = []
+    rejected: dict[str, int] = {}
+    for index in candidate_indices:
+        try:
+            if lookback_bars is not None:
+                validate_signal_lookback_window(rows, index, lookback_bars, interval_minutes)
+            _execution_window(rows, index, horizon_bars, interval_minutes)
+        except (KeyError, ValueError) as exc:
+            reason = str(exc).split(":", maxsplit=1)[0]
+            rejected[reason] = rejected.get(reason, 0) + 1
+        else:
+            eligible.append(index)
+    return eligible, dict(sorted(rejected.items()))
+
+
+def _price_window(
+    rows: list[dict[str, str]], index: int, horizon_bars: int
+) -> tuple[Decimal, Decimal, Decimal, Decimal]:
+    reference, close, high, low, _, _ = _execution_window(rows, index, horizon_bars)
     return reference, close, high, low
 
 
@@ -357,8 +440,12 @@ def write_real_market_no_cash_sample(
         raise ValueError("interval_minutes must be positive")
     if lookback_minutes < interval_minutes or horizon_minutes < interval_minutes:
         raise ValueError("lookback_minutes and horizon_minutes must be at least interval_minutes")
+    if lookback_minutes % interval_minutes or horizon_minutes % interval_minutes:
+        raise ValueError(
+            "lookback_minutes and horizon_minutes must be evenly divisible by interval_minutes"
+        )
     if fold_count < 2:
-        raise ValueError("fold_count must be at least 2 for an estimable PBO guard")
+        raise ValueError("fold_count must be at least 2 for the PBO input-threshold assessment")
 
     created = ensure_utc_aware("created_at", created_at)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -367,6 +454,7 @@ def write_real_market_no_cash_sample(
         if source_root is not None
         else _input_csv_rows(input_csv or Path(), symbol)
     )
+    validate_candle_rows(rows, interval_minutes)
     effective_ticker_source_root = ticker_source_root or source_root
     materialized_csv = out_dir / "input" / f"{symbol.upper()}_{interval_minutes}m_public_market.csv"
     _write_input_csv(materialized_csv, rows)
@@ -386,7 +474,24 @@ def write_real_market_no_cash_sample(
                     manifest, schema_version="strategy_idea_candidates_bitget_public_source.v1"
                 )
             )
-    candidate_indices = _eligible_indices(len(rows), lookback_bars, horizon_bars)
+    raw_candidate_indices = _eligible_indices(len(rows), lookback_bars, horizon_bars)
+    candidate_indices, execution_window_rejections = _full_horizon_eligible_indices(
+        rows=rows,
+        candidate_indices=raw_candidate_indices,
+        horizon_bars=horizon_bars,
+        interval_minutes=interval_minutes,
+        lookback_bars=lookback_bars,
+    )
+    if len(candidate_indices) < target_event_count:
+        reason_counts = (
+            ",".join(f"{reason}={count}" for reason, count in execution_window_rejections.items())
+            or "NONE"
+        )
+        raise ValueError(
+            f"{FULL_HORIZON_ELIGIBLE_EVENT_COUNT_BELOW_TARGET}: "
+            f"eligible={len(candidate_indices)} target={target_event_count} "
+            f"raw_candidates={len(raw_candidate_indices)} rejections={reason_counts}"
+        )
     ticker_covered_candidate_count: int | None = None
     ticker_coverage_missing_reasons: set[str] = set()
     if require_ticker_coverage:
@@ -414,6 +519,7 @@ def write_real_market_no_cash_sample(
 
     events = []
     outcomes = []
+    execution_windows: list[dict[str, Any]] = []
     for sample_index, row_index in enumerate(indices):
         cutoff = ensure_utc_aware("information_cutoff_at", rows[row_index]["available_at"])
         event = build_market_window_event(
@@ -424,8 +530,9 @@ def write_real_market_no_cash_sample(
             source_refs=source_refs,
             producer_command=REAL_MARKET_NO_CASH_PRODUCER,
         )
-        reference, close, high, low = _price_window(rows, row_index, horizon_bars)
-        settled_at = ensure_utc_aware("settled_at", rows[row_index + horizon_bars]["available_at"])
+        reference, close, high, low, entry_at, settled_at = _execution_window(
+            rows, row_index, horizon_bars, interval_minutes
+        )
         outcome = build_outcome(
             event_id=event.event_id,
             settled_at=settled_at,
@@ -466,6 +573,16 @@ def write_real_market_no_cash_sample(
         write_json_artifact(outcome_path, _json_payload(outcome))
         events.append((event_path, event, ticker_status, funding_status))
         outcomes.append((outcome_path, outcome))
+        execution_windows.append(
+            {
+                "event_id": event.event_id,
+                "outcome_id": outcome.outcome_id,
+                "information_cutoff_at": serialize_utc_z(cutoff),
+                "entry_at": serialize_utc_z(entry_at),
+                "settled_at": serialize_utc_z(settled_at),
+                "horizon_minutes": horizon_minutes,
+            }
+        )
 
     source_paths: list[str] = []
     missing_ticker_reasons: set[str] = set()
@@ -564,9 +681,21 @@ def write_real_market_no_cash_sample(
         "target_event_count": target_event_count,
         "event_count": len(pairs),
         "outcome_count": len(pairs),
+        "event_set": sorted(pair.event.event_id for pair in pairs),
+        "outcome_set": sorted(pair.outcome.artifact_id for pair in pairs),
+        "execution_windows": execution_windows,
+        "execution_window_coverage": {
+            "raw_candidate_count": len(raw_candidate_indices),
+            "eligible_candidate_count": len(candidate_indices),
+            "rejected_candidate_count": len(raw_candidate_indices) - len(candidate_indices),
+            "rejection_reason_counts": execution_window_rejections,
+            "entry_policy": "first_complete_bar_open_exactly_one_interval_after_cutoff",
+            "full_horizon_contiguous_required": True,
+        },
         "source_availability_count": len(source_paths),
         "selection_policy": (
-            "time_evenly_spaced_before_outcome; no outcome-favorable filtering; "
+            "full_horizon_eligible_then_time_evenly_spaced_before_outcome; "
+            "no outcome-favorable filtering; "
             f"require_ticker_coverage={str(require_ticker_coverage).lower()}"
         ),
         "source_coverage": {

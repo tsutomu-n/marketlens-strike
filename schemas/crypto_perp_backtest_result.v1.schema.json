@@ -1,0 +1,296 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "crypto_perp_backtest_result.v1"
+    },
+    "status": {
+      "const": "complete"
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "event_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "executed_trade_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "no_trade_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unknown_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "blocked_missing_action_row_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total_result_usd": {
+          "type": "string"
+        },
+        "average_result_usd": {
+          "type": "string"
+        },
+        "win_rate": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "max_drawdown_usd": {
+          "type": "string"
+        },
+        "beats_no_trade": {
+          "type": "boolean"
+        },
+        "profit_robustness": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "holding_minutes": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "holding_minutes_source": {
+              "const": "tournament_rows.summary.execution_windows"
+            },
+            "execution_windows_verified": {
+              "const": true
+            },
+            "peak_concurrent_positions": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "peak_gross_notional_usd": {
+              "type": "string"
+            },
+            "market_episode_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "market_episode_win_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "market_episode_totals_usd": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "non_overlapping_trade_count": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "single_position_total_result_usd": {
+              "type": "string"
+            },
+            "position_overlap_accounted": {
+              "type": "boolean"
+            },
+            "gross_profit_usd": {
+              "type": "string"
+            },
+            "gross_loss_usd": {
+              "type": "string"
+            },
+            "profit_factor": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "top_3_win_share_of_gross_profit": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "break_even_extra_cost_per_trade_usd": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "signal_score_result_correlation": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "static_action_totals_usd": {
+              "type": "object",
+              "minProperties": 1,
+              "additionalProperties": {
+                "type": "string"
+              }
+            },
+            "best_static_action": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "best_static_total_result_usd": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "selector_beats_best_static_action": {
+              "type": [
+                "boolean",
+                "null"
+              ]
+            },
+            "action_performance": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "trade_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "win_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "loss_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "total_result_usd": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "trade_count",
+                  "win_count",
+                  "loss_count",
+                  "total_result_usd"
+                ]
+              }
+            }
+          },
+          "required": [
+            "holding_minutes",
+            "holding_minutes_source",
+            "execution_windows_verified",
+            "peak_concurrent_positions",
+            "peak_gross_notional_usd",
+            "market_episode_count",
+            "market_episode_win_count",
+            "market_episode_totals_usd",
+            "non_overlapping_trade_count",
+            "single_position_total_result_usd",
+            "position_overlap_accounted",
+            "gross_profit_usd",
+            "gross_loss_usd",
+            "profit_factor",
+            "top_3_win_share_of_gross_profit",
+            "break_even_extra_cost_per_trade_usd",
+            "signal_score_result_correlation",
+            "static_action_totals_usd",
+            "best_static_action",
+            "best_static_total_result_usd",
+            "selector_beats_best_static_action",
+            "action_performance"
+          ]
+        }
+      },
+      "required": [
+        "event_count",
+        "executed_trade_count",
+        "no_trade_count",
+        "unknown_count",
+        "blocked_missing_action_row_count",
+        "total_result_usd",
+        "average_result_usd",
+        "win_rate",
+        "max_drawdown_usd",
+        "beats_no_trade",
+        "profit_robustness"
+      ]
+    },
+    "results": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "event_id": {
+            "type": "string"
+          },
+          "outcome_id": {
+            "type": "string"
+          },
+          "selected_action": {
+            "type": "string"
+          },
+          "fill_status": {
+            "type": "string"
+          },
+          "metric": {
+            "type": "string"
+          },
+          "result_usd": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "event_id",
+          "outcome_id",
+          "selected_action",
+          "fill_status",
+          "metric",
+          "result_usd"
+        ]
+      }
+    },
+    "paper_only": {
+      "const": true
+    },
+    "permits_live_order": {
+      "const": false
+    },
+    "live_conversion_allowed": {
+      "const": false
+    },
+    "wallet_used": {
+      "const": false
+    },
+    "exchange_write_used": {
+      "const": false
+    },
+    "live_order_submitted": {
+      "const": false
+    },
+    "profit_proven": {
+      "const": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "status",
+    "summary",
+    "results",
+    "paper_only",
+    "permits_live_order",
+    "live_conversion_allowed",
+    "wallet_used",
+    "exchange_write_used",
+    "live_order_submitted",
+    "profit_proven"
+  ]
+}

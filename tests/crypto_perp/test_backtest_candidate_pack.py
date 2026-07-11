@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal
+import hashlib
 import json
 from pathlib import Path
 
@@ -16,6 +17,7 @@ from sis.crypto_perp.backtest_candidate_pack import (
 from sis.crypto_perp.backtest_candidate_pack_models import (
     CryptoPerpBacktestCandidatePackDecision,
 )
+from sis.crypto_perp.backtest_candidate_pack_reports import decide_backtest_candidate
 from sis.crypto_perp.bias_guards import build_bias_guard
 from sis.crypto_perp.edge_scorer import build_edge_score
 from sis.crypto_perp.features import build_feature_pack
@@ -25,6 +27,10 @@ from .test_profit_readiness_local_automation import _event, _outcome, _schema, _
 
 
 runner = CliRunner()
+
+
+def _file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def _write_ready_inputs(tmp_path: Path) -> Path:
@@ -51,10 +57,126 @@ def _write_ready_inputs(tmp_path: Path) -> Path:
     return tmp_path
 
 
-def test_backtest_candidate_pack_writes_required_artifacts_and_hold_decision(
+def _write_explicit_passing_guard(data_dir: Path) -> None:
+    outcome = _outcome(_event().event_id)
+    rows = build_cost_aware_tournament_rows(
+        outcomes=[outcome],
+        created_at="2026-06-21T07:03:00Z",
+        notional_usd=Decimal("100"),
+        fee_rate=Decimal("0.0004"),
+        funding_rate=Decimal("0.0001"),
+        slippage_bps=Decimal("2"),
+    )
+    rows_path = data_dir / "tournament_rows_v2.json"
+    _write_json(rows_path, rows)
+    guard = build_bias_guard(
+        rows=rows.rows,
+        created_at="2026-06-21T07:04:00Z",
+        min_events_for_pbo=1,
+        fold_count=2,
+        source_refs=[
+            {
+                "path": rows_path.as_posix(),
+                "sha256": _file_sha256(rows_path),
+                "schema_version": rows.schema_version,
+            }
+        ],
+    ).model_copy(update={"guard_status": "PASS", "stop_reasons": []})
+    _write_json(data_dir / "bias_guard.json", guard)
+
+
+def test_candidate_missing_selected_action_row_requires_revision() -> None:
+    outcome = _outcome(_event().event_id)
+    rows = build_cost_aware_tournament_rows(
+        outcomes=[outcome],
+        created_at="2026-06-21T07:03:00Z",
+        notional_usd=Decimal("100"),
+    )
+    guard = build_bias_guard(
+        rows=rows.rows,
+        created_at="2026-06-21T07:04:00Z",
+        min_events_for_pbo=1,
+        fold_count=2,
+        max_profit_concentration=Decimal("1"),
+    ).model_copy(update={"pbo_status": "COMPUTED_PASS"})
+    backtest_summary = {
+        "executed_trade_count": 1,
+        "unknown_count": 0,
+        "blocked_missing_action_row_count": 1,
+        "total_result_usd": "1",
+        "max_drawdown_usd": "0",
+        "profit_robustness": {
+            "peak_concurrent_positions": 1,
+            "position_overlap_accounted": True,
+        },
+    }
+
+    decision, reasons = decide_backtest_candidate(
+        event_count=1,
+        outcome_count=1,
+        min_events=1,
+        ledger={"summary": {"critical_missing_count": 0}},
+        no_lookahead={"summary": {"failed_count": 0, "unverified_count": 0}},
+        backtest={"summary": backtest_summary},
+        stress={"summary": {**backtest_summary, "total_result_usd": "1"}},
+        rolling={"status": "complete"},
+        guard=guard,
+    )
+
+    assert decision == "BACKTEST_REVISE"
+    assert "ACTION_ROWS_MISSING" in reasons
+
+
+def test_candidate_rejects_blocked_guard_before_uncomputed_pbo() -> None:
+    outcome = _outcome(_event().event_id)
+    rows = build_cost_aware_tournament_rows(
+        outcomes=[outcome],
+        created_at="2026-06-21T07:03:00Z",
+        notional_usd=Decimal("100"),
+    )
+    guard = build_bias_guard(
+        rows=rows.rows,
+        created_at="2026-06-21T07:04:00Z",
+        min_events_for_pbo=1,
+        fold_count=2,
+        max_profit_concentration=Decimal("0.5"),
+    )
+    assert guard.guard_status == "BLOCKED"
+    assert guard.pbo_status == "INPUT_THRESHOLD_MET"
+    backtest_summary = {
+        "executed_trade_count": 1,
+        "unknown_count": 0,
+        "blocked_missing_action_row_count": 0,
+        "total_result_usd": "1",
+        "max_drawdown_usd": "0",
+        "profit_robustness": {
+            "peak_concurrent_positions": 1,
+            "position_overlap_accounted": True,
+        },
+    }
+
+    decision, reasons = decide_backtest_candidate(
+        event_count=1,
+        outcome_count=1,
+        min_events=2,
+        ledger={"summary": {"critical_missing_count": 0}},
+        no_lookahead={"summary": {"failed_count": 0, "unverified_count": 0}},
+        backtest={"summary": backtest_summary},
+        stress={"summary": {**backtest_summary, "total_result_usd": "1"}},
+        rolling={"status": "complete"},
+        guard=guard,
+    )
+
+    assert decision == "BACKTEST_REJECT"
+    assert "BIAS_GUARD_BLOCKED" in reasons
+    assert set(guard.stop_reasons).issubset(reasons)
+
+
+def test_backtest_candidate_pack_writes_artifacts_and_rejects_current_guard_blocker(
     tmp_path: Path,
 ) -> None:
     data_dir = _write_ready_inputs(tmp_path / "data")
+    _write_explicit_passing_guard(data_dir)
     out_dir = tmp_path / "pack"
 
     result = build_crypto_perp_backtest_candidate_pack(
@@ -73,7 +195,9 @@ def test_backtest_candidate_pack_writes_required_artifacts_and_hold_decision(
     assert set(result.paths) == set(BACKTEST_CANDIDATE_PACK_ARTIFACT_NAMES)
     for path in result.paths.values():
         assert path.exists()
-    assert result.decision.decision == "BACKTEST_CANDIDATE_HOLD"
+    assert result.decision.decision == "BACKTEST_REJECT"
+    assert result.decision.summary["pbo_status"] == "INPUT_THRESHOLD_MET"
+    assert "BIAS_GUARD_BLOCKED" in result.decision.reason_codes
     assert result.decision.evidence_grade_summary is not None
     assert (
         result.decision.evidence_grade_summary.strongest_evidence_level
@@ -105,7 +229,7 @@ def test_backtest_candidate_pack_writes_required_artifacts_and_hold_decision(
     Draft202012Validator(schema).validate(decision_payload)
 
 
-def test_backtest_candidate_pack_collects_more_data_when_sources_are_missing(
+def test_backtest_candidate_pack_rejects_blocked_guard_when_sources_are_missing(
     tmp_path: Path,
 ) -> None:
     event = _event()
@@ -122,7 +246,8 @@ def test_backtest_candidate_pack_collects_more_data_when_sources_are_missing(
         fold_count=2,
     )
 
-    assert result.decision.decision == "BACKTEST_COLLECT_MORE_DATA"
+    assert result.decision.decision == "BACKTEST_REJECT"
+    assert "BIAS_GUARD_BLOCKED" in result.decision.reason_codes
     assert result.decision.evidence_grade_summary is not None
     assert (
         result.decision.evidence_grade_summary.strongest_evidence_level
@@ -163,16 +288,24 @@ def test_backtest_candidate_pack_grades_existing_artifact_only_pack_as_local_sim
         funding_rate=Decimal("0.0001"),
         slippage_bps=Decimal("2"),
     )
+    rows_path = data_dir / "tournament_rows_v2.json"
+    _write_json(rows_path, rows)
     guard = build_bias_guard(
         rows=rows.rows,
         created_at="2026-06-21T07:04:00Z",
         min_events_for_pbo=1,
         fold_count=2,
         max_profit_concentration=Decimal("1"),
+        source_refs=[
+            {
+                "path": rows_path.as_posix(),
+                "sha256": _file_sha256(rows_path),
+                "schema_version": rows.schema_version,
+            }
+        ],
     )
     _write_json(data_dir / "feature_pack.json", feature)
     _write_json(data_dir / "edge_score.json", edge)
-    _write_json(data_dir / "tournament_rows_v2.json", rows)
     _write_json(data_dir / "bias_guard.json", guard)
 
     result = build_crypto_perp_backtest_candidate_pack(
@@ -187,10 +320,306 @@ def test_backtest_candidate_pack_grades_existing_artifact_only_pack_as_local_sim
 
     assert result.decision.evidence_grade_summary is not None
     assert result.decision.evidence_grade_summary.strongest_evidence_level == (
-        "local_simulated_estimate"
+        "recomputed_minimal_simulated_estimate"
     )
-    assert result.decision.evidence_grade_summary.existing_artifact_only is True
-    assert result.decision.evidence_grade_summary.recomputed_minimal_artifact_count == 0
+    assert result.decision.evidence_grade_summary.existing_artifact_only is False
+    assert result.decision.evidence_grade_summary.recomputed_minimal_artifact_count >= 1
+
+
+def test_backtest_candidate_pack_recomputes_external_guard_and_uses_current_blockers(
+    tmp_path: Path,
+) -> None:
+    data_dir = _write_ready_inputs(tmp_path / "data")
+    outcome = _outcome(_event().event_id)
+    rows = build_cost_aware_tournament_rows(
+        outcomes=[outcome],
+        created_at="2026-06-21T07:03:00Z",
+        notional_usd=Decimal("100"),
+        fee_rate=Decimal("0.0004"),
+        funding_rate=Decimal("0.0001"),
+        slippage_bps=Decimal("2"),
+    )
+    rows_path = data_dir / "tournament_rows_v2.json"
+    _write_json(rows_path, rows)
+    guard = build_bias_guard(
+        rows=rows.rows,
+        created_at="2026-06-21T07:04:00Z",
+        min_events_for_pbo=1,
+        fold_count=2,
+        source_refs=[
+            {
+                "path": rows_path.as_posix(),
+                "sha256": f"sha256:{_file_sha256(rows_path)}",
+                "schema_version": rows.schema_version,
+            }
+        ],
+    ).model_copy(
+        update={
+            "guard_status": "BLOCKED",
+            "stop_reasons": ["BIAS_GUARD_FAILED_test_guard"],
+        }
+    )
+    _write_json(data_dir / "bias_guard.json", guard)
+
+    result = build_crypto_perp_backtest_candidate_pack(
+        data_dir=data_dir,
+        out_dir=tmp_path / "pack-blocked",
+        created_at="2026-06-21T08:00:00Z",
+        notional_usd=Decimal("100"),
+        min_events=1,
+        min_events_for_stability=1,
+        fold_count=2,
+    )
+
+    assert result.decision.decision == "BACKTEST_REJECT"
+    assert "BIAS_GUARD_BLOCKED" in result.decision.reason_codes
+    assert "BIAS_GUARD_FAILED_profit_concentration_within_limit" in (result.decision.reason_codes)
+    assert "BIAS_GUARD_FAILED_test_guard" not in result.decision.reason_codes
+    assert result.decision.summary["bias_guard_origin"]["note"] == (
+        "recomputed with current guard policy from selected tournament rows"
+    )
+
+
+def test_backtest_candidate_pack_recomputes_guard_from_inconsistent_warning_contract(
+    tmp_path: Path,
+) -> None:
+    data_dir = _write_ready_inputs(tmp_path / "data")
+    outcome = _outcome(_event().event_id)
+    rows = build_cost_aware_tournament_rows(
+        outcomes=[outcome],
+        created_at="2026-06-21T07:03:00Z",
+        notional_usd=Decimal("100"),
+        fee_rate=Decimal("0.0004"),
+        funding_rate=Decimal("0.0001"),
+        slippage_bps=Decimal("2"),
+    )
+    rows_path = data_dir / "tournament_rows_v2.json"
+    _write_json(rows_path, rows)
+    guard = build_bias_guard(
+        rows=rows.rows,
+        created_at="2026-06-21T07:04:00Z",
+        min_events_for_pbo=1,
+        fold_count=2,
+        source_refs=[
+            {
+                "path": rows_path.as_posix(),
+                "sha256": _file_sha256(rows_path),
+                "schema_version": rows.schema_version,
+            }
+        ],
+    )
+    legacy_checks = [check.model_copy() for check in guard.checks]
+    legacy_guard = guard.model_copy(
+        update={
+            "checks": legacy_checks,
+            "guard_status": "BLOCKED",
+            "stop_reasons": ["BIAS_GUARD_FAILED_stress_cash_non_negative"],
+        }
+    )
+    _write_json(data_dir / "bias_guard.json", legacy_guard)
+
+    result = build_crypto_perp_backtest_candidate_pack(
+        data_dir=data_dir,
+        out_dir=tmp_path / "pack-contract",
+        created_at="2026-06-21T08:00:00Z",
+        notional_usd=Decimal("100"),
+        min_events=1,
+        min_events_for_stability=1,
+        fold_count=2,
+    )
+
+    origin = result.decision.summary["bias_guard_origin"]
+    assert origin["origin"] == "recomputed_minimal"
+    assert (
+        "BIAS_GUARD_FAILED_stress_cash_non_negative"
+        not in result.decision.summary["bias_guard_stop_reasons"]
+    )
+    assert result.decision.summary["bias_guard_warning_codes"] == [
+        "BIAS_GUARD_WARNING_stress_cash_non_negative"
+    ]
+
+
+def test_backtest_candidate_pack_recomputes_guard_when_rows_hash_does_not_match(
+    tmp_path: Path,
+) -> None:
+    data_dir = _write_ready_inputs(tmp_path / "data")
+    outcome = _outcome(_event().event_id)
+    rows = build_cost_aware_tournament_rows(
+        outcomes=[outcome],
+        created_at="2026-06-21T07:03:00Z",
+        notional_usd=Decimal("100"),
+        fee_rate=Decimal("0.0004"),
+        funding_rate=Decimal("0.0001"),
+        slippage_bps=Decimal("2"),
+    )
+    rows_path = data_dir / "tournament_rows_v2.json"
+    _write_json(rows_path, rows)
+    stale_guard = build_bias_guard(
+        rows=rows.rows,
+        created_at="2026-06-21T07:04:00Z",
+        min_events_for_pbo=1,
+        fold_count=2,
+        source_refs=[
+            {
+                "path": rows_path.as_posix(),
+                "sha256": "0" * 64,
+                "schema_version": rows.schema_version,
+            }
+        ],
+    )
+    _write_json(data_dir / "bias_guard.json", stale_guard)
+
+    result = build_crypto_perp_backtest_candidate_pack(
+        data_dir=data_dir,
+        out_dir=tmp_path / "pack-lineage",
+        created_at="2026-06-21T08:00:00Z",
+        notional_usd=Decimal("100"),
+        min_events=1,
+        min_events_for_stability=1,
+        fold_count=2,
+    )
+
+    origin = result.decision.summary["bias_guard_origin"]
+    assert origin["origin"] == "recomputed_minimal"
+    assert origin["note"] == "recomputed with current guard policy from selected tournament rows"
+
+
+def test_backtest_candidate_pack_always_recomputes_derived_tournament_rows(
+    tmp_path: Path,
+) -> None:
+    data_dir = _write_ready_inputs(tmp_path / "data")
+    outcome = _outcome(_event().event_id)
+    existing_rows = build_cost_aware_tournament_rows(
+        outcomes=[outcome],
+        created_at="2026-06-21T07:03:00Z",
+        notional_usd=Decimal("100"),
+    )
+    _write_json(data_dir / "tournament_rows_v2.json", existing_rows)
+
+    result = build_crypto_perp_backtest_candidate_pack(
+        data_dir=data_dir,
+        out_dir=tmp_path / "pack",
+        created_at="2026-06-21T08:00:00Z",
+        notional_usd=Decimal("100"),
+        min_events=1,
+        min_events_for_stability=1,
+        fold_count=2,
+    )
+
+    origin = result.decision.summary["tournament_rows_origin"]
+    assert origin == {
+        "origin": "recomputed_minimal",
+        "path": None,
+        "note": "always recomputed from matured outcomes; derived rows are not trusted inputs",
+    }
+
+
+def test_backtest_candidate_pack_recomputes_rows_when_cost_assumptions_change(
+    tmp_path: Path,
+) -> None:
+    data_dir = _write_ready_inputs(tmp_path / "data")
+    outcome = _outcome(_event().event_id)
+    existing_rows = build_cost_aware_tournament_rows(
+        outcomes=[outcome],
+        created_at="2026-06-21T07:03:00Z",
+        notional_usd=Decimal("100"),
+        fee_rate=Decimal("0.0004"),
+        funding_rate=Decimal("0.0001"),
+        slippage_bps=Decimal("2"),
+    )
+    _write_json(data_dir / "tournament_rows_v2.json", existing_rows)
+
+    result = build_crypto_perp_backtest_candidate_pack(
+        data_dir=data_dir,
+        out_dir=tmp_path / "pack-high-slippage",
+        created_at="2026-06-21T08:00:00Z",
+        notional_usd=Decimal("100"),
+        min_events=1,
+        min_events_for_stability=1,
+        fold_count=2,
+        fee_rate=Decimal("0.0004"),
+        funding_rate=Decimal("0.0001"),
+        slippage_bps=Decimal("50"),
+    )
+
+    assert result.decision.summary["tournament_rows_origin"]["origin"] == "recomputed_minimal"
+    persisted_rows = json.loads(
+        (tmp_path / "pack-high-slippage/tournament_rows_v2.json").read_text(encoding="utf-8")
+    )
+    assert persisted_rows["summary"]["cost_assumptions"]["notional_usd"] == "100"
+    assert persisted_rows["summary"]["cost_assumptions"]["slippage_bps"] == "50"
+    continuation = next(
+        row for row in persisted_rows["rows"] if row["action"] == "CONTINUATION_LONG"
+    )
+    assert Decimal(continuation["slippage_estimate_usd"]) == Decimal("0.5")
+
+
+def test_backtest_candidate_pack_persists_exact_rows_and_guard(tmp_path: Path) -> None:
+    data_dir = _write_ready_inputs(tmp_path / "data")
+    manifest_path = data_dir / "selection_manifest.json"
+    _write_json(
+        manifest_path,
+        {
+            "schema_version": "crypto_perp_real_market_no_cash_sample.v1",
+            "event_set": [_event().event_id],
+        },
+    )
+    result = build_crypto_perp_backtest_candidate_pack(
+        data_dir=data_dir,
+        out_dir=tmp_path / "pack-audit",
+        created_at="2026-06-21T08:00:00Z",
+        notional_usd=Decimal("100"),
+        min_events=1,
+        min_events_for_stability=1,
+        fold_count=2,
+    )
+
+    assert "tournament_rows_v2.json" in result.paths
+    assert "bias_guard.json" in result.paths
+    rows_payload = json.loads(result.paths["tournament_rows_v2.json"].read_text(encoding="utf-8"))
+    guard_payload = json.loads(result.paths["bias_guard.json"].read_text(encoding="utf-8"))
+    assert guard_payload["event_set"] == sorted(rows_payload["event_set"])
+    assert (
+        guard_payload["source_refs"][0]["path"]
+        == result.paths["tournament_rows_v2.json"].as_posix()
+    )
+    assert guard_payload["source_refs"][0]["sha256"].startswith("sha256:")
+    assert (
+        result.decision.artifact_paths["bias_guard.json"]
+        == result.paths["bias_guard.json"].as_posix()
+    )
+    assert any(
+        ref["path"] == manifest_path.as_posix()
+        and ref["sha256"] == f"sha256:{_file_sha256(manifest_path)}"
+        and ref["schema_version"] == "crypto_perp_real_market_no_cash_sample.v1"
+        for ref in result.decision.source_refs
+    )
+    no_lookahead = json.loads(result.paths["no_lookahead_report.json"].read_text(encoding="utf-8"))
+    recursive_checks = [
+        check
+        for check in no_lookahead["checks"]
+        if check["check_id"] == "recursive_feature_warmup_absent"
+    ]
+    assert len(recursive_checks) == 1
+    assert recursive_checks[0]["status"] == "pass"
+    recursive_guard_checks = [
+        check for check in guard_payload["checks"] if check["check_id"] == "recursive_warmup_absent"
+    ]
+    assert len(recursive_guard_checks) == 1
+    assert recursive_guard_checks[0]["passed"] is True
+    component_refs = result.decision.summary["pack_component_refs"]
+    for name in (
+        "signal_rows.jsonl",
+        "data_availability_ledger.json",
+        "tournament_rows_v2.json",
+        "bias_guard.json",
+        "backtest_result.json",
+        "stress_result.json",
+        "rolling_stability_result.json",
+    ):
+        artifact_path = result.paths[name]
+        assert component_refs[name]["path"] == artifact_path.as_posix()
+        assert component_refs[name]["sha256"] == f"sha256:{_file_sha256(artifact_path)}"
 
 
 def test_backtest_candidate_pack_accepts_legacy_v1_decision_without_evidence_grade() -> None:
@@ -253,8 +682,39 @@ def test_backtest_candidate_pack_rejects_zero_cost_assumptions(tmp_path: Path) -
         )
 
 
+def test_backtest_candidate_pack_cli_rejects_holding_horizon_mismatch(
+    tmp_path: Path,
+) -> None:
+    data_dir = _write_ready_inputs(tmp_path / "data")
+    out_dir = tmp_path / "cli-pack"
+
+    result = runner.invoke(
+        app,
+        [
+            "crypto-perp-backtest-candidate-pack",
+            "--data-dir",
+            str(data_dir),
+            "--out",
+            str(out_dir),
+            "--min-events",
+            "1",
+            "--min-events-for-stability",
+            "1",
+            "--fold-count",
+            "2",
+            "--max-holding-minutes",
+            "5",
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "max_holding_minutes=5 does not match actual outcome horizon" in result.stdout
+    assert not (out_dir / "decision.json").exists()
+
+
 def test_backtest_candidate_pack_cli_generates_pack(tmp_path: Path) -> None:
     data_dir = _write_ready_inputs(tmp_path / "data")
+    _write_explicit_passing_guard(data_dir)
     out_dir = tmp_path / "cli-pack"
 
     result = runner.invoke(
@@ -278,7 +738,7 @@ def test_backtest_candidate_pack_cli_generates_pack(tmp_path: Path) -> None:
     assert "network_attempted=false" in result.stdout
     assert "exchange_write_used=false" in result.stdout
     assert "profit_proven=false" in result.stdout
-    assert "decision=BACKTEST_CANDIDATE_HOLD" in result.stdout
+    assert "decision=BACKTEST_REJECT" in result.stdout
     assert (out_dir / "decision.json").exists()
     decision_payload = json.loads((out_dir / "decision.json").read_text(encoding="utf-8"))
     assert decision_payload["evidence_grade_summary"]["strongest_evidence_level"] == (

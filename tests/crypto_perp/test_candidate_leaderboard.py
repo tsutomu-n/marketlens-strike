@@ -65,10 +65,10 @@ def _kill(decision: str) -> dict:
     }
 
 
-def _gate() -> dict:
+def _gate(decision: str = "NO_CASH_BACKTEST_HOLD") -> dict:
     return {
         "schema_version": "crypto_perp_no_cash_backtest_gate.v1",
-        "gate_decision": "NO_CASH_BACKTEST_HOLD",
+        "gate_decision": decision,
         "known_gaps": ["BOOKS_SOURCE_MISSING"],
         "summary": {"rolling_stability_status": "complete", "event_count": 30},
     }
@@ -121,6 +121,23 @@ def test_collect_decision_maps_to_collect_more_data() -> None:
     payload = _leaderboard("COLLECT_MORE_DATA")
 
     assert payload["rows"][0]["next_action"] == "COLLECT_MORE_DATA"
+
+
+def test_gate_reject_overrides_incorrect_kill_report_hold() -> None:
+    payload = build_candidate_leaderboard(
+        decision=_decision(),
+        backtest=_backtest(),
+        stress=_stress(),
+        kill_report=_kill("HOLD_FOR_LEADERBOARD"),
+        gate=_gate("NO_CASH_BACKTEST_REJECT"),
+        signal_rows=[{"symbol": "BTCUSDT", "selected_action": "CONTINUATION_LONG"}],
+        created_at="2026-07-09T00:00:00Z",
+        input_artifacts={},
+        source_refs=[],
+    )
+
+    assert payload["rows"][0]["next_action"] == "KILL"
+    assert "UPSTREAM_GATE_REJECTED" in payload["rows"][0]["reason_codes"]
 
 
 def test_candidate_leaderboard_cli_writes_artifacts(tmp_path: Path) -> None:

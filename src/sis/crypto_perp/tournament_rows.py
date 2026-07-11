@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Literal
 
@@ -427,6 +427,16 @@ def build_cost_aware_tournament_rows(
             [row.model_dump(mode="json") for row in rows],
         ]
     )
+    execution_windows = {
+        outcome.event_id: {
+            "entry_at": serialize_utc_z(
+                outcome.settled_at - timedelta(minutes=_matured_horizon(outcome).horizon_minutes)
+            ),
+            "settled_at": serialize_utc_z(outcome.settled_at),
+            "horizon_minutes": _matured_horizon(outcome).horizon_minutes,
+        }
+        for outcome in outcomes
+    }
     summary = {
         "row_set_id": row_set_id,
         "event_count": len(event_set),
@@ -436,8 +446,12 @@ def build_cost_aware_tournament_rows(
         "no_trade_cost_adjusted_cash_estimate_usd": no_trade_total,
         "leader_beats_no_trade": leader_total is not None and leader_total > no_trade_total,
         "known_gap_count": len(known_gap_list),
+        "execution_windows": execution_windows,
         "cost_assumptions": {
             "cost_model_id": CRYPTO_PERP_PROJECT_COST_MODEL_ID,
+            "notional_usd": str(notional_usd),
+            "operator_time_minutes": str(operator_time_minutes),
+            "operator_hourly_cost_usd": str(operator_hourly_cost_usd),
             "fee_rate": str(fee_rate),
             "funding_rate": str(funding_rate),
             "slippage_bps": str(slippage_bps),
