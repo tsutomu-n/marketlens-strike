@@ -286,6 +286,7 @@ def test_no_trade_kill_report_cli_requires_gate(tmp_path: Path) -> None:
             "--stress",
             str(tmp_path / "stress.json"),
         ],
+        terminal_width=200,
     )
 
     assert result.exit_code == 2
@@ -412,6 +413,7 @@ def test_no_trade_kill_report_cli_requires_tournament_rows(tmp_path: Path) -> No
             "--gate",
             str(tmp_path / "gate.json"),
         ],
+        terminal_width=200,
     )
 
     assert result.exit_code == 2
