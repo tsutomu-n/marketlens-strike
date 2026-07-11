@@ -588,6 +588,9 @@ def test_pre_actual_cash_pack_builder_returns_required_summaries_for_ten_pairs(
     assert decision.tournament_summary["actual_cash_result_null_count"] == 30
     assert decision.tournament_summary["cost_assumptions"] == {
         "cost_model_id": CRYPTO_PERP_PROJECT_COST_MODEL_ID,
+        "notional_usd": "100",
+        "operator_time_minutes": "0",
+        "operator_hourly_cost_usd": "0",
         "fee_rate": CRYPTO_PERP_PROJECT_TAKER_FEE_RATE_TEXT,
         "funding_rate": CRYPTO_PERP_PROJECT_FUNDING_RATE_TEXT,
         "slippage_bps": CRYPTO_PERP_PROJECT_SLIPPAGE_BPS_TEXT,

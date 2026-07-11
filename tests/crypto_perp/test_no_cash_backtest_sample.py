@@ -56,11 +56,21 @@ def test_no_cash_backtest_sample_cli_feeds_candidate_pack_and_gate(tmp_path: Pat
     )
 
     assert pack.exit_code == 0, pack.stdout
-    assert "decision=BACKTEST_CANDIDATE_HOLD" in pack.stdout
+    assert "decision=BACKTEST_REJECT" in pack.stdout
     decision = json.loads((pack_out / "decision.json").read_text(encoding="utf-8"))
     assert decision["event_count"] == 30
     assert decision["outcome_count"] == 30
-    assert decision["summary"]["pbo_status"] == "ESTIMATED"
+    assert decision["summary"]["pbo_status"] == "NOT_ESTIMABLE"
+    assert decision["summary"]["bias_guard_status"] == "BLOCKED"
+    assert "BIAS_GUARD_BLOCKED" in decision["reason_codes"]
+    assert "DOGFOOD_FIXTURE_NOT_REAL_MARKET_EVIDENCE" in decision["reason_codes"]
+    assert (
+        "BIAS_GUARD_FAILED_sample_sufficient_for_pbo"
+        in decision["summary"]["bias_guard_stop_reasons"]
+    )
+    assert decision["summary"]["bias_guard_warning_codes"] == [
+        "BIAS_GUARD_WARNING_stress_cash_non_negative"
+    ]
     assert decision["summary"]["rolling_stability"]["event_count"] == 30
     assert decision["evidence_grade_summary"]["critical_missing_count"] == 0
     assert decision["evidence_grade_summary"]["future_signal_source_count"] == 0
@@ -91,13 +101,16 @@ def test_no_cash_backtest_sample_cli_feeds_candidate_pack_and_gate(tmp_path: Pat
     )
 
     assert gate.exit_code == 0, gate.stdout
-    assert "gate_decision=NO_CASH_BACKTEST_HOLD" in gate.stdout
+    assert "gate_decision=NO_CASH_BACKTEST_REJECT" in gate.stdout
     artifact = json.loads((gate_out / "no_cash_backtest_gate.json").read_text(encoding="utf-8"))
-    assert artifact["gate_decision"] == "NO_CASH_BACKTEST_HOLD"
-    assert artifact["blockers"] == []
+    assert artifact["gate_decision"] == "NO_CASH_BACKTEST_REJECT"
+    assert "BIAS_GUARD_BLOCKED" in artifact["reason_codes"]
+    assert "BIAS_GUARD_BLOCKED" in artifact["reason_codes"]
+    assert "BIAS_GUARD_FAILED_sample_sufficient_for_pbo" in artifact["reason_codes"]
+    assert "BIAS_GUARD_WARNING_stress_cash_non_negative" in artifact["known_gaps"]
     assert artifact["summary"]["event_count"] == 30
     assert artifact["summary"]["executed_trade_count"] >= 10
-    assert artifact["summary"]["pbo_status"] == "ESTIMATED"
+    assert artifact["summary"]["pbo_status"] == "NOT_ESTIMABLE"
     assert artifact["summary"]["paper_permission_granted"] is False
     assert artifact["summary"]["actual_cash_used"] is False
     assert "DOGFOOD_FIXTURE_NOT_REAL_MARKET_EVIDENCE" in artifact["known_gaps"]

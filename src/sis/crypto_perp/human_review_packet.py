@@ -8,16 +8,33 @@ from pathlib import Path
 from typing import Any, Literal, cast
 
 from sis.crypto_perp.clock import ensure_utc_aware, serialize_utc_z
-from sis.crypto_perp.io import write_json_artifact, write_text_artifact
+from sis.crypto_perp.human_review_packet_validation import (
+    EXPECTED_HUMAN_REVIEW_INPUT_ARTIFACT_NAMES,
+    _artifact_lineage_violations,
+    _artifact_structure_violations,
+    _boundary_violation,
+    _int,
+    _mapping,
+    _sequence,
+    _summary,
+)
+from sis.crypto_perp.io import file_artifact_ref, write_json_artifact, write_text_artifact
 from sis.crypto_perp.models import CryptoPerpBoundary, CryptoPerpProducer, stable_hash
 
 
 HUMAN_REVIEW_PACKET_SCHEMA_VERSION = "crypto_perp_human_review_packet.v1"
 HUMAN_REVIEW_PACKET_PRODUCER = "crypto-perp-human-review-packet"
+HUMAN_REVIEW_INPUT_CONTRACT_VERSION = "crypto_perp_human_review_packet_inputs.v2"
+_LINEAGE_VERIFIED_TOKEN = object()
+
 
 HumanReviewPacketDecision = Literal[
     "READY_FOR_HUMAN_REVIEW_PLANNING",
     "BLOCKED_BY_BOUNDARY_VIOLATION",
+    "BLOCKED_BY_ARTIFACT_LINEAGE",
+    "BLOCKED_BY_CANDIDATE",
+    "BLOCKED_BY_BIAS_GUARD",
+    "BLOCKED_BY_PBO",
     "BLOCKED_BY_GATE",
     "BLOCKED_BY_KILL_REPORT",
     "BLOCKED_BY_LEADERBOARD",
@@ -38,57 +55,20 @@ def _read_json(path: Path) -> dict[str, Any]:
     return payload
 
 
+def _read_jsonl(path: Path) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for line_number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), start=1):
+        if not line.strip():
+            continue
+        row = json.loads(line)
+        if not isinstance(row, dict):
+            raise ValueError(f"expected JSON object in {path}:{line_number}")
+        rows.append(row)
+    return rows
+
+
 def _source_ref(path: Path) -> dict[str, str]:
-    return {
-        "path": path.as_posix(),
-        "sha256": "sha256:" + stable_hash([path.read_text(encoding="utf-8")]),
-    }
-
-
-def _mapping(value: object) -> Mapping[str, Any]:
-    return cast(Mapping[str, Any], value) if isinstance(value, Mapping) else {}
-
-
-def _sequence(value: object) -> Sequence[Any]:
-    if isinstance(value, Sequence) and not isinstance(value, str):
-        return cast(Sequence[Any], value)
-    return []
-
-
-def _int(value: object, default: int = 0) -> int:
-    if isinstance(value, bool) or value is None:
-        return default
-    try:
-        return int(str(value))
-    except ValueError:
-        return default
-
-
-def _bool(value: object) -> bool:
-    return bool(value) if isinstance(value, bool) else False
-
-
-def _summary(payload: Mapping[str, Any]) -> Mapping[str, Any]:
-    return _mapping(payload.get("summary"))
-
-
-def _boundary_violation(payloads: Sequence[Mapping[str, Any]]) -> bool:
-    forbidden = (
-        "paper_permission_granted",
-        "permits_paper_order",
-        "permits_live_order",
-        "actual_cash_used",
-        "profit_proven",
-        "wallet_used",
-        "signing_used",
-        "exchange_write_used",
-        "live_order_submitted",
-    )
-    for payload in payloads:
-        for key in forbidden:
-            if _bool(payload.get(key)):
-                return True
-    return False
+    return file_artifact_ref(path)
 
 
 def _known_gaps(*payloads: Mapping[str, Any]) -> list[str]:
@@ -108,18 +88,42 @@ def _review_questions() -> list[str]:
         "Are drawdown and loss concentration acceptable for a no-cash local simulation candidate?",
         "Are the cost assumptions acceptable as no-cash simulation assumptions?",
         "Is any additional source coverage required before planning Paper Observation?",
+        "Is each bias guard warning acceptable for planning, without treating it as execution readiness?",
     ]
 
 
 def _decide(
     *,
     boundary_violation: bool,
+    lineage_violations: Sequence[str],
+    candidate_decision: str,
+    bias_guard_status: str,
+    bias_guard_stop_reasons: Sequence[str],
+    pbo_status: str,
+    pbo_evidence_verified: bool,
     gate_decision: str,
     kill_decision: str,
     top_next_action: str,
 ) -> tuple[HumanReviewPacketDecision, list[str]]:
     if boundary_violation:
         return "BLOCKED_BY_BOUNDARY_VIOLATION", ["BOUNDARY_FLAG_TRUE"]
+    if lineage_violations:
+        return "BLOCKED_BY_ARTIFACT_LINEAGE", list(dict.fromkeys(lineage_violations))
+    if bias_guard_status != "PASS":
+        status_reason = (
+            "BIAS_GUARD_BLOCKED"
+            if bias_guard_status == "BLOCKED"
+            else "BIAS_GUARD_STATUS_MISSING_OR_UNKNOWN"
+        )
+        return "BLOCKED_BY_BIAS_GUARD", list(
+            dict.fromkeys([status_reason, *bias_guard_stop_reasons])
+        )
+    if pbo_status != "COMPUTED_PASS":
+        return "BLOCKED_BY_PBO", ["PBO_NOT_COMPUTED"]
+    if not pbo_evidence_verified:
+        return "BLOCKED_BY_PBO", ["PBO_COMPUTATION_EVIDENCE_MISSING"]
+    if candidate_decision != "BACKTEST_CANDIDATE_HOLD":
+        return "BLOCKED_BY_CANDIDATE", ["BACKTEST_CANDIDATE_NOT_HOLD"]
     if gate_decision != "NO_CASH_BACKTEST_HOLD":
         return "BLOCKED_BY_GATE", ["NO_CASH_GATE_NOT_HOLD"]
     if kill_decision != "HOLD_FOR_LEADERBOARD":
@@ -129,18 +133,25 @@ def _decide(
     return "READY_FOR_HUMAN_REVIEW_PLANNING", ["HUMAN_REVIEW_PACKET_READY"]
 
 
-def build_human_review_packet(
+def _build_human_review_packet(
     *,
     selection_manifest: Mapping[str, Any],
     decision: Mapping[str, Any],
+    tournament_rows: Mapping[str, Any],
+    bias_guard: Mapping[str, Any],
+    data_availability: Mapping[str, Any],
+    signal_rows: Sequence[Mapping[str, Any]],
     backtest: Mapping[str, Any],
     stress: Mapping[str, Any],
+    rolling_stability: Mapping[str, Any],
     gate: Mapping[str, Any],
     kill_report: Mapping[str, Any],
     leaderboard: Mapping[str, Any],
     created_at: datetime | str,
     input_artifacts: Mapping[str, str],
     source_refs: Sequence[dict[str, str]],
+    lineage_violations: Sequence[str] = (),
+    _lineage_token: object | None = None,
 ) -> dict[str, Any]:
     created = ensure_utc_aware("created_at", created_at)
     gate_summary = _summary(gate)
@@ -151,24 +162,84 @@ def build_human_review_packet(
     selection_coverage = _mapping(selection_manifest.get("source_coverage"))
     leaderboard_rows = _sequence(leaderboard.get("rows"))
     top_row = _mapping(leaderboard_rows[0]) if leaderboard_rows else {}
+    candidate_decision = str(decision.get("decision", "UNKNOWN"))
     gate_decision = str(gate.get("gate_decision", "UNKNOWN"))
+    effective_bias_guard = bias_guard
+    bias_guard_status = str(effective_bias_guard.get("guard_status", "missing"))
+    pbo_status = str(effective_bias_guard.get("pbo_status", "missing"))
+    bias_guard_stop_reasons = [
+        str(value) for value in _sequence(effective_bias_guard.get("stop_reasons")) if value
+    ]
+    bias_guard_warning_codes = [
+        str(value) for value in _sequence(decision_summary.get("bias_guard_warning_codes")) if value
+    ]
+    guard_warning_codes = [
+        str(value)
+        for value in _sequence(effective_bias_guard.get("known_gaps"))
+        if str(value).startswith("BIAS_GUARD_WARNING_")
+    ]
+    bias_guard_warning_codes = list(
+        dict.fromkeys([*bias_guard_warning_codes, *guard_warning_codes])
+    )
     kill_decision = str(kill_report.get("kill_decision", "UNKNOWN"))
     top_next_action = str(top_row.get("next_action", "UNKNOWN"))
-    boundary_violation = _boundary_violation([gate, kill_report, leaderboard])
+    boundary_violation = _boundary_violation(
+        [
+            selection_manifest,
+            decision,
+            tournament_rows,
+            effective_bias_guard,
+            data_availability,
+            *signal_rows,
+            backtest,
+            stress,
+            rolling_stability,
+            gate,
+            kill_report,
+            leaderboard,
+        ]
+    )
+    effective_lineage_violations = list(lineage_violations)
+    expected_input_names = set(EXPECTED_HUMAN_REVIEW_INPUT_ARTIFACT_NAMES)
+    actual_input_names = set(input_artifacts)
+    for name in sorted(expected_input_names - actual_input_names):
+        effective_lineage_violations.append(f"HUMAN_REVIEW_INPUT_MISSING_{name.upper()}")
+    for name in sorted(actual_input_names - expected_input_names):
+        effective_lineage_violations.append(f"HUMAN_REVIEW_INPUT_UNEXPECTED_{name.upper()}")
+    if _lineage_token is not _LINEAGE_VERIFIED_TOKEN:
+        effective_lineage_violations.append("ARTIFACT_LINEAGE_NOT_VERIFIED")
     packet_decision, reason_codes = _decide(
         boundary_violation=boundary_violation,
+        lineage_violations=effective_lineage_violations,
+        candidate_decision=candidate_decision,
+        bias_guard_status=bias_guard_status,
+        bias_guard_stop_reasons=bias_guard_stop_reasons,
+        pbo_status=pbo_status,
+        pbo_evidence_verified=False,
         gate_decision=gate_decision,
         kill_decision=kill_decision,
         top_next_action=top_next_action,
     )
+    if packet_decision != "READY_FOR_HUMAN_REVIEW_PLANNING":
+        chain_reason_codes: list[str] = []
+        for payload in (decision, gate, kill_report, top_row):
+            chain_reason_codes.extend(
+                str(value) for value in _sequence(payload.get("reason_codes")) if value
+            )
+        reason_codes = list(dict.fromkeys([*reason_codes, *chain_reason_codes]))
     event_count = _int(gate_summary.get("event_count"), _int(decision.get("event_count")))
     outcome_count = _int(gate_summary.get("outcome_count"), _int(decision.get("outcome_count")))
+    ordered_input_names = [
+        *(name for name in EXPECTED_HUMAN_REVIEW_INPUT_ARTIFACT_NAMES if name in input_artifacts),
+        *(name for name in sorted(input_artifacts) if name not in expected_input_names),
+    ]
     review_inputs = [
-        {"name": name, "path": path, "required_for_review": True}
-        for name, path in input_artifacts.items()
+        {"name": name, "path": input_artifacts[name], "required_for_review": True}
+        for name in ordered_input_names
     ]
     current_evidence = {
-        "candidate_decision": str(decision.get("decision", "UNKNOWN")),
+        "candidate_decision": candidate_decision,
+        "artifact_lineage_status": ("PASS" if not effective_lineage_violations else "BLOCKED"),
         "gate_decision": gate_decision,
         "kill_decision": kill_decision,
         "leaderboard_top_next_action": top_next_action,
@@ -179,13 +250,26 @@ def build_human_review_packet(
         "critical_missing_count": _int(gate_summary.get("critical_missing_count")),
         "unknown_count": _int(gate_summary.get("unknown_count")),
         "executed_trade_count": _int(gate_summary.get("executed_trade_count")),
-        "pbo_status": str(gate_summary.get("pbo_status", decision_summary.get("pbo_status"))),
+        "pbo_status": pbo_status,
+        "pbo_computed": False,
+        "pbo_evidence_verified": False,
+        "bias_guard_status": bias_guard_status,
+        "bias_guard_artifact_id": str(effective_bias_guard.get("artifact_id", "missing")),
+        "bias_guard_warning_codes": bias_guard_warning_codes,
+        "profit_robustness": _mapping(backtest_summary.get("profit_robustness")),
         "rolling_stability_status": str(gate_summary.get("rolling_stability_status", "UNKNOWN")),
         "backtest_total_result_usd": str(backtest_summary.get("total_result_usd", "0")),
         "stress_total_result_usd": str(stress_summary.get("total_result_usd", "0")),
         "strongest_evidence_level": str(evidence.get("strongest_evidence_level", "UNKNOWN")),
     }
-    known_gaps = _known_gaps(selection_manifest, gate, kill_report, leaderboard)
+    known_gaps = list(
+        dict.fromkeys(
+            [
+                *_known_gaps(selection_manifest, data_availability, gate, kill_report, leaderboard),
+                *bias_guard_warning_codes,
+            ]
+        )
+    )
     summary = {
         "packet_decision": packet_decision,
         "ready_for_human_review_planning": packet_decision == "READY_FOR_HUMAN_REVIEW_PLANNING",
@@ -203,6 +287,7 @@ def build_human_review_packet(
     )
     return {
         "schema_version": HUMAN_REVIEW_PACKET_SCHEMA_VERSION,
+        "input_contract_version": HUMAN_REVIEW_INPUT_CONTRACT_VERSION,
         "artifact_id": stable_hash(
             ["human-review-packet", serialize_utc_z(created), packet_decision, current_evidence]
         ),
@@ -234,12 +319,57 @@ def build_human_review_packet(
     }
 
 
+def build_human_review_packet(
+    *,
+    selection_manifest: Mapping[str, Any],
+    decision: Mapping[str, Any],
+    tournament_rows: Mapping[str, Any],
+    bias_guard: Mapping[str, Any],
+    data_availability: Mapping[str, Any],
+    signal_rows: Sequence[Mapping[str, Any]],
+    backtest: Mapping[str, Any],
+    stress: Mapping[str, Any],
+    rolling_stability: Mapping[str, Any],
+    gate: Mapping[str, Any],
+    kill_report: Mapping[str, Any],
+    leaderboard: Mapping[str, Any],
+    created_at: datetime | str,
+    input_artifacts: Mapping[str, str],
+    source_refs: Sequence[dict[str, str]],
+    lineage_violations: Sequence[str] = (),
+) -> dict[str, Any]:
+    """Build a fail-closed packet without granting artifact-lineage trust."""
+    return _build_human_review_packet(
+        selection_manifest=selection_manifest,
+        decision=decision,
+        tournament_rows=tournament_rows,
+        bias_guard=bias_guard,
+        data_availability=data_availability,
+        signal_rows=signal_rows,
+        backtest=backtest,
+        stress=stress,
+        rolling_stability=rolling_stability,
+        gate=gate,
+        kill_report=kill_report,
+        leaderboard=leaderboard,
+        created_at=created_at,
+        input_artifacts=input_artifacts,
+        source_refs=source_refs,
+        lineage_violations=lineage_violations,
+    )
+
+
 def write_human_review_packet(
     *,
     selection_manifest_path: Path,
     decision_path: Path,
+    tournament_rows_path: Path,
+    bias_guard_path: Path,
+    data_availability_path: Path,
+    signal_rows_path: Path,
     backtest_path: Path,
     stress_path: Path,
+    rolling_stability_path: Path,
     gate_path: Path,
     kill_report_path: Path,
     leaderboard_path: Path,
@@ -248,33 +378,91 @@ def write_human_review_packet(
 ) -> HumanReviewPacketResult:
     selection_manifest = _read_json(selection_manifest_path)
     decision = _read_json(decision_path)
+    tournament_rows = _read_json(tournament_rows_path)
+    bias_guard = _read_json(bias_guard_path)
+    data_availability = _read_json(data_availability_path)
+    signal_rows = _read_jsonl(signal_rows_path)
     backtest = _read_json(backtest_path)
     stress = _read_json(stress_path)
+    rolling_stability = _read_json(rolling_stability_path)
     gate = _read_json(gate_path)
     kill_report = _read_json(kill_report_path)
     leaderboard = _read_json(leaderboard_path)
     paths = {
         "selection_manifest": selection_manifest_path,
         "decision": decision_path,
+        "tournament_rows": tournament_rows_path,
+        "bias_guard": bias_guard_path,
+        "data_availability": data_availability_path,
+        "signal_rows": signal_rows_path,
         "backtest": backtest_path,
         "stress": stress_path,
+        "rolling_stability": rolling_stability_path,
         "gate": gate_path,
         "kill_report": kill_report_path,
         "leaderboard": leaderboard_path,
     }
     input_artifacts = {name: path.as_posix() for name, path in paths.items()}
     source_refs = [_source_ref(path) for path in paths.values()]
-    payload = build_human_review_packet(
+    lineage_violations = _artifact_structure_violations(
+        selection_manifest=selection_manifest,
+        decision=decision,
+        tournament_rows=tournament_rows,
+        bias_guard=bias_guard,
+        data_availability=data_availability,
+        signal_rows=signal_rows,
+        backtest=backtest,
+        stress=stress,
+        rolling_stability=rolling_stability,
+        gate=gate,
+        kill_report=kill_report,
+        leaderboard=leaderboard,
+    )
+    lineage_violations.extend(
+        _artifact_lineage_violations(
+            selection_manifest=selection_manifest,
+            decision=decision,
+            tournament_rows=tournament_rows,
+            bias_guard=bias_guard,
+            data_availability=data_availability,
+            signal_rows=signal_rows,
+            backtest=backtest,
+            stress=stress,
+            rolling_stability=rolling_stability,
+            gate=gate,
+            kill_report=kill_report,
+            leaderboard=leaderboard,
+            selection_manifest_path=selection_manifest_path,
+            decision_path=decision_path,
+            tournament_rows_path=tournament_rows_path,
+            bias_guard_path=bias_guard_path,
+            data_availability_path=data_availability_path,
+            signal_rows_path=signal_rows_path,
+            backtest_path=backtest_path,
+            stress_path=stress_path,
+            rolling_stability_path=rolling_stability_path,
+            gate_path=gate_path,
+            kill_report_path=kill_report_path,
+        )
+    )
+    payload = _build_human_review_packet(
         selection_manifest=selection_manifest,
         decision=decision,
         backtest=backtest,
+        tournament_rows=tournament_rows,
+        bias_guard=bias_guard,
+        data_availability=data_availability,
+        signal_rows=signal_rows,
         stress=stress,
+        rolling_stability=rolling_stability,
         gate=gate,
         kill_report=kill_report,
         leaderboard=leaderboard,
         created_at=created_at,
         input_artifacts=input_artifacts,
         source_refs=source_refs,
+        lineage_violations=lineage_violations,
+        _lineage_token=_LINEAGE_VERIFIED_TOKEN,
     )
     json_path = out_dir / "human_review_packet.json"
     markdown_path = out_dir / "human_review_packet.md"
@@ -301,6 +489,7 @@ def _render_markdown(payload: Mapping[str, Any]) -> str:
         f"- outcome_count: `{evidence['outcome_count']}`",
         f"- executed_trade_count: `{evidence['executed_trade_count']}`",
         f"- pbo_status: `{evidence['pbo_status']}`",
+        f"- bias_guard_status: `{evidence['bias_guard_status']}`",
         f"- rolling_stability_status: `{evidence['rolling_stability_status']}`",
         "- paper_permission_granted: `false`",
         "- permits_paper_order: `false`",

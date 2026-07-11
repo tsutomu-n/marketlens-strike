@@ -193,6 +193,30 @@ def _outcome_id(event_id: str, settled_at: datetime, horizons: Sequence[OutcomeH
     )
 
 
+def validate_outcome_identity(outcome: CryptoPerpOutcome) -> None:
+    """Reject an outcome whose persisted identity no longer matches its content."""
+    expected_outcome_id = _outcome_id(outcome.event_id, outcome.settled_at, outcome.horizons)
+    if outcome.outcome_id != expected_outcome_id:
+        raise ValueError(f"OUTCOME_IDENTITY_MISMATCH: {outcome.event_id}")
+    expected_artifact_id = stable_hash(["crypto-perp-outcome-artifact", expected_outcome_id])
+    if outcome.artifact_id != expected_artifact_id:
+        raise ValueError(f"OUTCOME_ARTIFACT_IDENTITY_MISMATCH: {outcome.event_id}")
+    for horizon in outcome.horizons:
+        expected_raw_return = (horizon.close_price - horizon.reference_price) / (
+            horizon.reference_price
+        )
+        if horizon.raw_return != expected_raw_return:
+            raise ValueError(f"OUTCOME_RETURN_MISMATCH: {outcome.event_id}")
+        if horizon.long_return_before_cost != expected_raw_return:
+            raise ValueError(f"OUTCOME_LONG_RETURN_MISMATCH: {outcome.event_id}")
+        if horizon.short_return_before_cost != -expected_raw_return:
+            raise ValueError(f"OUTCOME_SHORT_RETURN_MISMATCH: {outcome.event_id}")
+        if horizon.mfe_short != -horizon.mae_long:
+            raise ValueError(f"OUTCOME_MFE_SHORT_MISMATCH: {outcome.event_id}")
+        if horizon.mae_short != -horizon.mfe_long:
+            raise ValueError(f"OUTCOME_MAE_SHORT_MISMATCH: {outcome.event_id}")
+
+
 def _source_refs(source_refs: Sequence[dict[str, str]] | None) -> list[OutcomeSourceRef]:
     return [OutcomeSourceRef.model_validate(item) for item in source_refs or []]
 

@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "symbol": {
+      "type": "string"
+    },
+    "event_id": {
+      "type": "string"
+    },
+    "outcome_id": {
+      "type": "string"
+    },
+    "information_cutoff_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "source_availability_id": {
+      "type": "string"
+    },
+    "feature_pack_id": {
+      "type": "string"
+    },
+    "edge_score_id": {
+      "type": "string"
+    },
+    "selected_action": {
+      "enum": [
+        "REVERSAL_SHORT",
+        "CONTINUATION_LONG",
+        "NO_TRADE"
+      ]
+    },
+    "signal_score": {
+      "type": "string"
+    },
+    "entry_allowed": {
+      "type": "boolean"
+    },
+    "no_trade_reason": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "artifact_origin": {
+      "type": "object"
+    },
+    "entry_at": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}Z$"
+    },
+    "outcome_horizon_minutes": {
+      "type": "integer",
+      "minimum": 1
+    }
+  },
+  "required": [
+    "timestamp",
+    "symbol",
+    "event_id",
+    "outcome_id",
+    "information_cutoff_at",
+    "source_availability_id",
+    "feature_pack_id",
+    "edge_score_id",
+    "selected_action",
+    "signal_score",
+    "entry_allowed",
+    "no_trade_reason",
+    "artifact_origin",
+    "entry_at",
+    "outcome_horizon_minutes"
+  ]
+}

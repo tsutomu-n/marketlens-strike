@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Literal, cast
 
 from sis.crypto_perp.clock import ensure_utc_aware, serialize_utc_z
-from sis.crypto_perp.io import write_json_artifact, write_text_artifact
+from sis.crypto_perp.io import file_artifact_ref, write_json_artifact, write_text_artifact
 from sis.crypto_perp.models import CryptoPerpBoundary, CryptoPerpProducer, stable_hash
 
 
@@ -62,10 +62,7 @@ def _read_jsonl(path: Path) -> list[dict[str, Any]]:
 
 
 def _source_ref(path: Path) -> dict[str, str]:
-    return {
-        "path": path.as_posix(),
-        "sha256": "sha256:" + stable_hash([path.read_text(encoding="utf-8")]),
-    }
+    return file_artifact_ref(path)
 
 
 def _mapping(value: object) -> Mapping[str, Any]:
@@ -167,7 +164,22 @@ def build_candidate_leaderboard(
     stress_summary = _summary(stress)
     gate_summary = _summary(gate)
     kill_decision = str(kill_report.get("kill_decision", "REVISE_SOURCE_OR_SIGNAL"))
-    next_action = _next_action(kill_decision)
+    gate_decision = str(gate.get("gate_decision", "UNKNOWN"))
+    if gate_decision == "NO_CASH_BACKTEST_REJECT":
+        next_action: CandidateNextAction = "KILL"
+        upstream_reason_code = "UPSTREAM_GATE_REJECTED"
+    elif gate_decision == "NO_CASH_BACKTEST_REVISE":
+        next_action = "REVISE_SIGNAL"
+        upstream_reason_code = "UPSTREAM_GATE_REVISE"
+    elif gate_decision == "NO_CASH_BACKTEST_COLLECT_MORE_DATA":
+        next_action = "COLLECT_MORE_DATA"
+        upstream_reason_code = "UPSTREAM_GATE_COLLECT_MORE_DATA"
+    elif gate_decision == "NO_CASH_BACKTEST_HOLD":
+        next_action = _next_action(kill_decision)
+        upstream_reason_code = None
+    else:
+        next_action = "COLLECT_MORE_DATA"
+        upstream_reason_code = "UPSTREAM_GATE_MISSING_OR_UNKNOWN"
     source_score = _source_quality_score(decision, gate)
     no_trade_delta = _decimal(
         kill_report.get("cost_adjusted_delta_vs_no_trade"),
@@ -196,6 +208,8 @@ def build_candidate_leaderboard(
         if isinstance(kill_report.get("reason_codes"), list)
         else []
     )
+    if upstream_reason_code is not None:
+        reason_codes = list(dict.fromkeys([upstream_reason_code, *reason_codes]))
     known_gaps = list(
         dict.fromkeys(
             [

@@ -1,13 +1,15 @@
 <!--
 作成日: 2026-07-05_11:55 JST
-更新日: 2026-07-11_11:41 JST
+更新日: 2026-07-11_18:35 JST
 -->
 
 # Current Docs Index 2026-07-05
 
 ## 結論
 
-現行判断では、この index から読む。古い audit、roadmap、dogfood log、completed plan、fixed pass-count snapshot は archive / history として扱う。
+現行判断では、このindexから読む。古いaudit、roadmap、dogfood log、completed plan、fixed pass-count snapshotはarchive / historyとして扱う。
+
+Crypto Perp no-cash laneの現在値は、default fold_count 0によるguard BLOCKED、PBO未計算、position overlap未反映、独立market episode不足、selectorの単純基準未達により`BLOCKED_BY_BIAS_GUARD`である。現在の実装主計画はprofit evidence hardeningで、fail-closed計画とbias guard warning semantic計画は履歴である。
 
 ## Primary Current Docs
 
@@ -25,14 +27,14 @@
 
 | 領域 | 読むもの |
 |---|---|
+| Crypto Perp profit evidence hardening主計画 | [plans/CRYPTO_PERP_PROFIT_EVIDENCE_HARDENING_2026-07-11.md](plans/CRYPTO_PERP_PROFIT_EVIDENCE_HARDENING_2026-07-11.md) |
 | Crypto Perp actual-cashなし短期終着点 / evidence grade | [crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md](crypto_perp/BACKTEST_CANDIDATE_PACK_V1.md) |
 | Crypto Perp no-cash backtest gate | [crypto_perp/NO_CASH_BACKTEST_GATE_V1.md](crypto_perp/NO_CASH_BACKTEST_GATE_V1.md) |
-| Crypto Perp no-cash backtest goal implementation plan | [crypto_perp/NO_CASH_BACKTEST_GOAL_IMPLEMENTATION_PLAN_2026-07-08.md](crypto_perp/NO_CASH_BACKTEST_GOAL_IMPLEMENTATION_PLAN_2026-07-08.md) |
 | Crypto Perp real-market no-cash sample | [crypto_perp/REAL_MARKET_NO_CASH_SAMPLE_V1.md](crypto_perp/REAL_MARKET_NO_CASH_SAMPLE_V1.md) |
 | Crypto Perp forward ticker coverage status | [crypto_perp/REAL_MARKET_TICKER_COVERAGE_STATUS_V1.md](crypto_perp/REAL_MARKET_TICKER_COVERAGE_STATUS_V1.md) |
-| Crypto Perp human review plan for no-cash HOLD | [crypto_perp/HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLAN_2026-07-09.md](crypto_perp/HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLAN_2026-07-09.md) |
+| Crypto Perp human review plan / current blocked decision | [crypto_perp/HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLAN_2026-07-09.md](crypto_perp/HUMAN_REVIEW_FOR_PAPER_OBSERVATION_PLAN_2026-07-09.md) |
 | Crypto Perp human review packet | [crypto_perp/HUMAN_REVIEW_PACKET_V1.md](crypto_perp/HUMAN_REVIEW_PACKET_V1.md) |
-| Crypto Perp no-cash 検証と人間レビューの現在地 | [crypto_perp/CURRENT_NO_CASH_HUMAN_REVIEW_EXPLAINER_2026-07-11.md](crypto_perp/CURRENT_NO_CASH_HUMAN_REVIEW_EXPLAINER_2026-07-11.md) |
+| Crypto Perp no-cash検証と停止理由の現在地 | [crypto_perp/CURRENT_NO_CASH_HUMAN_REVIEW_EXPLAINER_2026-07-11.md](crypto_perp/CURRENT_NO_CASH_HUMAN_REVIEW_EXPLAINER_2026-07-11.md) |
 | Crypto Perp NO_TRADE kill report | [crypto_perp/NO_TRADE_KILL_REPORT_V1.md](crypto_perp/NO_TRADE_KILL_REPORT_V1.md) |
 | Crypto Perp candidate leaderboard | [crypto_perp/CANDIDATE_LEADERBOARD_V1.md](crypto_perp/CANDIDATE_LEADERBOARD_V1.md) |
 | Crypto Perp cost model assumptions | [../configs/cost_models/crypto_perp_bitget_usdt_futures.yaml](../configs/cost_models/crypto_perp_bitget_usdt_futures.yaml) |
@@ -60,7 +62,14 @@
 
 ## Historical / Archive
 
-Archive は current proof ではありません。履歴を探す時だけ [archive/README.md](archive/README.md) と [../plan/README.md](../plan/README.md) から辿ります。
+次の計画は現在の主計画ではなく、profit evidence hardeningへ至る実装履歴である。
+
+- [Crypto Perp fail-closed decision chain plan](plans/CRYPTO_PERP_FAIL_CLOSED_DECISION_CHAIN_2026-07-11.md)
+- [Crypto Perp bias guard warning semantics plan](plans/CRYPTO_PERP_BIAS_GUARD_WARNING_SEMANTICS_2026-07-11.md)
+- [Crypto Perp no-cash third-party explainer plan](plans/CRYPTO_PERP_NO_CASH_THIRD_PARTY_EXPLAINER_2026-07-11.md)
+- [Crypto Perp no-cash backtest goal implementation plan](crypto_perp/NO_CASH_BACKTEST_GOAL_IMPLEMENTATION_PLAN_2026-07-08.md)
+
+その他のarchiveはcurrent proofではない。履歴を探す時だけ[archive/README.md](archive/README.md)と[../plan/README.md](../plan/README.md)から辿る。
 
 ## Current Verification
 

@@ -18,7 +18,8 @@ def register_crypto_perp_no_trade_kill_report_commands(app: typer.Typer) -> None
         signal_rows: Path = typer.Option(..., "--signal-rows"),
         backtest: Path = typer.Option(..., "--backtest"),
         stress: Path = typer.Option(..., "--stress"),
-        tournament_rows: Path | None = typer.Option(None, "--tournament-rows"),
+        gate: Path = typer.Option(..., "--gate"),
+        tournament_rows: Path = typer.Option(..., "--tournament-rows"),
         out: Path = typer.Option(
             Path("data/crypto_perp/real_market_no_cash/no_trade_kill_report/latest"),
             "--out",
@@ -30,6 +31,7 @@ def register_crypto_perp_no_trade_kill_report_commands(app: typer.Typer) -> None
                 signal_rows_path=signal_rows,
                 backtest_path=backtest,
                 stress_path=stress,
+                gate_path=gate,
                 tournament_rows_path=tournament_rows,
                 out_dir=out,
                 created_at=_utc_now(),

@@ -22,6 +22,8 @@ BACKTEST_CANDIDATE_PACK_ARTIFACT_NAMES = (
     "signal_rows.jsonl",
     "data_availability_ledger.json",
     "execution_assumptions.json",
+    "tournament_rows_v2.json",
+    "bias_guard.json",
     "no_lookahead_report.json",
     "backtest_result.json",
     "stress_result.json",

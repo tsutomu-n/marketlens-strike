@@ -12,7 +12,7 @@ from typing import Any, Literal, cast
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 from sis.crypto_perp.clock import ensure_utc_aware, serialize_utc_z
-from sis.crypto_perp.io import write_json_artifact, write_text_artifact
+from sis.crypto_perp.io import file_artifact_ref, write_json_artifact, write_text_artifact
 from sis.crypto_perp.models import CryptoPerpBoundary, CryptoPerpProducer, stable_hash
 
 
@@ -162,8 +162,7 @@ def _blocker(
 
 
 def _source_ref(path: Path) -> dict[str, str]:
-    text = path.read_text(encoding="utf-8")
-    return {"path": path.as_posix(), "sha256": "sha256:" + stable_hash([text])}
+    return file_artifact_ref(path)
 
 
 def _read_json_mapping(path: Path) -> tuple[dict[str, Any] | None, str | None]:
@@ -347,6 +346,14 @@ def build_no_cash_backtest_gate(
     max_drawdown = _decimal(backtest_summary.get("max_drawdown_usd"))
     rolling_status = str(rolling_stability.get("status", "missing"))
     pbo_status = str(decision_summary.get("pbo_status", "missing"))
+    bias_guard_status = str(decision_summary.get("bias_guard_status", "missing"))
+    guard_stop_reasons = [
+        str(value) for value in decision_summary.get("bias_guard_stop_reasons", []) if value
+    ]
+    guard_warning_codes = [
+        str(value) for value in decision_summary.get("bias_guard_warning_codes", []) if value
+    ]
+    known_gaps.extend(guard_warning_codes)
     overall_grade = str(evidence_summary.get("overall_grade", "missing"))
     largest_loss_ratio = _largest_loss_ratio(backtest, total_result)
 
@@ -358,6 +365,29 @@ def build_no_cash_backtest_gate(
                 "legacy v1 decision has no evidence_grade_summary; gate keeps compatibility but cannot hold",
             )
         )
+    if bias_guard_status == "BLOCKED":
+        blockers.append(
+            _blocker(
+                "metric",
+                "BIAS_GUARD_BLOCKED",
+                "bias guard blocked the candidate",
+                metric="bias_guard_status",
+            )
+        )
+        blockers.extend(
+            _blocker("metric", reason, "bias guard stop reason", metric="bias_guard_status")
+            for reason in guard_stop_reasons
+        )
+    elif bias_guard_status != "PASS":
+        blockers.append(
+            _blocker(
+                "metric",
+                "BIAS_GUARD_STATUS_MISSING_OR_UNKNOWN",
+                "bias guard status is missing, not run, or unknown",
+                metric="bias_guard_status",
+            )
+        )
+
     if candidate_decision == "BACKTEST_COLLECT_MORE_DATA":
         blockers.append(
             _blocker(
@@ -376,7 +406,46 @@ def build_no_cash_backtest_gate(
         blockers.append(
             _blocker("candidate", "BACKTEST_CANDIDATE_PACK_REJECT", "candidate pack rejected")
         )
+    elif candidate_decision != "BACKTEST_CANDIDATE_HOLD":
+        blockers.append(
+            _blocker(
+                "candidate",
+                "BACKTEST_CANDIDATE_PACK_STATUS_MISSING_OR_UNKNOWN",
+                "candidate pack decision is missing or unknown",
+            )
+        )
 
+    if candidate_decision != "BACKTEST_CANDIDATE_HOLD":
+        existing_blocker_codes = {blocker.code for blocker in blockers}
+        candidate_reason_codes = decision.get("reason_codes", [])
+        if isinstance(candidate_reason_codes, Sequence) and not isinstance(
+            candidate_reason_codes, str
+        ):
+            for value in candidate_reason_codes:
+                code = str(value)
+                if code and code not in existing_blocker_codes:
+                    blockers.append(
+                        _blocker(
+                            "candidate",
+                            code,
+                            "candidate pack non-HOLD reason",
+                        )
+                    )
+                    existing_blocker_codes.add(code)
+
+    allowed_evidence_grades = {
+        "insufficient_source_for_local_simulation",
+        "local_simulation_with_recomputed_minimal_artifacts",
+        "local_simulation_from_existing_artifacts",
+    }
+    if evidence is not None and overall_grade not in allowed_evidence_grades:
+        blockers.append(
+            _blocker(
+                "candidate",
+                "EVIDENCE_GRADE_STATUS_MISSING_OR_UNKNOWN",
+                "evidence grade is missing or unknown",
+            )
+        )
     if overall_grade == "insufficient_source_for_local_simulation":
         blockers.append(
             _blocker(
@@ -417,6 +486,15 @@ def build_no_cash_backtest_gate(
                 metric="rolling_stability.status",
             )
         )
+    elif rolling_status != "complete":
+        blockers.append(
+            _blocker(
+                "metric",
+                "ROLLING_STABILITY_STATUS_UNKNOWN",
+                "rolling stability status is unknown",
+                metric="rolling_stability.status",
+            )
+        )
     if pbo_status in {"NOT_ESTIMABLE", "missing"}:
         blockers.append(
             _blocker(
@@ -426,7 +504,16 @@ def build_no_cash_backtest_gate(
                 metric="pbo_status",
             )
         )
-    elif pbo_status not in {"ESTIMATED", "PASS", "PASSED"}:
+    elif pbo_status in {"INPUT_THRESHOLD_MET", "ESTIMATED"}:
+        blockers.append(
+            _blocker(
+                "metric",
+                "PBO_NOT_COMPUTED",
+                "PBO input threshold is met but no PBO value was computed",
+                metric="pbo_status",
+            )
+        )
+    elif pbo_status != "COMPUTED_PASS":
         blockers.append(
             _blocker("metric", "PBO_FAILED", "PBO status is not passing", metric="pbo_status")
         )
@@ -444,6 +531,7 @@ def build_no_cash_backtest_gate(
         "STRESS_INPUT_MISSING_OR_INVALID",
         "ROLLING_STABILITY_INPUT_MISSING_OR_INVALID",
         "EVIDENCE_GRADE_SUMMARY_MISSING_LEGACY_COMPATIBILITY",
+        "EVIDENCE_GRADE_STATUS_MISSING_OR_UNKNOWN",
         "BACKTEST_CANDIDATE_PACK_COLLECT_MORE_DATA",
         "INSUFFICIENT_SOURCE_FOR_LOCAL_SIMULATION",
         "CRITICAL_SIGNAL_SOURCE_MISSING",
@@ -451,6 +539,10 @@ def build_no_cash_backtest_gate(
         "MIN_EVENTS_FOR_GATE_NOT_MET",
         "ROLLING_STABILITY_SAMPLE_INSUFFICIENT",
         "PBO_NOT_ESTIMABLE_OR_MISSING",
+        "PBO_NOT_COMPUTED",
+        "BIAS_GUARD_STATUS_MISSING_OR_UNKNOWN",
+        "BACKTEST_CANDIDATE_PACK_STATUS_MISSING_OR_UNKNOWN",
+        "ROLLING_STABILITY_STATUS_UNKNOWN",
     }
     reject_blockers: list[NoCashBacktestGateBlocker] = []
     revise_blockers: list[NoCashBacktestGateBlocker] = []
@@ -513,13 +605,29 @@ def build_no_cash_backtest_gate(
             _blocker("event", "ACTION_ROWS_MISSING", "action rows are missing for selected actions")
         )
 
+    deduplicated_blockers: list[NoCashBacktestGateBlocker] = []
+    seen_blockers: set[tuple[object, ...]] = set()
+    for blocker in blockers:
+        identity = (
+            blocker.code,
+            blocker.event_id,
+            blocker.source_type,
+        )
+        if identity not in seen_blockers:
+            deduplicated_blockers.append(blocker)
+            seen_blockers.add(identity)
+    blockers = deduplicated_blockers
     blocker_codes = {blocker.code for blocker in blockers}
-    if blocker_codes.intersection(collect_codes):
-        gate_decision: NoCashBacktestGateDecision = "NO_CASH_BACKTEST_COLLECT_MORE_DATA"
+    if "BIAS_GUARD_BLOCKED" in blocker_codes:
+        gate_decision: NoCashBacktestGateDecision = "NO_CASH_BACKTEST_REJECT"
     elif any(blocker.code == "BACKTEST_CANDIDATE_PACK_REJECT" for blocker in blockers):
         gate_decision = "NO_CASH_BACKTEST_REJECT"
+    elif blocker_codes.intersection(collect_codes):
+        gate_decision = "NO_CASH_BACKTEST_COLLECT_MORE_DATA"
     elif any(blocker.code == "BACKTEST_CANDIDATE_PACK_REVISE" for blocker in blockers):
         gate_decision = "NO_CASH_BACKTEST_REVISE"
+    elif blockers:
+        gate_decision = "NO_CASH_BACKTEST_COLLECT_MORE_DATA"
     elif reject_blockers:
         blockers.extend(reject_blockers)
         gate_decision = "NO_CASH_BACKTEST_REJECT"
@@ -559,6 +667,8 @@ def build_no_cash_backtest_gate(
         "largest_loss_to_total_result_ratio": str(largest_loss_ratio),
         "rolling_stability_status": rolling_status,
         "pbo_status": pbo_status,
+        "bias_guard_status": bias_guard_status,
+        "bias_guard_warning_codes": guard_warning_codes,
         "paper_permission_granted": False,
         "actual_cash_used": False,
     }

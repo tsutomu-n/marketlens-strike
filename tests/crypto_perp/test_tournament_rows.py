@@ -245,6 +245,13 @@ def test_cost_aware_tournament_rows_v2_separates_estimate_from_actual_cash() -> 
     assert continuation.cost_adjusted_cash_estimate_usd < continuation.before_cost_proxy_usd
     assert continuation.evidence_level == "cost_adjusted_estimate"
     assert "ESTIMATE_NOT_ACTUAL_CASH" in continuation.known_gaps
+    assert row_set.summary["execution_windows"] == {
+        "event-1": {
+            "entry_at": "2026-06-21T05:00:00Z",
+            "settled_at": "2026-06-21T06:00:00Z",
+            "horizon_minutes": 60,
+        }
+    }
 
 
 def test_cost_aware_tournament_rows_v2_defaults_to_project_cost_model() -> None:
@@ -272,6 +279,9 @@ def test_cost_aware_tournament_rows_v2_defaults_to_project_cost_model() -> None:
     assumptions = row_set.summary["cost_assumptions"]
     assert assumptions == {
         "cost_model_id": CRYPTO_PERP_PROJECT_COST_MODEL_ID,
+        "notional_usd": "100",
+        "operator_time_minutes": "0",
+        "operator_hourly_cost_usd": "0",
         "fee_rate": CRYPTO_PERP_PROJECT_TAKER_FEE_RATE_TEXT,
         "funding_rate": CRYPTO_PERP_PROJECT_FUNDING_RATE_TEXT,
         "slippage_bps": CRYPTO_PERP_PROJECT_SLIPPAGE_BPS_TEXT,
@@ -339,6 +349,9 @@ def test_crypto_perp_tournament_rows_v2_cli_uses_project_cost_defaults(tmp_path:
     payload = json.loads((tmp_path / "rows-v2/tournament_rows_v2.json").read_text())
     assert payload["summary"]["cost_assumptions"] == {
         "cost_model_id": CRYPTO_PERP_PROJECT_COST_MODEL_ID,
+        "notional_usd": "100",
+        "operator_time_minutes": "0",
+        "operator_hourly_cost_usd": "0",
         "fee_rate": CRYPTO_PERP_PROJECT_TAKER_FEE_RATE_TEXT,
         "funding_rate": CRYPTO_PERP_PROJECT_FUNDING_RATE_TEXT,
         "slippage_bps": CRYPTO_PERP_PROJECT_SLIPPAGE_BPS_TEXT,

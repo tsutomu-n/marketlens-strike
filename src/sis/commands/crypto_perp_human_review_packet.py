@@ -25,6 +25,30 @@ def register_crypto_perp_human_review_packet_commands(app: typer.Typer) -> None:
             ),
             "--decision",
         ),
+        tournament_rows: Path = typer.Option(
+            Path(
+                "data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/tournament_rows_v2.json"
+            ),
+            "--tournament-rows",
+        ),
+        bias_guard: Path = typer.Option(
+            Path(
+                "data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/bias_guard.json"
+            ),
+            "--bias-guard",
+        ),
+        data_availability: Path = typer.Option(
+            Path(
+                "data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/data_availability_ledger.json"
+            ),
+            "--data-availability",
+        ),
+        signal_rows: Path = typer.Option(
+            Path(
+                "data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/signal_rows.jsonl"
+            ),
+            "--signal-rows",
+        ),
         backtest: Path = typer.Option(
             Path(
                 "data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/backtest_result.json"
@@ -36,6 +60,12 @@ def register_crypto_perp_human_review_packet_commands(app: typer.Typer) -> None:
                 "data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/stress_result.json"
             ),
             "--stress",
+        ),
+        rolling_stability: Path = typer.Option(
+            Path(
+                "data/crypto_perp/real_market_no_cash/backtest_candidate_pack/latest/rolling_stability_result.json"
+            ),
+            "--rolling-stability",
         ),
         gate: Path = typer.Option(
             Path(
@@ -65,8 +95,13 @@ def register_crypto_perp_human_review_packet_commands(app: typer.Typer) -> None:
             result = write_human_review_packet(
                 selection_manifest_path=selection_manifest,
                 decision_path=decision,
+                tournament_rows_path=tournament_rows,
+                bias_guard_path=bias_guard,
+                data_availability_path=data_availability,
+                signal_rows_path=signal_rows,
                 backtest_path=backtest,
                 stress_path=stress,
+                rolling_stability_path=rolling_stability,
                 gate_path=gate,
                 kill_report_path=kill_report,
                 leaderboard_path=leaderboard,

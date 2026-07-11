@@ -1,9 +1,17 @@
 <!--
 作成日: 2026-06-27_19:01 JST
-更新日: 2026-06-28_07:24 JST
+更新日: 2026-07-11_18:35 JST
 -->
 
 # Crypto Perp Profit-Readiness Acceptance Vocabulary
+
+## 2026-07-11現行契約
+
+現在は`fold_count=0`、`pbo_status=NOT_ESTIMABLE`、guard `BLOCKED`です。candidate/gateはREJECT、kill report/leaderboardはKILL、packetは`BLOCKED_BY_BIAS_GUARD`です。
+
+`INPUT_THRESHOLD_MET`や`COMPUTED_PASS`というstatus文字列だけではPBO合格になりません。専用PBO計算artifactとlineageを検証するproducerがないため、現packetは`pbo_evidence_verified=false`です。
+
+30 events / 14 trades / 10 winsの名目正値は仮説継続材料ですが、peak6、episodes5、single-position負、episode bootstrapが0を跨ぐためprofit proofまたはPaper permissionではありません。
 
 ## 評価値
 
@@ -32,7 +40,14 @@
 |---|---|
 | `known_gaps` | 欠損sourceや制約を下流へ伝播させる一覧。0埋めの代替ではない。 |
 | `source_availability` | eventごとに何が計算可能かを source refs と row counts で示す artifact。 |
-| `pbo_status=NOT_ESTIMABLE` | event数やfoldが不足して PBO を推定しない正式結果。 |
+| `pbo_status=NOT_ESTIMABLE` | event数やfoldが不足し、PBO入力条件も満たさない正式結果。後段へ進めない。 |
+| `pbo_status=INPUT_THRESHOLD_MET` | event数/fold数の入力閾値を満たしただけ。PBOは未計算で、後段へ進めない。legacy `ESTIMATED`も計算済み扱いにしない。 |
+| `pbo_status=COMPUTED_PASS` | 実際のPBO計算が合格した状態。後段進行を許せる唯一のPBO statusだが、現production builderは生成しない。 |
+| `packet_decision=BLOCKED_BY_BIAS_GUARD` | guardがPASS以外なので、PBOより先にHuman Review Planningを停止した状態。 |
+| `packet_decision=BLOCKED_BY_PBO` | guard通過後もPBO専用証跡が検証できず停止した状態。status文字列だけでは解除しない。 |
+| `position_overlap_accounted=false` | 同時保有と資本拘束をaggregate損益に織り込んでいない。positive totalを収益性の証明に使わない。 |
+| `INDEPENDENT_MARKET_EPISODE_SAMPLE_NOT_MET` | nominal event数ではなく、重複しないmarket episode数が最低条件未満。現在は5 < 10なのでCOLLECT。 |
+| `SELECTOR_DOES_NOT_BEAT_BEST_STATIC_ACTION` | 選択器の損益が同一標本の最良static actionを下回る。現在はselector `+3.042366...`に対しalways-long `+5.816219...`。 |
 | `bias_guard_status=BLOCKED` | lookahead、recursive warmup、sample不足、stress lossなどで次段階へ進めない状態。 |
 | `tiny_live_shadow` | 実発注しない preflight artifact。`exchange_write_used=false`、`live_order_submitted=false`、`permits_live_order=false` が必須。 |
 

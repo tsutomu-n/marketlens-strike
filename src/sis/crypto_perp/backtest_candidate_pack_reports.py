@@ -12,8 +12,16 @@ from sis.crypto_perp.backtest_candidate_pack_models import (
     _EventOutcomePair,
     _PerEventArtifacts,
 )
+from sis.crypto_perp.backtest_candidate_pack_profit import (
+    build_profit_robustness_summary,
+)
 from sis.crypto_perp.bias_guards import CryptoPerpBiasGuard
 from sis.crypto_perp.clock import ensure_utc_aware, serialize_utc_z
+from sis.crypto_perp.cost_model import (
+    CRYPTO_PERP_PROJECT_FUNDING_RATE,
+    CRYPTO_PERP_PROJECT_SLIPPAGE_BPS,
+    CRYPTO_PERP_PROJECT_TAKER_FEE_RATE,
+)
 from sis.crypto_perp.source_availability import (
     CryptoPerpSourceAvailability,
     SourceAvailabilityStatus,
@@ -30,6 +38,16 @@ def _score(artifact: _PerEventArtifacts) -> str:
     return str(first.score) if first is not None else "0"
 
 
+def _outcome_execution_window(pair: _EventOutcomePair) -> tuple[datetime, int]:
+    matured = [horizon for horizon in pair.outcome.horizons if horizon.matured]
+    if not matured:
+        raise ValueError(f"outcome has no matured horizon: {pair.outcome.outcome_id}")
+    horizon = matured[0]
+    return pair.outcome.settled_at - timedelta(
+        minutes=horizon.horizon_minutes
+    ), horizon.horizon_minutes
+
+
 def build_signal_rows(
     *,
     pairs: Sequence[_EventOutcomePair],
@@ -44,9 +62,12 @@ def build_signal_rows(
             no_trade_reason.append("SELECTED_ACTION_UNKNOWN")
         if selected == "NO_TRADE":
             no_trade_reason.append("NO_TRADE_SELECTED")
+        entry_at, outcome_horizon_minutes = _outcome_execution_window(pair)
         rows.append(
             {
                 "timestamp": serialize_utc_z(pair.event.information_cutoff_at),
+                "entry_at": serialize_utc_z(entry_at),
+                "outcome_horizon_minutes": outcome_horizon_minutes,
                 "symbol": pair.event.canonical_symbol,
                 "event_id": pair.event.event_id,
                 "outcome_id": pair.outcome.outcome_id,
@@ -209,7 +230,7 @@ def build_no_lookahead_report(
     ledger_rows = cast(list[dict[str, Any]], ledger.get("rows", []))
     for pair, artifact in zip(pairs, artifacts, strict=True):
         cutoff = pair.event.information_cutoff_at
-        entry_at = cutoff + timedelta(minutes=5)
+        entry_at, _ = _outcome_execution_window(pair)
         checks.append(
             _check_row(
                 "signal_timestamp_before_entry_timestamp",
@@ -263,6 +284,13 @@ def build_no_lookahead_report(
             "no train/test optimization is performed in this deterministic candidate pack",
         )
     )
+    checks.append(
+        _check_row(
+            "recursive_feature_warmup_absent",
+            "pass",
+            "features and edge scores are rebuilt independently per event by the current non-recursive pipeline",
+        )
+    )
     counts = Counter(str(check["status"]) for check in checks)
     status = "fail" if counts.get("fail", 0) else "pass"
     return {
@@ -309,6 +337,8 @@ def _simulation_results(
     signal_rows: Sequence[Mapping[str, Any]],
     rows: CryptoPerpTournamentRowsV2 | None,
     metric: Literal["cost_adjusted_cash_estimate_usd", "stress_cash_estimate_usd"],
+    holding_minutes: int,
+    notional_usd: Decimal,
 ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
     row_map = _row_by_event_action(rows)
     results: list[dict[str, Any]] = []
@@ -358,6 +388,14 @@ def _simulation_results(
         "win_rate": str(Decimal(wins) / Decimal(len(executed))) if executed else None,
         "max_drawdown_usd": str(_drawdown(returns)),
         "beats_no_trade": total > 0,
+        "profit_robustness": build_profit_robustness_summary(
+            signal_rows=signal_rows,
+            results=results,
+            holding_minutes=holding_minutes,
+            notional_usd=notional_usd,
+            tournament_rows=rows,
+            metric=metric,
+        ),
     }
     return results, summary
 
@@ -365,11 +403,16 @@ def _simulation_results(
 def build_backtest_result(
     signal_rows: Sequence[Mapping[str, Any]],
     rows: CryptoPerpTournamentRowsV2 | None,
+    *,
+    holding_minutes: int = 60,
+    notional_usd: Decimal = Decimal("100"),
 ) -> dict[str, Any]:
     results, summary = _simulation_results(
         signal_rows=signal_rows,
         rows=rows,
         metric="cost_adjusted_cash_estimate_usd",
+        holding_minutes=holding_minutes,
+        notional_usd=notional_usd,
     )
     return {
         "schema_version": "crypto_perp_backtest_result.v1",
@@ -389,11 +432,16 @@ def build_backtest_result(
 def build_stress_result(
     signal_rows: Sequence[Mapping[str, Any]],
     rows: CryptoPerpTournamentRowsV2 | None,
+    *,
+    holding_minutes: int = 60,
+    notional_usd: Decimal = Decimal("100"),
 ) -> dict[str, Any]:
     results, summary = _simulation_results(
         signal_rows=signal_rows,
         rows=rows,
         metric="stress_cash_estimate_usd",
+        holding_minutes=holding_minutes,
+        notional_usd=notional_usd,
     )
     return {
         "schema_version": "crypto_perp_backtest_stress_result.v1",
@@ -520,12 +568,18 @@ def decide_backtest_candidate(
     stress: Mapping[str, Any],
     rolling: Mapping[str, Any],
     guard: CryptoPerpBiasGuard | None,
+    fixture_only: bool = False,
+    event_source_provenance_verified: bool = True,
 ) -> tuple[BacktestCandidateDecisionName, list[str]]:
     reasons: list[str] = []
     if event_count == 0 or outcome_count == 0:
         return "BACKTEST_COLLECT_MORE_DATA", ["NO_EVENT_OUTCOME_PAIRS"]
     if event_count < min_events or outcome_count < min_events:
         reasons.append("MIN_EVENT_OUTCOME_SAMPLE_NOT_MET")
+    if fixture_only:
+        reasons.append("DOGFOOD_FIXTURE_NOT_REAL_MARKET_EVIDENCE")
+    if not event_source_provenance_verified:
+        reasons.append("EVENT_SOURCE_PROVENANCE_NOT_VERIFIABLE")
     if int(cast(Mapping[str, Any], ledger["summary"])["critical_missing_count"]) > 0:
         reasons.append("CRITICAL_SIGNAL_SOURCE_MISSING")
     nl_summary = cast(Mapping[str, Any], no_lookahead["summary"])
@@ -541,23 +595,60 @@ def decide_backtest_candidate(
     elif int(bt_summary["unknown_count"]) > 0:
         reasons.append("SELECTED_ACTION_UNKNOWN")
     if guard is None:
-        reasons.append("BIAS_GUARD_NOT_RUN")
+        reasons.append("BIAS_GUARD_MISSING_OR_NOT_ESTIMABLE")
+    elif guard.guard_status == "BLOCKED":
+        reasons.extend(["BIAS_GUARD_BLOCKED", *guard.stop_reasons])
+    elif guard.guard_status != "PASS":
+        reasons.append("BIAS_GUARD_MISSING_OR_NOT_ESTIMABLE")
     elif guard.pbo_status == "NOT_ESTIMABLE":
-        reasons.append("PBO_NOT_ESTIMABLE_SAMPLE_INSUFFICIENT")
-    if rolling["status"] == "sample_insufficient":
+        reasons.append("BIAS_GUARD_MISSING_OR_NOT_ESTIMABLE")
+    elif guard.pbo_status != "COMPUTED_PASS":
+        reasons.append("PBO_NOT_COMPUTED")
+    rolling_status = rolling.get("status")
+    if rolling_status == "sample_insufficient":
         reasons.append("ROLLING_STABILITY_SAMPLE_INSUFFICIENT")
+    elif rolling_status != "complete":
+        reasons.append("ROLLING_STABILITY_STATUS_UNKNOWN")
+    if int(bt_summary["executed_trade_count"]) == 0 or int(bt_summary["unknown_count"]) > 0:
+        reasons.append("NO_EXECUTABLE_SIGNAL_ROWS")
+    if int(bt_summary.get("blocked_missing_action_row_count", 0)) > 0:
+        reasons.append("ACTION_ROWS_MISSING")
+    robustness = cast(Mapping[str, Any], bt_summary.get("profit_robustness", {}))
+    if int(robustness.get("peak_concurrent_positions", 0)) > 1 and not bool(
+        robustness.get("position_overlap_accounted")
+    ):
+        reasons.append("POSITION_OVERLAP_NOT_ACCOUNTED")
+    if (
+        "market_episode_count" in robustness
+        and int(robustness["market_episode_count"]) < min_events
+    ):
+        reasons.append("INDEPENDENT_MARKET_EPISODE_SAMPLE_NOT_MET")
+    if robustness.get("selector_beats_best_static_action") is False:
+        reasons.append("SELECTOR_DOES_NOT_BEAT_BEST_STATIC_ACTION")
     collection_reasons = {
         "MIN_EVENT_OUTCOME_SAMPLE_NOT_MET",
         "CRITICAL_SIGNAL_SOURCE_MISSING",
         "NO_LOOKAHEAD_UNVERIFIED",
         "SELECTED_ACTION_UNKNOWN_DUE_TO_MISSING_SOURCE",
-        "PBO_NOT_ESTIMABLE_SAMPLE_INSUFFICIENT",
+        "BIAS_GUARD_MISSING_OR_NOT_ESTIMABLE",
+        "PBO_NOT_COMPUTED",
         "ROLLING_STABILITY_SAMPLE_INSUFFICIENT",
+        "ROLLING_STABILITY_STATUS_UNKNOWN",
+        "INDEPENDENT_MARKET_EPISODE_SAMPLE_NOT_MET",
+        "DOGFOOD_FIXTURE_NOT_REAL_MARKET_EVIDENCE",
+        "EVENT_SOURCE_PROVENANCE_NOT_VERIFIABLE",
     }
+    revision_reasons = {
+        "NO_EXECUTABLE_SIGNAL_ROWS",
+        "ACTION_ROWS_MISSING",
+        "POSITION_OVERLAP_NOT_ACCOUNTED",
+        "SELECTOR_DOES_NOT_BEAT_BEST_STATIC_ACTION",
+    }
+    if "BIAS_GUARD_BLOCKED" in reasons:
+        return "BACKTEST_REJECT", _unique(reasons)
     if collection_reasons.intersection(reasons):
         return "BACKTEST_COLLECT_MORE_DATA", _unique(reasons)
-    if int(bt_summary["executed_trade_count"]) == 0 or int(bt_summary["unknown_count"]) > 0:
-        reasons.append("NO_EXECUTABLE_SIGNAL_ROWS")
+    if revision_reasons.intersection(reasons):
         return "BACKTEST_REVISE", _unique(reasons)
     total = Decimal(str(bt_summary["total_result_usd"]))
     stress_total = Decimal(str(stress_summary["total_result_usd"]))
@@ -616,10 +707,16 @@ def validate_backtest_assumptions(
         raise ValueError("notional_usd must be positive")
     if fee_rate <= 0:
         raise ValueError("fee_rate must be positive; zero-cost backtest is forbidden")
+    if fee_rate < CRYPTO_PERP_PROJECT_TAKER_FEE_RATE:
+        raise ValueError("fee_rate must not be below the project cost floor")
     if funding_rate < 0:
         raise ValueError("funding_rate must be non-negative")
+    if funding_rate < CRYPTO_PERP_PROJECT_FUNDING_RATE:
+        raise ValueError("funding_rate must not be below the project cost floor")
     if slippage_bps <= 0:
         raise ValueError("slippage_bps must be positive; zero-cost backtest is forbidden")
+    if slippage_bps < CRYPTO_PERP_PROJECT_SLIPPAGE_BPS:
+        raise ValueError("slippage_bps must not be below the project cost floor")
     if min_events <= 0:
         raise ValueError("min_events must be positive")
     if min_events_for_stability <= 0:
