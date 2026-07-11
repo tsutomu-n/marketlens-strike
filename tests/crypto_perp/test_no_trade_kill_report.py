@@ -5,8 +5,10 @@ from decimal import Decimal
 import json
 from pathlib import Path
 
+from click import Group
 from jsonschema import Draft202012Validator
 import pytest
+from typer.main import get_command
 from typer.testing import CliRunner
 
 from sis.cli import app
@@ -17,6 +19,14 @@ from .test_profit_readiness_local_automation import _outcome
 
 ROOT = Path(__file__).resolve().parents[2]
 runner = CliRunner()
+
+
+def _kill_report_option_is_required(name: str) -> bool:
+    root_command = get_command(app)
+    assert isinstance(root_command, Group)
+    command = root_command.commands["crypto-perp-no-trade-kill-report"]
+    option = next(param for param in command.params if param.name == name)
+    return option.required
 
 
 def _schema(name: str) -> dict:
@@ -286,11 +296,10 @@ def test_no_trade_kill_report_cli_requires_gate(tmp_path: Path) -> None:
             "--stress",
             str(tmp_path / "stress.json"),
         ],
-        terminal_width=200,
     )
 
     assert result.exit_code == 2
-    assert "--gate" in result.stderr
+    assert _kill_report_option_is_required("gate") is True
 
 
 @pytest.mark.parametrize(
@@ -413,11 +422,10 @@ def test_no_trade_kill_report_cli_requires_tournament_rows(tmp_path: Path) -> No
             "--gate",
             str(tmp_path / "gate.json"),
         ],
-        terminal_width=200,
     )
 
     assert result.exit_code == 2
-    assert "--tournament-rows" in result.stderr
+    assert _kill_report_option_is_required("tournament_rows") is True
 
 
 def test_missing_episode_concentration_never_holds() -> None:
