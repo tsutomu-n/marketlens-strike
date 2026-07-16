@@ -1,0 +1,172 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_idea_seed.v1.schema.json",
+  "title": "Strategy Idea Seed v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "seed_record_id",
+    "created_at",
+    "producer",
+    "source_lane",
+    "status",
+    "data_readiness",
+    "title",
+    "hypothesis",
+    "profit_intent",
+    "required_sources",
+    "known_gaps",
+    "falsification_question",
+    "next_research_question",
+    "lineage",
+    "payload",
+    "provenance_signature",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_idea_seed.v1"},
+    "seed_record_id": {"$ref": "#/$defs/id"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "#/$defs/producer"},
+    "source_lane": {"const": "TECHNICAL"},
+    "status": {"const": "UNVERIFIED_SEED"},
+    "data_readiness": {"enum": ["HISTORICAL_SOURCE", "DATA_REQUIRED"]},
+    "title": {"type": "string", "minLength": 1},
+    "hypothesis": {"type": "string", "minLength": 1},
+    "profit_intent": {"$ref": "#/$defs/profit_intent"},
+    "required_sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {"$ref": "#/$defs/required_source"}
+    },
+    "known_gaps": {"type": "array", "items": {"type": "string"}},
+    "falsification_question": {"type": "string", "minLength": 1},
+    "next_research_question": {"type": "string", "minLength": 1},
+    "lineage": {"$ref": "#/$defs/lineage"},
+    "payload": {"$ref": "#/$defs/payload_ref"},
+    "provenance_signature": {"$ref": "#/$defs/sha256"},
+    "boundary": {"$ref": "#/$defs/boundary"}
+  },
+  "$defs": {
+    "id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "producer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["producer_id", "version", "canonicalization_version"],
+      "properties": {
+        "producer_id": {"$ref": "#/$defs/id"},
+        "version": {"type": "string", "minLength": 1},
+        "canonicalization_version": {"const": "seed-domain-canonicalization-v1"}
+      }
+    },
+    "profit_intent": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mechanism_class",
+        "capture_archetype",
+        "path_archetype",
+        "direction_hint",
+        "horizon_hint",
+        "affected_actor_or_constraint",
+        "observable_proxies",
+        "hypothesized_persistence",
+        "alternative_explanations"
+      ],
+      "properties": {
+        "mechanism_class": {"type": "string", "minLength": 1},
+        "capture_archetype": {"enum": ["CONTINUATION", "REVERSAL"]},
+        "path_archetype": {"type": "string", "minLength": 1},
+        "direction_hint": {"enum": ["LONG", "SHORT"]},
+        "horizon_hint": {"type": "string", "minLength": 1},
+        "affected_actor_or_constraint": {"type": "string", "minLength": 1},
+        "observable_proxies": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string"}
+        },
+        "hypothesized_persistence": {"type": "string", "minLength": 1},
+        "alternative_explanations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string"}
+        }
+      }
+    },
+    "required_source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_key", "capability", "requirement_status", "reason_codes"],
+      "properties": {
+        "source_key": {"$ref": "#/$defs/id"},
+        "capability": {
+          "enum": ["HISTORICAL", "SNAPSHOT_ONLY", "FORWARD_ONLY", "MISSING", "INVALID", "UNKNOWN"]
+        },
+        "requirement_status": {"enum": ["AVAILABLE", "DATA_REQUIRED"]},
+        "reason_codes": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "lineage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["parent_seed_ids", "generation_depth", "mutation_operators"],
+      "properties": {
+        "parent_seed_ids": {"type": "array", "items": {"$ref": "#/$defs/id"}},
+        "generation_depth": {"type": "integer", "minimum": 0},
+        "mutation_operators": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "payload_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "schema_version", "path", "sha256", "record_key"],
+      "properties": {
+        "kind": {"const": "TECHNICAL"},
+        "schema_version": {"const": "strategy_idea_seed_technical_payload.v1"},
+        "path": {"const": "technical/technical_payloads.jsonl"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "record_key": {"$ref": "#/$defs/id"}
+      }
+    },
+    "boundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "backtest_evaluated",
+        "execution_evaluated",
+        "cost_evaluated",
+        "profit_claimed",
+        "auto_shortlisted",
+        "permits_candidate_export",
+        "permits_paper_candidate",
+        "paper_execution_allowed",
+        "live_allowed",
+        "wallet_used",
+        "signing_used",
+        "exchange_write_used"
+      ],
+      "properties": {
+        "backtest_evaluated": {"const": false},
+        "execution_evaluated": {"const": false},
+        "cost_evaluated": {"const": false},
+        "profit_claimed": {"const": false},
+        "auto_shortlisted": {"const": false},
+        "permits_candidate_export": {"const": false},
+        "permits_paper_candidate": {"const": false},
+        "paper_execution_allowed": {"const": false},
+        "live_allowed": {"const": false},
+        "wallet_used": {"const": false},
+        "signing_used": {"const": false},
+        "exchange_write_used": {"const": false}
+      }
+    }
+  }
+}

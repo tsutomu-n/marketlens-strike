@@ -18,6 +18,7 @@ from sis.commands.research import register_research_commands
 from sis.commands.strategy_authoring import register_strategy_authoring_commands
 from sis.commands.strategy_ai_review import register_strategy_ai_review_commands
 from sis.commands.strategy_idea_candidates import register_strategy_idea_candidate_commands
+from sis.commands.strategy_idea_seeds import register_strategy_idea_seed_commands
 from sis.commands.strategy_case_index import register_strategy_case_index_commands
 from sis.commands.strategy_case_lite import register_strategy_case_lite_commands
 from sis.commands.profit_core_reality_check import register_profit_core_reality_check_commands
@@ -157,6 +158,7 @@ register_strategy_case_index_commands(app)
 register_strategy_daily_brief_commands(app)
 register_strategy_ai_review_commands(app)
 register_strategy_idea_candidate_commands(app)
+register_strategy_idea_seed_commands(app)
 register_profit_core_reality_check_commands(app)
 register_strategy_model_loop_commands(app)
 register_strategy_micro_live_plan_commands(app)

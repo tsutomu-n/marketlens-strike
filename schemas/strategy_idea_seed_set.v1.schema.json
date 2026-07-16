@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_idea_seed_set.v1.schema.json",
+  "title": "Strategy Idea Seed Set v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "created_at",
+    "producer",
+    "seed_count",
+    "data_required_count",
+    "semantic_hash",
+    "seeds",
+    "boundary"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_idea_seed_set.v1"},
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "strategy_idea_seed.v1.schema.json#/$defs/producer"},
+    "seed_count": {"type": "integer", "minimum": 0},
+    "data_required_count": {"type": "integer", "minimum": 0},
+    "semantic_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "seeds": {
+      "type": "array",
+      "items": {"$ref": "strategy_idea_seed.v1.schema.json"}
+    },
+    "boundary": {"$ref": "strategy_idea_seed.v1.schema.json#/$defs/boundary"}
+  }
+}

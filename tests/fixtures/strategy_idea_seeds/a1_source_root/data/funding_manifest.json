@@ -1,0 +1,26 @@
+{
+  "schema_version": "crypto_perp_funding_manifest.v1",
+  "manifest_id": "seed-foundry-a1-funding-fixture",
+  "created_at": "2026-07-16T00:00:00Z",
+  "artifact": "funding_rows",
+  "version": 1,
+  "exchange": "bitget",
+  "market_type": "perp_linear",
+  "symbols": ["BTCUSDT", "ETHUSDT"],
+  "capture_mode": "rest_funding_history",
+  "coverage_class": "historical_public_funding",
+  "supports_cost_adjusted_estimate": true,
+  "window": {
+    "start_ms": 1784073600000,
+    "end_ms": 1784160000000
+  },
+  "row_count_total": 4,
+  "row_count_after_dedupe": 4,
+  "fields_present": ["funding_rate"],
+  "warnings": [],
+  "raw_inputs": ["funding_history"],
+  "network_attempted": false,
+  "credentials_used": false,
+  "exchange_write_used": false,
+  "live_order_submitted": false
+}

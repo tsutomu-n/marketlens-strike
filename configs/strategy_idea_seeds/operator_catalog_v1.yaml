@@ -1,0 +1,7 @@
+schema_version: strategy_idea_seed_operator_catalog.v1
+operators:
+  - operator_id: compare_gte
+    arity: 2
+    input_types: [number, number]
+    output_type: boolean
+    unit_policy: same

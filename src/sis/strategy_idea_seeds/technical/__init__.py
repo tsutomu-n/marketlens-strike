@@ -1,0 +1,1 @@
+"""Technical Seed generation."""
