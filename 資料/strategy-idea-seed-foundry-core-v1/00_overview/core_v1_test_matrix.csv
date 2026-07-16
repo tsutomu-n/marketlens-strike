@@ -1,0 +1,41 @@
+checkpoint,test_id,test_type,description,expected
+A1,A1-UN-001,unit,Boundary trueを拒否,PASSまたは明示的なReason Code付き正規結果
+A1,A1-UN-002,unit,Title変更でseed_record_id不変,PASSまたは明示的なReason Code付き正規結果
+A1,A1-UN-003,unit,Axis順序変更でSeed集合不変,PASSまたは明示的なReason Code付き正規結果
+A1,A1-UN-004,unit,Invalid unit/typeはAttempt止まり,PASSまたは明示的なReason Code付き正規結果
+A1,A1-UN-005,unit,Historical SeedとDATA_REQUIRED Seedを同時生成,PASSまたは明示的なReason Code付き正規結果
+A2,A2-HO-001,hostile,Fragment hash不一致を拒否,PASSまたは明示的なReason Code付き正規結果
+A2,A2-HO-002,hostile,Reducer順序変更で結果不変,PASSまたは明示的なReason Code付き正規結果
+A2,A2-HO-003,hostile,Atomic write中断でfinal manifestを公開しない,PASSまたは明示的なReason Code付き正規結果
+A2,A2-HO-004,hostile,Config/Source変更Resumeを拒否,PASSまたは明示的なReason Code付き正規結果
+A2,A2-HO-005,hostile,Clean/Resumeの意味的結果一致,PASSまたは明示的なReason Code付き正規結果
+A3,A3-LE-001,leakage,将来Candle変更で過去Feature不変,PASSまたは明示的なReason Code付き正規結果
+A3,A3-LE-002,leakage,他Symbol追加で対象Symbol Feature不変,PASSまたは明示的なReason Code付き正規結果
+A3,A3-LE-003,leakage,未来Fundingをas-of joinしない,PASSまたは明示的なReason Code付き正規結果
+A3,A3-LE-004,leakage,Same-bar dual barrierをAMBIGUOUS,PASSまたは明示的なReason Code付き正規結果
+A3,A3-LE-005,leakage,label_end_at重複RowをPurge,PASSまたは明示的なReason Code付き正規結果
+A4,A4-ML-001,ml,Native model save/load予測一致,PASSまたは明示的なReason Code付き正規結果
+A4,A4-ML-002,ml,Golden tree dump parse,PASSまたは明示的なReason Code付き正規結果
+A4,A4-ML-003,ml,Leaf valueだけでSeed化しない,PASSまたは明示的なReason Code付き正規結果
+A4,A4-ML-004,ml,Distillationがrule_observationを参照しない,PASSまたは明示的なReason Code付き正規結果
+A4,A4-ML-005,ml,Null controlを専用Tagで保持,PASSまたは明示的なReason Code付き正規結果
+A5,A5-SE-001,security,Prompt hash不一致を拒否,PASSまたは明示的なReason Code付き正規結果
+A5,A5-SE-002,security,Wallet/command/exchange-write claimを拒否,PASSまたは明示的なReason Code付き正規結果
+A5,A5-SE-003,security,Parent evidenceコピーを拒否,PASSまたは明示的なReason Code付き正規結果
+A5,A5-SE-004,security,Unknown operatorをOPERATOR_REQUIREDとして保持,PASSまたは明示的なReason Code付き正規結果
+A5,A5-SE-005,security,Raw responseを改変せず保存,PASSまたは明示的なReason Code付き正規結果
+A6,A6-PR-001,property,Direction flip二回で元へ戻る,PASSまたは明示的なReason Code付き正規結果
+A6,A6-PR-002,property,Counterfactual direct_support=false,PASSまたは明示的なReason Code付き正規結果
+A6,A6-PR-003,property,Generation depth超過を拒否,PASSまたは明示的なReason Code付き正規結果
+A6,A6-PR-004,property,Mutationに親Evidenceがない,PASSまたは明示的なReason Code付き正規結果
+A6,A6-PR-005,property,Resume結果とClean結果が一致,PASSまたは明示的なReason Code付き正規結果
+A7,A7-CL-001,clustering,Exact duplicateを同Groupへ統合,PASSまたは明示的なReason Code付き正規結果
+A7,A7-CL-002,clustering,Threshold variantを同Cluster候補へ配置,PASSまたは明示的なReason Code付き正規結果
+A7,A7-CL-003,clustering,異なるmechanismをover-mergeしない,PASSまたは明示的なReason Code付き正規結果
+A7,A7-CL-004,clustering,Review外SeedをArchiveに保持,PASSまたは明示的なReason Code付き正規結果
+A7,A7-CL-005,clustering,Round-robinで単一Family独占を防止,PASSまたは明示的なReason Code付き正規結果
+A8,A8-E2-001,e2e,Technical/ML/LLM/Mutation/ReviewのFull Fixture E2E,PASSまたは明示的なReason Code付き正規結果
+A8,A8-E2-002,e2e,途中停止後Resume E2E,PASSまたは明示的なReason Code付き正規結果
+A8,A8-E2-003,e2e,全Boundary false,PASSまたは明示的なReason Code付き正規結果
+A8,A8-E2-004,e2e,Candidate/Backtest/Paper/Live artifactがゼロ,PASSまたは明示的なReason Code付き正規結果
+A8,A8-E2-005,e2e,Core CIとOptional ML CIの分離,PASSまたは明示的なReason Code付き正規結果
