@@ -27,8 +27,7 @@ TASK_ROW_RE = re.compile(r"^\|\s*(A[1-8]-\d{2})\s*\|\s*(.*?)\s*\|")
 def _read_yaml(path: Path) -> dict[str, Any]:
     payload = yaml.safe_load(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
-        relative = path.relative_to(REPO_ROOT)
-        raise ValueError(f"{relative} must contain a YAML object")
+        raise ValueError(f"{path.relative_to(REPO_ROOT)} must contain a YAML object")
     return payload
 
 
@@ -42,8 +41,9 @@ def _task_rows(path: Path, checkpoint_id: str) -> list[tuple[str, str]]:
         task_id = match.group(1)
         title = match.group(2).strip()
         if task_id in seen:
-            relative = path.relative_to(REPO_ROOT)
-            raise ValueError(f"{relative} contains duplicate task id: {task_id}")
+            raise ValueError(
+                f"{path.relative_to(REPO_ROOT)} contains duplicate task id: {task_id}"
+            )
         seen.add(task_id)
         rows.append((task_id, title))
     return rows
@@ -67,7 +67,6 @@ def _checklist_rows(
     tasks = matches[0].get("tasks")
     if not isinstance(tasks, list):
         raise ValueError(f"{checkpoint_id}.tasks must be a list")
-
     rows: list[tuple[str, str]] = []
     seen: set[str] = set()
     for item in tasks:
@@ -89,8 +88,9 @@ def check_seed_foundry_docs() -> list[str]:
     required_paths = [PLAN_PATH, CHECKLIST_PATH, *CHECKPOINT_DIRS.values()]
     for path in required_paths:
         if not path.is_file():
-            relative = path.relative_to(REPO_ROOT)
-            errors.append(f"missing required Seed Foundry document: {relative}")
+            errors.append(
+                f"missing required Seed Foundry document: {path.relative_to(REPO_ROOT)}"
+            )
     if errors:
         return errors
 
@@ -106,14 +106,14 @@ def check_seed_foundry_docs() -> list[str]:
             f"expected {expected_document!r}, got {checklist.get('document')!r}"
         )
 
-    raw_checkpoints = checklist.get("checkpoints", [])
     checkpoint_ids = [
-        item.get("id") for item in raw_checkpoints if isinstance(item, dict)
+        item.get("id")
+        for item in checklist.get("checkpoints", [])
+        if isinstance(item, dict)
     ]
     if checkpoint_ids != list(CHECKPOINT_DIRS):
         errors.append(
-            "Seed Foundry checkpoints must be ordered A1..A8: "
-            f"got {checkpoint_ids!r}"
+            f"Seed Foundry checkpoints must be ordered A1..A8: got {checkpoint_ids!r}"
         )
 
     for checkpoint_id, chunk_path in CHECKPOINT_DIRS.items():
@@ -130,13 +130,13 @@ def check_seed_foundry_docs() -> list[str]:
             continue
         if plan_rows != chunk_rows:
             errors.append(
-                f"{checkpoint_id} task rows differ between canonical plan and "
-                f"chunk README: plan={plan_rows!r}, chunk={chunk_rows!r}"
+                f"{checkpoint_id} task rows differ between canonical plan and chunk README: "
+                f"plan={plan_rows!r}, chunk={chunk_rows!r}"
             )
         if plan_rows != checklist_rows:
             errors.append(
-                f"{checkpoint_id} task rows differ between canonical plan and "
-                f"checklist: plan={plan_rows!r}, checklist={checklist_rows!r}"
+                f"{checkpoint_id} task rows differ between canonical plan and checklist: "
+                f"plan={plan_rows!r}, checklist={checklist_rows!r}"
             )
 
     return errors
