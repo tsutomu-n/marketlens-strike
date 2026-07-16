@@ -30,5 +30,7 @@ jobs:
         run: uv python install "$(cat .python-version)"
       - name: Verify Bun lockfile
         run: bun install --frozen-lockfile
+      - name: Verify Seed Foundry docs
+        run: uv run python scripts/check_seed_foundry_docs.py
       - name: Check
         run: ./scripts/check
