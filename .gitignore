@@ -47,6 +47,8 @@ data/
 !tests/fixtures/**/*.sqlite
 !tests/fixtures/**/*.sqlite3
 !tests/fixtures/**/*.db
+!tests/fixtures/strategy_idea_seeds/
+!tests/fixtures/strategy_idea_seeds/**
 
 # Logs and temporary files
 logs/

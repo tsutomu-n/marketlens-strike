@@ -1,0 +1,63 @@
+schema_version: strategy_idea_seed_mechanism_pack.v1
+mechanisms:
+  - mechanism_template_id: funding-crowding-v1
+    mechanism_class: Funding Crowding
+    affected_actor_or_constraint: Funding-burdened crowded perpetual positions
+    observable_proxies:
+      - historical funding rate
+      - price return
+      - quote volume
+      - realized volatility
+    captures: [CONTINUATION, REVERSAL]
+    directions: [LONG, SHORT]
+    horizons: [1h]
+    lookbacks: [24]
+    thresholds:
+      - value: "0.0005"
+        value_type: number
+        unit: ratio
+    required_source_bundles:
+      - [candles_5m, funding_rows]
+      - [candles_5m, open_interest_history]
+    primary_field: funding_rate
+    primary_field_type: number
+    primary_field_unit: ratio
+    comparison_operator: compare_gte
+    hypothesized_persistence: Crowding pressure may persist or unwind over the selected horizon.
+    alternative_explanations:
+      - broad market beta
+      - scheduled funding mechanics
+      - volatility regime shift
+    falsification_question: Does the directional path disappear after conditioning on market beta and volatility?
+    next_research_question: Which historical funding and price windows should be tested without lookahead?
+
+  - mechanism_template_id: volatility-compression-release-v1
+    mechanism_class: Volatility Compression / Release
+    affected_actor_or_constraint: Positions rebuilt after low-volatility compression and liquidity change
+    observable_proxies:
+      - range compression
+      - realized volatility ratio
+      - quote volume
+      - price breakout
+    captures: [CONTINUATION, REVERSAL]
+    directions: [LONG, SHORT]
+    horizons: [4h]
+    lookbacks: [12]
+    thresholds:
+      - value: "0.5"
+        value_type: number
+        unit: ratio
+    required_source_bundles:
+      - [candles_5m]
+      - [candles_5m, order_book_history]
+    primary_field: realized_volatility_ratio
+    primary_field_type: number
+    primary_field_unit: ratio
+    comparison_operator: compare_gte
+    hypothesized_persistence: A release or failed release may persist over the selected horizon.
+    alternative_explanations:
+      - time-of-day liquidity
+      - news arrival
+      - broad market volatility shock
+    falsification_question: Does compression fail to predict continuation or reversal beyond unconditional volatility?
+    next_research_question: Which compression definition remains stable across symbols and calendar windows?

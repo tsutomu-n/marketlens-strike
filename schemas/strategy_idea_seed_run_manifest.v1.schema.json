@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_idea_seed_run_manifest.v1.schema.json",
+  "title": "Strategy Idea Seed Run Manifest v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "created_at",
+    "producer",
+    "git_sha",
+    "inputs",
+    "configs",
+    "attempt_count",
+    "seed_count",
+    "data_required_count",
+    "reason_counts",
+    "artifacts",
+    "boundary_summary",
+    "known_gaps",
+    "run_status"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_idea_seed_run_manifest.v1"},
+    "run_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "created_at": {"type": "string", "format": "date-time"},
+    "producer": {"$ref": "strategy_idea_seed.v1.schema.json#/$defs/producer"},
+    "git_sha": {"type": "string", "pattern": "^[a-f0-9]{40}$"},
+    "inputs": {"type": "array", "items": {"$ref": "#/$defs/input_ref"}},
+    "configs": {"type": "array", "items": {"$ref": "#/$defs/input_ref"}},
+    "attempt_count": {"type": "integer", "minimum": 0},
+    "seed_count": {"type": "integer", "minimum": 0},
+    "data_required_count": {"type": "integer", "minimum": 0},
+    "next_cursor": {"type": ["integer", "null"], "minimum": 0},
+    "reason_counts": {
+      "type": "object",
+      "additionalProperties": {"type": "integer", "minimum": 0}
+    },
+    "artifacts": {"type": "array", "items": {"$ref": "#/$defs/artifact_ref"}},
+    "boundary_summary": {
+      "$ref": "strategy_idea_seed.v1.schema.json#/$defs/boundary"
+    },
+    "known_gaps": {"type": "array", "items": {"type": "string"}},
+    "run_status": {"const": "pass"}
+  },
+  "$defs": {
+    "input_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input_key", "path", "sha256"],
+      "properties": {
+        "input_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "path": {"type": "string"},
+        "sha256": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        }
+      }
+    },
+    "artifact_ref": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["artifact_key", "path", "sha256"],
+      "properties": {
+        "artifact_key": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+        },
+        "path": {"type": "string"},
+        "sha256": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "record_count": {"type": ["integer", "null"], "minimum": 0}
+      }
+    }
+  }
+}

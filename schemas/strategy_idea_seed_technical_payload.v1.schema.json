@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_idea_seed_technical_payload.v1.schema.json",
+  "title": "Strategy Idea Seed Technical Payload v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "payload_record_id",
+    "mechanism_template_id",
+    "mechanism_status",
+    "operator_ast",
+    "generation_axes",
+    "parameter_values",
+    "technical_exact_signature",
+    "technical_semantic_descriptor",
+    "source_capability_snapshot_ref",
+    "authoring_compatibility",
+    "payload_hash"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_idea_seed_technical_payload.v1"},
+    "payload_record_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "mechanism_template_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "mechanism_status": {"const": "HYPOTHESIZED_NOT_CAUSALLY_VERIFIED"},
+    "operator_ast": {"type": "object"},
+    "generation_axes": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "parameter_values": {
+      "type": "object",
+      "additionalProperties": {"type": ["string", "integer"]}
+    },
+    "technical_exact_signature": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "technical_semantic_descriptor": {
+      "type": "object",
+      "additionalProperties": {"type": "string"}
+    },
+    "source_capability_snapshot_ref": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "authoring_compatibility": {"const": "NOT_CONNECTED_METADATA_ONLY"},
+    "payload_hash": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    }
+  }
+}

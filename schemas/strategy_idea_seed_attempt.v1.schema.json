@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "strategy_idea_seed_attempt.v1.schema.json",
+  "title": "Strategy Idea Seed Generation Attempt v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "attempt_id",
+    "attempt_index",
+    "mechanism_template_id",
+    "required_sources",
+    "observable_proxies",
+    "reason_codes"
+  ],
+  "properties": {
+    "schema_version": {"const": "strategy_idea_seed_attempt.v1"},
+    "attempt_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "attempt_index": {"type": "integer", "minimum": 0},
+    "mechanism_template_id": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "direction": {"type": ["string", "null"], "enum": ["LONG", "SHORT", null]},
+    "capture_archetype": {
+      "type": ["string", "null"],
+      "enum": ["CONTINUATION", "REVERSAL", null]
+    },
+    "horizon": {"type": ["string", "null"]},
+    "required_sources": {"type": "array", "items": {"type": "string"}},
+    "observable_proxies": {"type": "array", "items": {"type": "string"}},
+    "candidate_payload": {"type": ["object", "null"]},
+    "technical_exact_signature": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "reason_codes": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "enum": [
+          "INVALID_AST",
+          "INVALID_TYPE",
+          "INVALID_UNIT",
+          "MISSING_DIRECTION",
+          "MISSING_HORIZON",
+          "MISSING_OBSERVABLE_PROXY",
+          "MISSING_SOURCE_REQUIREMENT",
+          "DUPLICATE_EXACT_ATTEMPT",
+          "PRUNED_BUDGET",
+          "SEED_MATERIALIZED"
+        ]
+      }
+    },
+    "materialized_seed_id": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    },
+    "duplicate_of_attempt_id": {
+      "type": ["string", "null"],
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+    }
+  }
+}
