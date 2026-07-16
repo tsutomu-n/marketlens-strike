@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-16_16:10 JST
-更新日: 2026-07-16_16:10 JST
+更新日: 2026-07-16_21:00 JST
 -->
 
 # Strategy Idea Seed Foundry Core v1
@@ -15,8 +15,10 @@
 ## 状態
 
 - `00_overview`と`A1`～`A8`: 現行実装資料
-- `90_reference`: 設計根拠
+- `90_reference`: 外部一次情報と設計根拠
 - `99_archive`: 旧版・却下案・対象外資料。実装正本ではない
+
+過去生成ファイルの原本は現時点で未格納です。Archiveの完全性は`99_archive/ARCHIVE_COMPLETENESS.md`を確認してください。
 
 ## 境界
 
