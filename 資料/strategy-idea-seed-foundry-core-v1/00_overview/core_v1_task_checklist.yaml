@@ -1,0 +1,133 @@
+schema_version: seed_foundry_core_v1_execution_checklist.v1
+document: MarketLens_Strike_Seed_Foundry_Core_v1_A1-A8_Engineering_Execution_Plan.md
+scope:
+  included: [seed_generation, seed_lineage, seed_archive, ml_rule_discovery, manual_llm_import, mutation_counterfactual, human_review_packet]
+  excluded: [candidate_materialization, backtest, profit_decision, capital_management, paper, live, orders, wallet, signing, exchange_write]
+checkpoints:
+- id: A1
+  goal: 現行Source形式からTechnical Seedを生成し、Attempt Ledger、Seed Set、Markdownまで完走する。
+  tasks:
+  - {id: A1-01, title: Repo preflight and branch, status: TODO, evidence: []}
+  - {id: A1-02, title: Common envelope and boundaries, status: TODO, evidence: []}
+  - {id: A1-03, title: Individual seed / seed set / technical payload schemas, status: TODO, evidence: []}
+  - {id: A1-04, title: Domain canonical JSON and IDs, status: TODO, evidence: []}
+  - {id: A1-05, title: Source probe, status: TODO, evidence: []}
+  - {id: A1-06, title: Mechanism/operator configs, status: TODO, evidence: []}
+  - {id: A1-07, title: Technical axis generator, status: TODO, evidence: []}
+  - {id: A1-08, title: Attempt/seed materialization, status: TODO, evidence: []}
+  - {id: A1-09, title: Artifacts and Markdown, status: TODO, evidence: []}
+  - {id: A1-10, title: CLI and regression tests, status: TODO, evidence: []}
+  completion: {implementation_complete: false, current_data_operational: false, decision: null}
+- id: A2
+  goal: 大量生成を安全に受ける同一性、Archive、Fragment、Reducer、Idempotency、Resumeを完成する。
+  tasks:
+  - {id: A2-01, title: Canonicalization policy, status: TODO, evidence: []}
+  - {id: A2-02, title: Identity protocol, status: TODO, evidence: []}
+  - {id: A2-03, title: Fragment/run/archive schemas, status: TODO, evidence: []}
+  - {id: A2-04, title: Atomic writes, status: TODO, evidence: []}
+  - {id: A2-05, title: Worker fragments, status: TODO, evidence: []}
+  - {id: A2-06, title: Single reducer, status: TODO, evidence: []}
+  - {id: A2-07, title: Parquet/DuckDB derived index, status: TODO, evidence: []}
+  - {id: A2-08, title: Run key/idempotency, status: TODO, evidence: []}
+  - {id: A2-09, title: Resume/retry, status: TODO, evidence: []}
+  - {id: A2-10, title: 10k hostile tests, status: TODO, evidence: []}
+  completion: {implementation_complete: false, current_data_operational: false, decision: null}
+- id: A3
+  goal: Point-in-time Feature、Path Primitive、Label View、Discovery Windowを監査可能なDatasetとして完成する。
+  tasks:
+  - {id: A3-01, title: Timestamp semantics, status: TODO, evidence: []}
+  - {id: A3-02, title: Lazy source adapter, status: TODO, evidence: []}
+  - {id: A3-03, title: Feature specs, status: TODO, evidence: []}
+  - {id: A3-04, title: Symbol-local rolling, status: TODO, evidence: []}
+  - {id: A3-05, title: Funding as-of join, status: TODO, evidence: []}
+  - {id: A3-06, title: Feature manifest, status: TODO, evidence: []}
+  - {id: A3-07, title: Risk scale, status: TODO, evidence: []}
+  - {id: A3-08, title: Path primitives, status: TODO, evidence: []}
+  - {id: A3-09, title: Ambiguity/censoring, status: TODO, evidence: []}
+  - {id: A3-10, title: Label views, status: TODO, evidence: []}
+  - {id: A3-11, title: Event clusters, status: TODO, evidence: []}
+  - {id: A3-12, title: Four-window split/purge, status: TODO, evidence: []}
+  - {id: A3-13, title: Dataset CLI and hostile tests, status: TODO, evidence: []}
+  completion: {implementation_complete: false, current_data_operational: false, decision: null}
+- id: A4
+  goal: XGBoost/LightGBMから単独評価済みML Seedを生成しArchiveへ追加する。
+  tasks:
+  - {id: A4-01, title: Dependency probe and lock, status: TODO, evidence: []}
+  - {id: A4-02, title: Scout protocol, status: TODO, evidence: []}
+  - {id: A4-03, title: XGBoost runner, status: TODO, evidence: []}
+  - {id: A4-04, title: LightGBM runner, status: TODO, evidence: []}
+  - {id: A4-05, title: Trial artifacts, status: TODO, evidence: []}
+  - {id: A4-06, title: Golden dump parsers, status: TODO, evidence: []}
+  - {id: A4-07, title: Raw path extraction, status: TODO, evidence: []}
+  - {id: A4-08, title: Standalone rule evaluation, status: TODO, evidence: []}
+  - {id: A4-09, title: Distillation, status: TODO, evidence: []}
+  - {id: A4-10, title: Observation evaluation, status: TODO, evidence: []}
+  - {id: A4-11, title: Engine matching, status: TODO, evidence: []}
+  - {id: A4-12, title: ML seed builder, status: TODO, evidence: []}
+  - {id: A4-13, title: Planted/null controls, status: TODO, evidence: []}
+  - {id: A4-14, title: Optional ML CI, status: TODO, evidence: []}
+  completion: {implementation_complete: false, current_data_operational: false, decision: null}
+- id: A5
+  goal: Manual LLM PacketからMutation/Wild Seedを安全にImportする。
+  tasks:
+  - {id: A5-01, title: Packet/response/import schemas, status: TODO, evidence: []}
+  - {id: A5-02, title: Packet snapshot builder, status: TODO, evidence: []}
+  - {id: A5-03, title: Mutation mode, status: TODO, evidence: []}
+  - {id: A5-04, title: Wild mechanism mode, status: TODO, evidence: []}
+  - {id: A5-05, title: Raw response hash/preserve, status: TODO, evidence: []}
+  - {id: A5-06, title: Semantic validation, status: TODO, evidence: []}
+  - {id: A5-07, title: Grounding claims, status: TODO, evidence: []}
+  - {id: A5-08, title: Unknown operator/data required, status: TODO, evidence: []}
+  - {id: A5-09, title: Evidence inheritance guard, status: TODO, evidence: []}
+  - {id: A5-10, title: Duplicate/lineage guard, status: TODO, evidence: []}
+  - {id: A5-11, title: LLM seed builder, status: TODO, evidence: []}
+  - {id: A5-12, title: CLI and hostile tests, status: TODO, evidence: []}
+  completion: {implementation_complete: false, current_data_operational: false, decision: null}
+- id: A6
+  goal: 親Evidenceを継承せず、Mutation、Counterfactual、Cross-lane Requestを生成する。
+  tasks:
+  - {id: A6-01, title: Mutation models, status: TODO, evidence: []}
+  - {id: A6-02, title: Applicability matrix, status: TODO, evidence: []}
+  - {id: A6-03, title: Core operators, status: TODO, evidence: []}
+  - {id: A6-04, title: Counterfactual, status: TODO, evidence: []}
+  - {id: A6-05, title: Evidence reset, status: TODO, evidence: []}
+  - {id: A6-06, title: Depth/budget/cursor, status: TODO, evidence: []}
+  - {id: A6-07, title: Cross-lane request models, status: TODO, evidence: []}
+  - {id: A6-08, title: Technical-to-ML, status: TODO, evidence: []}
+  - {id: A6-09, title: ML-to-LLM, status: TODO, evidence: []}
+  - {id: A6-10, title: LLM-to-Technical, status: TODO, evidence: []}
+  - {id: A6-11, title: Archive/CLI, status: TODO, evidence: []}
+  - {id: A6-12, title: Property/resume tests, status: TODO, evidence: []}
+  completion: {implementation_complete: false, current_data_operational: false, decision: null}
+- id: A7
+  goal: 三レーンを統合し、Exact/Semantic/Provenanceを保ったReview Productを生成する。
+  tasks:
+  - {id: A7-01, title: Fragment revalidation, status: TODO, evidence: []}
+  - {id: A7-02, title: Exact groups, status: TODO, evidence: []}
+  - {id: A7-03, title: Semantic clusters, status: TODO, evidence: []}
+  - {id: A7-04, title: Cross-run history, status: TODO, evidence: []}
+  - {id: A7-05, title: Descriptor archive, status: TODO, evidence: []}
+  - {id: A7-06, title: Review buckets, status: TODO, evidence: []}
+  - {id: A7-07, title: Representative policy, status: TODO, evidence: []}
+  - {id: A7-08, title: Round-robin diversity, status: TODO, evidence: []}
+  - {id: A7-09, title: Data acquisition backlog, status: TODO, evidence: []}
+  - {id: A7-10, title: JSON/Markdown rendering, status: TODO, evidence: []}
+  - {id: A7-11, title: CLI, status: TODO, evidence: []}
+  - {id: A7-12, title: Clustering/diversity tests, status: TODO, evidence: []}
+  completion: {implementation_complete: false, current_data_operational: false, decision: null}
+- id: A8
+  goal: 第三者が再現・中断・再開・監査できるCore v1としてReleaseする。
+  tasks:
+  - {id: A8-01, title: Orchestrator config/manifest, status: TODO, evidence: []}
+  - {id: A8-02, title: Lane status/skip/pause, status: TODO, evidence: []}
+  - {id: A8-03, title: Orchestrator using existing services, status: TODO, evidence: []}
+  - {id: A8-04, title: Validate/inspect CLI, status: TODO, evidence: []}
+  - {id: A8-05, title: Full fixture E2E, status: TODO, evidence: []}
+  - {id: A8-06, title: Resume E2E, status: TODO, evidence: []}
+  - {id: A8-07, title: Failure isolation, status: TODO, evidence: []}
+  - {id: A8-08, title: Core/ML CI separation, status: TODO, evidence: []}
+  - {id: A8-09, title: CLI catalog/current docs, status: TODO, evidence: []}
+  - {id: A8-10, title: Runbooks/artifact/reason docs, status: TODO, evidence: []}
+  - {id: A8-11, title: Performance/storage benchmark, status: TODO, evidence: []}
+  - {id: A8-12, title: Release validation evidence, status: TODO, evidence: []}
+  completion: {implementation_complete: false, current_data_operational: false, decision: null}
