@@ -288,7 +288,9 @@ class ExecutionReplayResult(BaseModel):
     side: ReplaySide
     replay_status: ReplayStatus
     entry_snapshot_at: datetime | None = None
+    entry_snapshot_received_at: datetime | None = None
     exit_snapshot_at: datetime | None = None
+    exit_snapshot_received_at: datetime | None = None
     entry_book_wait_ms: int | None = Field(default=None, ge=0)
     exit_book_wait_ms: int | None = Field(default=None, ge=0)
     entry_fill: DepthFillResult | None = None
@@ -303,7 +305,14 @@ class ExecutionReplayResult(BaseModel):
     actual_cash_used: Literal[False] = False
     profit_proven: Literal[False] = False
 
-    @field_validator("created_at", "entry_snapshot_at", "exit_snapshot_at", mode="before")
+    @field_validator(
+        "created_at",
+        "entry_snapshot_at",
+        "entry_snapshot_received_at",
+        "exit_snapshot_at",
+        "exit_snapshot_received_at",
+        mode="before",
+    )
     @classmethod
     def validate_utc_optional(
         cls,
@@ -320,7 +329,13 @@ class ExecutionReplayResult(BaseModel):
                 )
         return self
 
-    @field_serializer("created_at", "entry_snapshot_at", "exit_snapshot_at")
+    @field_serializer(
+        "created_at",
+        "entry_snapshot_at",
+        "entry_snapshot_received_at",
+        "exit_snapshot_at",
+        "exit_snapshot_received_at",
+    )
     def serialize_timestamp_optional(self, value: datetime | None) -> str | None:
         return None if value is None else serialize_utc_z(value)
 
