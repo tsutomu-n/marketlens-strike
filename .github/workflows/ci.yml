@@ -33,4 +33,12 @@ jobs:
       - name: Verify Seed Foundry docs
         run: uv run python scripts/check_seed_foundry_docs.py
       - name: Check
-        run: ./scripts/check
+        run: ./scripts/check 2>&1 | tee check.log
+      - name: Upload failed check log
+        if: failure()
+        uses: actions/upload-artifact@v4.6.2
+        with:
+          name: check-log-${{ github.run_id }}
+          path: check.log
+          if-no-files-found: error
+          retention-days: 7
