@@ -106,10 +106,12 @@ def check_seed_foundry_docs() -> list[str]:
             f"expected {expected_document!r}, got {checklist.get('document')!r}"
         )
 
+    raw_checkpoints = checklist.get("checkpoints")
+    if not isinstance(raw_checkpoints, list):
+        errors.append("Seed Foundry checklist 'checkpoints' must be a list")
+        return errors
     checkpoint_ids = [
-        item.get("id")
-        for item in checklist.get("checkpoints", [])
-        if isinstance(item, dict)
+        item.get("id") for item in raw_checkpoints if isinstance(item, dict)
     ]
     if checkpoint_ids != list(CHECKPOINT_DIRS):
         errors.append(
