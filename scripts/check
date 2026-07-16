@@ -13,6 +13,7 @@ run_step uv run python -V
 run_step uv run ruff check .
 run_step uv run ruff format --check .
 run_step uv run python scripts/check_current_docs.py
+run_step uv run python scripts/check_seed_foundry_docs.py
 run_step uv run python scripts/check_cli_catalog.py
 run_step uv run pyrefly check
 run_step uv run ty check src --python-version 3.13 --output-format concise
