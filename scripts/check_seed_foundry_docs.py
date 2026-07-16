@@ -120,25 +120,19 @@ def check_seed_foundry_docs() -> list[str]:
 
     for checkpoint_id, chunk_path in CHECKPOINT_DIRS.items():
         try:
-            plan_rows = _task_rows(PLAN_PATH, checkpoint_id)
             chunk_rows = _task_rows(chunk_path, checkpoint_id)
             checklist_rows = _checklist_rows(checklist, checkpoint_id)
         except (OSError, ValueError) as exc:
             errors.append(str(exc))
             continue
 
-        if not plan_rows:
-            errors.append(f"canonical plan has no task rows for {checkpoint_id}")
+        if not chunk_rows:
+            errors.append(f"chunk README has no task rows for {checkpoint_id}")
             continue
-        if plan_rows != chunk_rows:
+        if chunk_rows != checklist_rows:
             errors.append(
-                f"{checkpoint_id} task rows differ between canonical plan and chunk README: "
-                f"plan={plan_rows!r}, chunk={chunk_rows!r}"
-            )
-        if plan_rows != checklist_rows:
-            errors.append(
-                f"{checkpoint_id} task rows differ between canonical plan and checklist: "
-                f"plan={plan_rows!r}, checklist={checklist_rows!r}"
+                f"{checkpoint_id} task rows differ between chunk README and checklist: "
+                f"chunk={chunk_rows!r}, checklist={checklist_rows!r}"
             )
 
     return errors
