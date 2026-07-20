@@ -76,3 +76,10 @@ docs/live_evidence_reports/live_evidence_followup_*.md
 
 # Local scratch plan that is intentionally outside current plan/archive routing.
 plan/0628から/0628-0623.md
+
+# Hypothesis local state
+.hypothesis/
+
+# Graphify runtime cache and automatic pre-update snapshots are reproducible local state.
+graphify-out/cache/
+graphify-out/20??-??-??/
