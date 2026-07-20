@@ -76,3 +76,9 @@ docs/live_evidence_reports/live_evidence_followup_*.md
 
 # Local scratch plan that is intentionally outside current plan/archive routing.
 plan/0628から/0628-0623.md
+
+# Hypothesis local state
+.hypothesis/
+
+# Graphify knowledge graphs are large, reproducible, local-only artifacts.
+graphify-out/
