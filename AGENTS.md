@@ -1,11 +1,11 @@
 <!--
 作成日: 2026-05-30_21:32 JST
-更新日: 2026-06-26_16:12 JST
+更新日: 2026-07-20_20:12 JST
 -->
 
 # Repository Guidelines
 
-Last updated: 2026-06-26_16:12 Asia/Tokyo. Keep this guide concise; no fixed word limit.
+Last updated: 2026-07-20_20:12 Asia/Tokyo. Keep this guide concise; no fixed word limit.
 
 ## Scope
 
@@ -416,6 +416,8 @@ ai: update docs for breaking config change
 
 This project has a knowledge graph at graphify-out/ with god nodes, community structure, and cross-file relationships.
 
+`graphify-out/` is local-only generated state. Keep the entire directory ignored by Git. Never stage, commit, or push Graphify artifacts. If the directory is absent in a fresh clone or worktree, generate it locally before using graph queries.
+
 When the user types `/graphify`, use the installed graphify skill or instructions before doing anything else.
 
 Rules:
@@ -424,3 +426,4 @@ Rules:
 - If graphify-out/wiki/index.md exists, use it for broad navigation instead of raw source browsing.
 - Read graphify-out/GRAPH_REPORT.md only for broad architecture review or when query/path/explain do not surface enough context.
 - After modifying code, run `graphify update .` to keep the graph current (AST-only, no API cost).
+- After updating the graph, confirm `git status --short` does not list `graphify-out/`; the graph must remain local-only.

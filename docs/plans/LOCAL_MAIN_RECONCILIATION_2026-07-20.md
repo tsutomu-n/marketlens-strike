@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-20_19:49 JST
-更新日: 2026-07-20_19:49 JST
+更新日: 2026-07-20_20:12 JST
 -->
 
 # ローカルmain文書統合計画
@@ -25,7 +25,9 @@
 - ローカルcommitを一括cherry-pickしない。
 - `.serena/project.yml`のtemplateドリフトは移植しない。
 - A2、Execution Replay実装、新機能開発を始めない。
-- 外部書き込み、push、依存関係変更を行わない。
+- 依存関係変更を行わない。
+- `graphify-out/`全体をローカル専用とし、stage、commit、pushしない。
+- 2026-07-20のユーザー指示に基づき、Graphifyを含まない統合文書のcommitとremote branchへのpushは実施する。
 - コード、テスト、schema、CLI helpを文書より優先する。
 
 ## 対象ファイル
@@ -36,7 +38,6 @@
 - `docs/plans/HYPOTHESIS_SEARCH_ENGINE_*.md`
 - `docs/plans/CRYPTO_PERP_PORTFOLIO_CAPACITY_EXECUTION_REPLAY_2026-07-16.md`
 - `plan/archive/2026-07-20-local-main-reconciliation/`
-- `graphify-out/`
 - `docs/final-summary.md`
 
 ## 実装方針と手順
@@ -47,7 +48,8 @@
 4. Execution Replayは未実装の設計案として`docs/plans/`へ配置する。
 5. Seed Foundryのマージ前指示は警告付きで`plan/archive/`へ配置する。
 6. 文書経路チェックと全品質ゲートを実行する。
-7. 統合後のソースから知識グラフを最後に更新する。
+7. 統合後のソースからローカル知識グラフを更新し、`git status`に含まれないことを確認する。
+8. Graphify commitを履歴に含まないクリーンブランチをpushする。
 
 ## テスト方針
 
@@ -63,7 +65,8 @@
 - 統合ブランチが`origin/main` のA1実装を含む。
 - 計画文書がcurrent/archiveの境界に従っている。
 - 全品質ゲートが成功する。
-- 知識グラフが統合後のツリーを反映する。
+- ローカル知識グラフが統合後のツリーを反映する。
+- branch履歴、index、push対象のいずれにも`graphify-out/`が含まれない。
 - A2や新機能の実装が混入していない。
 
 ## 失敗条件
@@ -75,7 +78,7 @@
 
 ## 影響範囲
 
-文書経路、作業ガイド、ローカル生成知識グラフに限定する。製品コード、schema、CLI、依存関係、runtime dataは変更しない。
+文書経路、作業ガイド、Git ignore policyに限定する。ローカル生成知識グラフのファイル自体はGit対象にしない。製品コード、schema、CLI、依存関係、runtime dataは変更しない。
 
 ## ロールバック方針
 
@@ -98,8 +101,8 @@
 
 ## ブランチ名
 
-`ai/reconcile-main-20260720-1949`
+`ai/reconcile-main-no-graph-20260720-2010`
 
 ## 移行手順
 
-必要な場合のみ、検証済み統合ブランチを人間が`main`へ取り込む。この作業でpushやremote branch作成は行わない。
+検証済み統合ブランチをremoteへpushする。`main`への取り込みは行わず、remote branchのまま引き渡す。
