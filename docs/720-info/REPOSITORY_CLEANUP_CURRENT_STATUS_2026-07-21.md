@@ -1,13 +1,13 @@
 <!--
 作成日: 2026-07-21_19:24 JST
-更新日: 2026-07-21_20:50 JST
+更新日: 2026-07-22_06:53 JST
 -->
 
 # Repository Cleanup Current Status 2026-07-21
 
 ## 1. 結論
 
-2026-07-21_20:50 JST時点で、保留されていたBT0、Execution Replay、Profit Core、その他の旧branchはすべて「mainへ限定統合」または「復旧可能なarchiveへ退避」のどちらかに分類済みである。
+2026-07-22_06:49 JST時点で、保留されていたBT0、Execution Replay、Profit Core、その他の旧branchはすべて「mainへ限定統合」または「復旧可能なarchiveへ退避」のどちらかに分類済みである。さらにmainとarchive tagをGitHub rulesetで保護し、local evidenceをSHA-256台帳化した。
 
 - mainへ統合: repo現況文書、Crypto Perp Portfolio CapacityのPR-BT0 discovery spike
 - 未統合: Execution Replay、Profit Core、旧Strategy AI Review、旧計画branch
@@ -18,6 +18,19 @@
 - Graphify: 約51 MiBのactive artifactだけをローカル保持し、Git対象外
 
 未統合branchを誤ってpushまたはmergeするリスクは解消した。履歴は削除せず、remote archive tagとlocal Git bundleで復旧可能にしている。
+
+## 1.1 2026-07-22 hardening
+
+- Protect main delivery、ruleset ID 19483352、active
+- Protect archive tags、ruleset ID 19483353、active
+- main: PR、check、最新mainとの同期、linear history、review thread解消を必須化
+- main: branch削除とforce pushを禁止
+- archive/*: 既存tagの更新、削除、force updateを禁止
+- .tmp/archive: 958 files、850,136,529 bytesをSHA-256台帳化・verify済み
+- data/raw: 109 files、2,096,766,465 bytesをSHA-256台帳化・verify済み
+- 3 bundle: 空repositoryへのfetch、git fsck、expected commit、remote tag一致を確認
+
+手順の正本は[Local Artifact Retention And Recovery Runbook](../runbooks/LOCAL_ARTIFACT_RETENTION_AND_RECOVERY.md)である。
 
 ## 2. mainへ反映した内容
 
@@ -116,7 +129,7 @@ archive tagは保存用であり、そのままmainへmergeする入口ではな
 - .gitignoreのgraphify-out/で除外
 - Git追跡なし、local-only方針を継続
 
-graphify update . を実行し、47,956 nodes、68,205 edges、3,568 communitiesへ更新した。更新時に生成された約50 MiBのbackupと約60 MiBのcacheは再生成可能なため削除し、active artifactだけを残した。
+graphify update . を実行し、47,964 nodes、68,212 edgesへ更新した。更新時に生成された約60 MiBのcacheは再生成可能なため削除し、active artifactだけを残した。
 
 ## 8. local archiveと一時領域
 
@@ -145,13 +158,13 @@ graphify update . を実行し、47,956 nodes、68,205 edges、3,568 communities
 
 ## 10. 残リスク
 
-### R1. local bundleは単一端末上
+### R1. 別媒体backup先は未指定
 
-remote archive tagが一次保全、local bundleが二次保全なので、Git履歴は端末故障だけでは失われない。ただしbundleファイル自体には別媒体backupがない。重要度が高い場合だけ、暗号化した別媒体へSHA-256付きで複製する。
+remote archive tagはruleset保護済みで、local bundleは実fetchとfsckまで検証した。ただしbundleと一意raw dataの別媒体保存先、暗号化鍵、保存年限は未指定である。保存先を推測した外部送信は行わず、runbookの複製・checksum手順を使う。
 
 ### R2. local-only raw/archive data
 
-一意性が確認できないデータは削除していない。保存期限や別媒体方針が決まるまでは、容量だけを理由に一括削除しない。
+一意性が確認できないデータは削除していない。2 rootともpath、size、mtime、SHA-256のlocal-only manifestを生成・verify済みである。保存期限や別媒体方針が決まるまでは、容量だけを理由に一括削除しない。
 
 ### R3. archiveコードは現行保証外
 
@@ -159,14 +172,14 @@ archiveは履歴保全であり、alpha、paper/live readiness、安全性、現
 
 ### R4. Graphifyはsnapshot
 
-将来の変更を自動的に保証しない。コード変更後はgraphify updateを実行し、生成物は引き続きGitへ追加しない。
+将来の変更を自動的に保証しない。コード変更後はgraphify updateを実行し、生成物は引き続きGitへ追加しない。常駐watchと自動commitは採用しない。
 
 ## 11. 今後の予定
 
-必須のcleanup作業はない。通常開発はcleanなmainから開始できる。
+必須のrepository hardening作業はない。通常開発は保護済みmainを対象とするPRから開始できる。
 
-必要になった場合だけ、local raw/archive dataの保存期限と別媒体backup方針を決める。archive実装を再利用する場合は、archive全体ではなく必要部分だけを新branchへ抽出する。
+利用者が別媒体保存先を決めた場合だけ、3 bundleと2 manifestを暗号化済み保存先へ複製し、保存先でSHA-256を再照合する。archive実装を再利用する場合は、archive全体ではなく必要部分だけを現行mainから作った新branchへ抽出する。
 
 ## 12. 完了判定
 
-BT0保護、限定統合、CI後merge、未統合履歴の監査と退避、通常branch/worktree整理、Serena差分分離、Graphify local-only維持、exact duplicateだけの削除、full quality gateを完了したため、repository cleanupは完了と判定する。
+BT0保護、限定統合、CI後merge、未統合履歴の監査と退避、通常branch/worktree整理、Serena差分分離、Graphify local-only維持、exact duplicateだけの削除、GitHub ruleset、local SHA-256台帳、bundle restore drillを完了したため、repository cleanupとhardeningは完了と判定する。

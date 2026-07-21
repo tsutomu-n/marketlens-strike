@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-20_19:33 JST
-更新日: 2026-07-21_20:50 JST
+更新日: 2026-07-22_06:49 JST
 -->
 
 # 720 Info
@@ -12,6 +12,7 @@
 現在のGit、GitHub、archive、worktree、Graphify、整理状態は、先に次を読む。
 
 - [Repository Cleanup Current Status 2026-07-21](REPOSITORY_CLEANUP_CURRENT_STATUS_2026-07-21.md)
+- [Local Artifact Retention And Recovery Runbook](../runbooks/LOCAL_ARTIFACT_RETENTION_AND_RECOVERY.md)
 
 repo全体の詳細調査は次にまとめる。Git状態とworktree状態は2026-07-20時点のhistorical snapshotであり、現状判断には上の2026-07-21文書を使う。
 
@@ -32,4 +33,4 @@ repo全体の詳細調査は次にまとめる。Git状態とworktree状態は20
 
 ## 重要な注意
 
-2026-07-20の詳細文書にあるlocal mainのahead / behind、A1 worktree、root HANDOFF、未統合branchの記述はhistorical snapshotである。2026-07-21のcleanup完了時点では、通常branchはlocal/remoteともmainだけ、worktreeはrootだけである。未統合履歴は削除せず、remote archive tagとlocal complete bundleへ退避している。
+2026-07-20の詳細文書にあるlocal mainのahead / behind、A1 worktree、root HANDOFF、未統合branchの記述はhistorical snapshotである。2026-07-22のhardening完了時点では、mainとarchive tagにactive GitHub rulesetがあり、未統合履歴はremote archive tagとfetch検証済みlocal bundleへ退避している。
