@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-20_19:33 JST
-更新日: 2026-07-21_19:24 JST
+更新日: 2026-07-21_20:50 JST
 -->
 
 # 720 Info
@@ -9,7 +9,7 @@
 
 このフォルダーは、`marketlens-strike`をコード、テスト、schema、設定、CLI、Git、runtime artifact、HANDOFF、Graphify graphから調査した結果を集約する。
 
-現在のGit、GitHub、worktree、Graphify、整理状態は、先に次を読む。
+現在のGit、GitHub、archive、worktree、Graphify、整理状態は、先に次を読む。
 
 - [Repository Cleanup Current Status 2026-07-21](REPOSITORY_CLEANUP_CURRENT_STATUS_2026-07-21.md)
 
@@ -32,6 +32,4 @@ repo全体の詳細調査は次にまとめる。Git状態とworktree状態は20
 
 ## 重要な注意
 
-2026-07-20の詳細文書にあるlocal `main`のahead / behind、A1 worktree、root HANDOFFの記述は、統合前のhistorical snapshotである。2026-07-21時点では`main`と`origin/main`のcommitは一致し、A1 worktreeと古いroot HANDOFFは整理済みである。
-
-ただし、root working treeには`.serena/project.yml`の未コミット変更があり、BT0とProfit Coreのworktreeには未統合作業が残る。commit一致をrepo全体のclean状態と混同しない。
+2026-07-20の詳細文書にあるlocal mainのahead / behind、A1 worktree、root HANDOFF、未統合branchの記述はhistorical snapshotである。2026-07-21のcleanup完了時点では、通常branchはlocal/remoteともmainだけ、worktreeはrootだけである。未統合履歴は削除せず、remote archive tagとlocal complete bundleへ退避している。
