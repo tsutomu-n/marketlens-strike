@@ -1,237 +1,172 @@
 <!--
 作成日: 2026-07-21_19:24 JST
-更新日: 2026-07-21_19:24 JST
+更新日: 2026-07-21_20:50 JST
 -->
 
 # Repository Cleanup Current Status 2026-07-21
 
 ## 1. 結論
 
-2026-07-21_19:24 JST時点で、`main`のcommitは`origin/main`と一致し、open PRは0件である。完了済みA1 worktree、誤mergeリスクのあったPR、merge済みbranch、古いHANDOFF、重複Graphify生成物は整理済みである。
+2026-07-21_20:50 JST時点で、保留されていたBT0、Execution Replay、Profit Core、その他の旧branchはすべて「mainへ限定統合」または「復旧可能なarchiveへ退避」のどちらかに分類済みである。
 
-一方、root working treeには今回の文書作成前から`.serena/project.yml`の未コミット変更がある。また、BT0 worktreeには未追跡実装15ファイル、Profit Core worktreeにはmain未収録の可能性がある大きな履歴が残る。これらは整理対象ではなく、保全対象である。
+- mainへ統合: repo現況文書、Crypto Perp Portfolio CapacityのPR-BT0 discovery spike
+- 未統合: Execution Replay、Profit Core、旧Strategy AI Review、旧計画branch
+- local/remoteの通常branch: mainだけ
+- worktree: root checkoutだけ
+- open PR: この文書用PRを作る前は0件
+- root working tree: この文書作成前はclean
+- Graphify: 約51 MiBのactive artifactだけをローカル保持し、Git対象外
 
-## 2. この文書の位置づけ
+未統合branchを誤ってpushまたはmergeするリスクは解消した。履歴は削除せず、remote archive tagとlocal Git bundleで復旧可能にしている。
 
-この文書は、2026-07-20のrepo全体調査後に行ったGit、GitHub、worktree、HANDOFF、Graphify生成物の整理結果と残リスクを記録する現行スナップショットである。
+## 2. mainへ反映した内容
 
-実装や挙動の正本ではない。判断時は、コード、テスト、schema、設定、lockfile、CI、CLI help、Git refを優先する。
+### 2.1 現況文書
 
-## 3. 現在のGit状態
+- PR #50: docs: refresh repository cleanup status
+- CI成功後にReadyへ変更し、squash merge
+- merge commit: 4e3ae49ac34daeb00514c5283b88acd03b6ce545
 
-### 3.1 Root checkout
+### 2.2 Portfolio Capacity PR-BT0
 
-- path: `/home/tn/projects/marketlens-strike`
-- branch: `main`
-- HEAD: `d717e4b01b63c69996485ee46ff808bb9069c460`
-- `origin/main`: `d717e4b01b63c69996485ee46ff808bb9069c460`
-- commit relation: 同一
-- working tree: cleanではない
-- 文書作成前から存在した変更: `.serena/project.yml`
+- PR #51: research: add portfolio capacity discovery spike
+- CI成功後にReadyへ変更し、squash merge
+- merge commit: 9fcffb351ca339c75366e69412b90597f0061ce0
+- 統合範囲: tools/backtest_spikes/crypto_perp_portfolio_capacity/ 配下の15ファイルだけ
+- 非対象: src、public CLI、schema、依存、lockfile、production execution
 
-`.serena/project.yml`の差分は、Serenaの生成コメント、利用可能language一覧、workspace folder設定の更新を含む。この文書作成では内容を変更していない。所有者と採用可否を確認せず、他の変更と一緒にcommitしない。
+元worktreeの未追跡15ファイルは、commit fe03934ae310febb7e5013b51212524585f45712 として先に保護した。cleanなorigin/mainから作った統合branchへcherry-pickし、full quality gateを通してからPR化した。
 
-### 3.2 Stash
+## 3. 検証結果
 
-調査時点でstashは存在しない。
+Portfolio CapacityのVectorBT込みfocused testは31 passed。clean-main統合worktreeで scripts/check を実行し、次を確認した。
 
-## 4. GitHub状態
+- Ruff lint / format check: success
+- current-docs / CLI catalog: success
+- Pyrefly: 0 errors
+- ty: success
+- Pytest: 3185 passed, 2 skipped in 118.87s
 
-### 4.1 Pull Request
+最初のfull checkでは、repo内の.worktrees配下をPyreflyが除外したためsourceを発見できなかった。コード不良ではなく検証配置の問題だったため、統合worktreeをrepo外へ移し、Python 3.13のvenvを作り直して再実行した。
 
-- open PR: 0件
-- PR #49: repo調査文書とGraphify local-only方針をmainへ統合済み
-- PR #48: Seed Foundry A1をmainへ統合済み
-- PR #44: 2026-07-21にclose
-- PR #46: 2026-07-21にclose
+## 4. 未統合履歴の処理
 
-PR #44は、PR内に存在しないZIPを参照するREADMEとchecksumだけを追加する状態だったため、誤merge防止のためcloseした。
+### 4.1 Execution Replay
 
-PR #46は、Git上はmerge可能だったが、現在のmainより古いSeed Foundry checklistとCI/doc validatorを含み、現行文書を意味的に巻き戻す可能性があったためcloseした。必要な検証は、現行mainから新しいPRとして再設計する。
+旧branchはmainにない実装17ファイル、18 commit、約3,388行の追加を持っていたが、branch固有のtestと現行設計文書がなく、Trade[XYZ]を標準軸へ戻す内容を含むためmergeしていない。
 
-### 4.2 削除済みremote branch
+- 保存tag: archive/crypto-perp-portfolio-replay-20260716
+- 保存bundle: .tmp/archive/git-bundles/crypto-perp-portfolio-replay-20260716.bundle
+- bundle SHA-256: 9b4660fdf02d78ff98bbc631b8a226f876ae92a494c8155c06dda292f30ae28d
+- 元branch: local/remoteとも削除済み
 
-次の6本は、merge済みまたはclose済みであることを確認して削除した。
+Portfolio Capacityとして再利用できる狭い部分だけをPR-BT0として統合した。
 
-- `ai/human-review-packet-20260709-2200`
-- `ai/post-merge-doc-status-20260711-2038`
-- `ai/seed-foundry-a1-technical-walking-product-20260716-1654`
-- `ai/seed-foundry-docs-20260716-1604`
-- `ai/add-seed-foundry-archives-20260716-1522`
-- `ai/seed-foundry-archive-completeness-20260716-1700`
+### 4.2 Profit Core
 
-## 5. Worktree状態
+15 local branchと14 remote branchを監査した。各predecessorの変更pathはすべて最終tipにも存在したが、履歴は単純な祖先関係ではなく、blobも完全一致しなかった。そのため15 tipすべてをparentに持つarchive anchorを作った。
 
-### 5.1 削除済みA1 worktree
+- archive anchor: 6f3d7a2c4109f9e730194b498aad037e42fb8b8f
+- 保存tag: archive/profit-core-branch-set-20260721
+- 保存bundle: .tmp/archive/git-bundles/profit-core-branch-set-20260721.bundle
+- bundle SHA-256: 492615e45d734d7011cf9460eb495adc23fccb6cc7c569de94093a36665467d7
+- archive前focused test: 81 passed
+- 元branch: local/remoteとも0本
+- 元worktree: clean確認後に削除
 
-次のworktreeは、PR #48でmainへ統合済み、working tree clean、主要変更がmainへ収録済みであることを確認して削除した。
+Profit Coreは現行mainへ戻していない。特にactual cash関連をarchiveからそのまま再有効化してはならない。
 
-```text
-/home/tn/projects/marketlens-strike/.worktrees/marketlens-strike-a1-20260716-1654
-```
+### 4.3 その他の旧branch
 
-A1のsmoke artifactとHANDOFFは削除せず、次へ退避した。
+Portfolio Capacityの2 branch、旧repo hygiene、旧Strategy AI Review、旧roadmap、旧Profit Core reality-checkの6 tipを1つのarchive anchorへ集約した。
 
-```text
-/home/tn/projects/marketlens-strike/.tmp/archive/seed-foundry-a1-completed-20260721
-```
+- 保存tag: archive/legacy-branch-set-20260721
+- peeled target: fbe65b32f5d45774b08e3d453cb02f24852857b0
+- 保存bundle: .tmp/archive/git-bundles/legacy-branch-set-20260721.bundle
+- bundle SHA-256: b733705943af0957b433c82c050fede671f17e78706161d4b369140aa12f7d1c
+- bundle検証: complete history
+- 元branch: local/remoteとも削除済み
 
-退避内容は15ファイル、約320 KiBである。
+## 5. 現在のGitとworktree
 
-### 5.2 保全中のBT0 worktree
+- local branch: mainだけ
+- remote tracking branch: origin/mainだけ
+- worktree: /home/tn/projects/marketlens-strike だけ
+- stash: なし
+- .serena/project.yml: main版へ復元済み
 
-- path: `/home/tn/projects/marketlens-strike/.worktrees/marketlens-strike-bt0-20260716-2325`
-- branch: `ai/crypto-perp-portfolio-capacity-bt0-20260716-2325`
-- HEAD: `5301bbf1f058b7d77783d725255aac0f35344225`
-- upstream: なし
-- working tree: 未追跡実装15ファイルあり
+Serena差分は別versionが生成したcomment/template driftで、採用根拠がなかった。差分と同じ内容はBT0の保護commitにも残るため、rootではmain版へ戻した。
 
-未追跡ファイルは`tools/backtest_spikes/crypto_perp_portfolio_capacity/`配下の実装、test、fixtureである。commit、patch、別媒体への退避のいずれもない状態でworktreeを削除してはいけない。
+## 6. Archiveと復旧
 
-### 5.3 保全中のProfit Core worktree
+復旧用tagはremoteへpush済みで、bundleはGit管理外のlocal backupである。
 
-- path: `/home/tn/projects/marketlens-strike/.worktrees/marketlens-strike-profit-core-impl`
-- branch: `ai/profit-core-smart-priors-20260702-1952`
-- HEAD: `21c458ad5d678326d627d82bc70dde8fbce24f75`
-- upstream: `origin/ai/profit-core-smart-priors-20260702-1952`
-- working tree: clean
+| tag | 主な内容 | bundle |
+|---|---|---:|
+| archive/crypto-perp-portfolio-replay-20260716 | Execution Replay全履歴 | 約30 MiB |
+| archive/profit-core-branch-set-20260721 | Profit Core 15 tip全履歴 | 約30 MiB |
+| archive/legacy-branch-set-20260721 | その他6 tip全履歴 | 約31 MiB |
 
-このbranchはmainに対して長い独立履歴を持つ。先行調査では、branchで扱った57ファイルが現在のmainと異なっていた。PR記録がなく、単純なmerged判定や古さだけで削除できない。
+archive tagは保存用であり、そのままmainへmergeする入口ではない。再利用時は必要なfile/commitだけを現行mainから作った専用branchへ抽出し、現行testと安全境界を再適用する。
 
-### 5.4 Worktree容量
+## 7. Graphify
 
-残る`.worktrees/`全体は約1.5 GiBである。大部分はworktreeごとの`.venv`である可能性が高いが、BT0の未追跡コードとProfit Core履歴を保全したまま、環境だけを削除する場合も事前確認が必要である。
+- active graph.json: 約49 MiB
+- graphify-out全体: 約51 MiB
+- .gitignoreのgraphify-out/で除外
+- Git追跡なし、local-only方針を継続
 
-## 6. Graphifyの現在地
+graphify update . を実行し、47,956 nodes、68,205 edges、3,568 communitiesへ更新した。更新時に生成された約50 MiBのbackupと約60 MiBのcacheは再生成可能なため削除し、active artifactだけを残した。
 
-### 6.1 保存方針
+## 8. local archiveと一時領域
 
-Graphify artifactはローカル専用で、今後もGit管理対象外とする。`.gitignore`の`graphify-out/`規則で除外されている。
+### 8.1 Refactor cleanup archive
 
-### 6.2 現在残しているもの
+.tmp/archive/refactor_cleanup_2026-06-25_0207/ の大容量4ファイルをSHA-256で比較した。2つのParquetが完全一致したため、代表コピーを残し、recheck_trade_xyz_ws_quotes_24h.parquetだけを削除した。
 
-- `graphify-out/graph.json`: 約49 MiB
-- `graphify-out/manifest.json`
-- `graphify-out/GRAPH_REPORT.md`
-- community label、interpreter、root、cost情報
+- 削減: 146,177,670 bytes
+- .tmp/archive整理後: 約815 MiB
+- hashが異なる、または唯一のDB/Parquetは保持
+- local manifest: .tmp/archive/refactor_cleanup_2026-06-25_0207/ARCHIVE_MANIFEST.md
 
-`graphify-out/`全体は約50 MiBである。
+### 8.2 Pytest一時領域
 
-### 6.3 整理したもの
+/tmp/pytest-of-tn/garbage-* の74 directory、約5.5 GiBは、過去の別repo test名を含むpytest cleanup失敗物だった。active pytest processがないことを確認し、対象をgarbage-*へ限定して削除した。その後のfocused testでcleanup warningは再発していない。
 
-- `graphify-out/2026-07-20/`: 旧スナップショット
-- `graphify-out/cache/`: 再生成可能なAST cache
+## 9. 削除対象と復旧性
 
-上記とPytest、Ruff、Hypothesis cacheはデスクトップ環境のゴミ箱へ移動した。Graphify queryは整理後も正常動作を確認した。ゴミ箱を空にするまでは、物理ディスク上の容量が完全には解放されない。
+| 対象 | 理由 | 復旧性 |
+|---|---|---|
+| 旧local/remote branch | 誤push・誤merge入口を除去 | remote tagとcomplete bundleから復旧可 |
+| 不要worktreeとvenv | branch保護後の重複checkout | tag、bundle、mainから再作成可 |
+| Graphify backup/cache | active graphから再生成可能 | graphify updateで再生成可 |
+| 重複Parquet 1個 | SHA-256完全一致 | 同一hashの代表コピーを保持 |
+| pytest garbage 約5.5 GiB | 失敗した一時cleanup物 | 復旧不可、実行成果ではない |
 
-## 7. HANDOFF状態
+## 10. 残リスク
 
-rootの`.ai_memory/HANDOFF.md`は、完了済みA1 worktreeへ誘導する古いrestart pointerだったため、active位置から除去した。
+### R1. local bundleは単一端末上
 
-削除ではなく、A1完了archiveへ退避している。現在rootにactive HANDOFFはない。新しい継続作業を開始する場合は、古いA1 handoffを復活させず、その作業専用のrestart状態を新規作成する。
+remote archive tagが一次保全、local bundleが二次保全なので、Git履歴は端末故障だけでは失われない。ただしbundleファイル自体には別媒体backupがない。重要度が高い場合だけ、暗号化した別媒体へSHA-256付きで複製する。
 
-## 8. ローカル容量と保全判断
+### R2. local-only raw/archive data
 
-2026-07-21_19:24 JST時点の主な容量は次のとおり。
+一意性が確認できないデータは削除していない。保存期限や別媒体方針が決まるまでは、容量だけを理由に一括削除しない。
 
-| Path | 容量 | 判断 |
-| --- | ---: | --- |
-| `graphify-out/` | 約50 MiB | 維持。ローカル専用 |
-| `.worktrees/` | 約1.5 GiB | 未統合作業があるため一括削除禁止 |
-| `.tmp/archive/seed-foundry-a1-completed-20260721/` | 約320 KiB | A1証跡として維持 |
-| `.tmp/archive/refactor_cleanup_2026-06-25_0207/` | 約864 MiB | 一意なDB、Parquet、生ログの可能性があり要確認 |
-| `data/raw/` | 約2.0 GiB | 市場観測データ。無条件削除禁止 |
+### R3. archiveコードは現行保証外
 
-## 9. 残るbranch整理リスク
+archiveは履歴保全であり、alpha、paper/live readiness、安全性、現行schema互換を証明しない。再利用時は現行mainへ部分抽出し、計画、test、review、CIをやり直す。
 
-remoteには、現在のmainへ未収録の可能性があるbranchが残る。
+### R4. Graphifyはsnapshot
 
-特に次は自動削除しない。
+将来の変更を自動的に保証しない。コード変更後はgraphify updateを実行し、生成物は引き続きGitへ追加しない。
 
-- `origin/ai/crypto-perp-portfolio-replay-20260716-2204`
-- `origin/ai/profit-core-smart-priors-20260702-1952`
-- Profit Coreの各checkpoint branch
-- `origin/ai/refactor-repo-hygiene-20260701-2042`
-- `origin/ai/strategy-ai-review-dogfood-route-20260701-2259`
-- `origin/docs/crypto-perp-backtest-candidate-roadmap-20260705`
-- `origin/docs/profit-core-reality-check-20260703`
+## 11. 今後の予定
 
-Crypto Perp Portfolio Replay branchは、mainと異なる実装ファイルを持つがPRがない。Profit Core系branchは単純な祖先関係になっておらず、tip branchだけ残せば安全とは証明できていない。
+必須のcleanup作業はない。通常開発はcleanなmainから開始できる。
 
-## 10. 残リスクと推奨対応
+必要になった場合だけ、local raw/archive dataの保存期限と別媒体backup方針を決める。archive実装を再利用する場合は、archive全体ではなく必要部分だけを新branchへ抽出する。
 
-### R1. `.serena/project.yml`の所有権が未確定
+## 12. 完了判定
 
-- 状態: rootに未コミット差分あり
-- リスク: 今回のdocs変更と混ぜてcommitする
-- 対応: Serena更新として採用するか、生成差分として戻すかを別タスクで判断する
-
-### R2. BT0の未追跡コード
-
-- 状態: 15ファイルがGit外
-- リスク: worktree削除、clean操作、ディスク障害で消失する
-- 対応: 内容review後、専用branchへcommitするかpatch/archiveを作る
-
-### R3. Profit Coreの独立履歴
-
-- 状態: cleanだがmain未収録の可能性がある
-- リスク: 古いbranchとして一括削除する、または逆に不要なbranchを無期限に残す
-- 対応: file単位のmain収録判定、必要機能の選別、保存tipまたはtagの決定を行う
-
-### R4. PRなしremote実装
-
-- 状態: Crypto Perp Portfolio Replay branchにmainと異なる実装がある
-- リスク: 意図不明のまま放置、または誤削除
-- 対応: test、設計文書、現在のproduct軸との整合をreviewし、PR化、archive、削除のいずれかを決める
-
-### R5. 大きなlocal archive
-
-- 状態: `.tmp/archive`に約864 MiB、`data/raw`に約2.0 GiB
-- リスク: 容量圧迫と、根拠データの誤削除
-- 対応: hash、生成元、再生成可否、他媒体backupを確認してから保存期限を決める
-
-### R6. Graphの更新時点
-
-- 状態: 現行graphはquery可能だが、この文書追加後のGit文書構成までは反映していない
-- リスク: graphにないことをrepoに存在しないと誤認する
-- 対応: 次にコードを変更した時、repo規則どおり`graphify update .`を実行する
-
-## 11. 次に整理する場合の順序
-
-1. `.serena/project.yml`差分の所有権と採否を確定する。
-2. BT0の未追跡15ファイルをcommitまたはarchiveで保護する。
-3. Crypto Perp Portfolio Replay branchをreviewする。
-4. Profit Core worktreeと各branchの内容をfile単位で照合する。
-5. `.tmp/archive/refactor_cleanup_2026-06-25_0207/`の再生成可否と保存期限を決める。
-6. 上記が終わるまで、残る2 worktreeと未merge remote branchを削除しない。
-
-## 12. 確認済みコマンド
-
-主に次を使って現状を確認した。
-
-```bash
-git status --short --branch --untracked-files=all
-git rev-parse HEAD
-git rev-parse origin/main
-git worktree list --porcelain
-git branch -vv
-git branch -r
-git stash list
-gh pr list --state open
-gh pr view 44
-gh pr view 46
-du -sh graphify-out .worktrees .tmp/archive data/raw
-graphify query "repository cleanup current status worktrees branches pull requests graphify artifact residual risks"
-```
-
-## 13. 更新条件
-
-次のいずれかが起きた場合、この文書を再検証し、東京時間の`更新日`を更新する。
-
-- mainまたはorigin/mainが進む
-- PRを作成、close、mergeする
-- worktreeまたはbranchを追加、削除する
-- BT0またはProfit Coreをcommit、archive、統合する
-- `.serena/project.yml`の扱いを確定する
-- Graphify artifactを再生成する
-- `.tmp/archive`または`data/raw`を移動、削除する
+BT0保護、限定統合、CI後merge、未統合履歴の監査と退避、通常branch/worktree整理、Serena差分分離、Graphify local-only維持、exact duplicateだけの削除、full quality gateを完了したため、repository cleanupは完了と判定する。
