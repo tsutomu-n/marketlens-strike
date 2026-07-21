@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-17_22:40 JST
-更新日: 2026-07-01_20:06 JST
+更新日: 2026-06-28_19:04 JST
 -->
 
 # Repo CLI Catalog Current
@@ -79,19 +79,14 @@ uv run python scripts/check_current_docs.py
 - `strategy-idea-candidates-ai-import`
 - `strategy-idea-candidates-perp-estimate`
 - `strategy-idea-candidates-authoring-bridge`
-- `strategy-idea-candidates-multiplicity-account-build`
 - `strategy-idea-candidates-bitget-source-refresh`
-- `edge-candidate-protocol-validate`
-- `edge-candidate-factory-run`
-- `edge-candidate-virtual-gate-run`
-- `edge-candidate-evidence-packet-build`
-- `edge-candidate-adversarial-review-record`
-- `edge-candidate-actual-cash-readiness-packet-build`
-- `edge-candidate-tiny-actual-cash-measurement-record`
-- `edge-candidate-actual-cash-report-gate`
-- `edge-candidate-feedback-calibration-build`
-- `edge-candidate-external-venue-adapter-record`
-- `edge-candidate-risk-taker-sprint-isolation-record`
+- `edge-candidate-factory-build`
+- `edge-candidate-backtest-kill-gate`
+- `edge-candidate-virtual-execution-gate`
+- `edge-candidate-risk-actual-cash-handoff`
+- `edge-candidate-adversarial-packet-build`
+- `edge-candidate-adversarial-import`
+- `edge-candidate-artifact-summary`
 - `strategy-model-run-record`
 - `strategy-micro-live-plan`
 - `strategy-next-scale-plan`

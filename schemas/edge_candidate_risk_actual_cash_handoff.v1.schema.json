@@ -1,44 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "trial_multiplicity_account.v1.schema.json",
+  "$id": "edge_candidate_risk_actual_cash_handoff.v1.schema.json",
   "$defs": {
-    "AdjustmentMethods": {
-      "additionalProperties": false,
-      "properties": {
-        "benjamini_hochberg_fdr": {
-          "$ref": "#/$defs/AdjustmentStatus"
-        },
-        "benjamini_yekutieli_fdr": {
-          "$ref": "#/$defs/AdjustmentStatus"
-        },
-        "pbo": {
-          "$ref": "#/$defs/AdjustmentStatus"
-        },
-        "white_reality_check": {
-          "$ref": "#/$defs/AdjustmentStatus"
-        },
-        "deflated_sharpe_ratio": {
-          "$ref": "#/$defs/AdjustmentStatus"
-        }
-      },
-      "required": [
-        "benjamini_hochberg_fdr",
-        "benjamini_yekutieli_fdr",
-        "pbo",
-        "white_reality_check",
-        "deflated_sharpe_ratio"
-      ],
-      "title": "AdjustmentMethods",
-      "type": "object"
-    },
-    "AdjustmentStatus": {
-      "enum": [
-        "NOT_ESTIMABLE",
-        "AVAILABLE"
-      ],
-      "title": "AdjustmentStatus",
-      "type": "string"
-    },
     "ArtifactRef": {
       "additionalProperties": false,
       "properties": {
@@ -160,18 +123,26 @@
       ],
       "title": "ProducerInfo",
       "type": "object"
+    },
+    "RiskActualCashHandoffStatus": {
+      "enum": [
+        "BLOCKED_NEEDS_ACTUAL_CASH_ROWS",
+        "READY_WITH_ACTUAL_CASH_ROWS"
+      ],
+      "title": "RiskActualCashHandoffStatus",
+      "type": "string"
     }
   },
   "additionalProperties": false,
   "properties": {
     "schema_version": {
-      "const": "trial_multiplicity_account.v1",
-      "default": "trial_multiplicity_account.v1",
+      "const": "edge_candidate_risk_actual_cash_handoff.v1",
+      "default": "edge_candidate_risk_actual_cash_handoff.v1",
       "title": "Schema Version",
       "type": "string"
     },
-    "account_id": {
-      "title": "Account Id",
+    "handoff_id": {
+      "title": "Handoff Id",
       "type": "string"
     },
     "created_at": {
@@ -182,98 +153,53 @@
     "producer": {
       "$ref": "#/$defs/ProducerInfo"
     },
-    "source_refs": {
-      "items": {
-        "$ref": "#/$defs/ArtifactRef"
-      },
-      "minItems": 1,
-      "title": "Source Refs",
-      "type": "array"
-    },
-    "candidate_run_id": {
-      "title": "Candidate Run Id",
+    "candidate_id": {
+      "title": "Candidate Id",
       "type": "string"
     },
-    "candidate_count_total": {
-      "minimum": 0,
-      "title": "Candidate Count Total",
-      "type": "integer"
+    "candidate_report_ref": {
+      "$ref": "#/$defs/ArtifactRef"
     },
-    "candidate_count_shortlisted": {
-      "minimum": 0,
-      "title": "Candidate Count Shortlisted",
-      "type": "integer"
+    "search_ledger_ref": {
+      "$ref": "#/$defs/ArtifactRef"
     },
-    "candidate_count_rejected": {
-      "minimum": 0,
-      "title": "Candidate Count Rejected",
-      "type": "integer"
+    "multiplicity_account_ref": {
+      "$ref": "#/$defs/ArtifactRef"
     },
-    "family_count": {
-      "minimum": 0,
-      "title": "Family Count",
-      "type": "integer"
+    "backtest_kill_gate_ref": {
+      "$ref": "#/$defs/ArtifactRef"
     },
-    "family_trial_counts": {
-      "additionalProperties": {
-        "type": "integer"
-      },
-      "title": "Family Trial Counts",
-      "type": "object"
+    "virtual_execution_gate_ref": {
+      "$ref": "#/$defs/ArtifactRef"
     },
-    "parameter_grid_hashes": {
-      "items": {
-        "type": "string"
-      },
-      "minItems": 1,
-      "title": "Parameter Grid Hashes",
-      "type": "array"
+    "risk_taker_review_input_status": {
+      "$ref": "#/$defs/RiskActualCashHandoffStatus"
     },
-    "candidate_cluster_count": {
-      "minimum": 0,
-      "title": "Candidate Cluster Count",
-      "type": "integer"
+    "actual_cash_report_gate_input_status": {
+      "$ref": "#/$defs/RiskActualCashHandoffStatus"
     },
-    "effective_trial_count_status": {
-      "$ref": "#/$defs/AdjustmentStatus"
+    "actual_cash_rows_required": {
+      "const": true,
+      "default": true,
+      "title": "Actual Cash Rows Required",
+      "type": "boolean"
     },
-    "effective_trial_count": {
+    "actual_cash_rows_ref": {
       "anyOf": [
         {
-          "minimum": 0,
-          "type": "integer"
+          "$ref": "#/$defs/ArtifactRef"
         },
         {
           "type": "null"
         }
       ],
-      "default": null,
-      "title": "Effective Trial Count"
+      "default": null
     },
-    "validation_peek_count": {
-      "minimum": 0,
-      "title": "Validation Peek Count",
-      "type": "integer"
-    },
-    "rerank_count": {
-      "minimum": 0,
-      "title": "Rerank Count",
-      "type": "integer"
-    },
-    "sealed_test_used_for_selection": {
+    "virtual_or_backtest_used_as_actual_cash": {
       "const": false,
       "default": false,
-      "title": "Sealed Test Used For Selection",
+      "title": "Virtual Or Backtest Used As Actual Cash",
       "type": "boolean"
-    },
-    "success_only_reporting": {
-      "const": false,
-      "default": false,
-      "title": "Success Only Reporting",
-      "type": "boolean"
-    },
-    "adjustment_methods": {
-      "$ref": "#/$defs/AdjustmentMethods"
     },
     "known_gaps": {
       "items": {
@@ -287,22 +213,18 @@
     }
   },
   "required": [
-    "account_id",
+    "handoff_id",
     "created_at",
     "producer",
-    "source_refs",
-    "candidate_run_id",
-    "candidate_count_total",
-    "candidate_count_shortlisted",
-    "candidate_count_rejected",
-    "family_count",
-    "parameter_grid_hashes",
-    "candidate_cluster_count",
-    "effective_trial_count_status",
-    "validation_peek_count",
-    "rerank_count",
-    "adjustment_methods"
+    "candidate_id",
+    "candidate_report_ref",
+    "search_ledger_ref",
+    "multiplicity_account_ref",
+    "backtest_kill_gate_ref",
+    "virtual_execution_gate_ref",
+    "risk_taker_review_input_status",
+    "actual_cash_report_gate_input_status"
   ],
-  "title": "TrialMultiplicityAccount",
+  "title": "RiskActualCashHandoff",
   "type": "object"
 }

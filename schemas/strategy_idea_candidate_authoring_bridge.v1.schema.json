@@ -104,12 +104,13 @@
           },
           "status": {
             "enum": [
-              "BRIDGED_TECHNICAL_ONLY",
-              "BLOCKED_UNSUPPORTED_FAMILY",
-              "BLOCKED_MISSING_SOURCE",
-              "BLOCKED_BACKTEST_PACK",
-              "BLOCKED_ECONOMIC_GATE",
-              "BLOCKED_MULTIPLICITY_ACCOUNT"
+              "BRIDGED",
+              "BLOCKED_UNSUPPORTED_FAMILY_MAPPING",
+              "BLOCKED_MISSING_SOURCE_COLUMNS",
+              "BLOCKED_NO_SYMBOL_DATA",
+              "BLOCKED_UNSUPPORTED_PRODUCT_TYPE",
+              "BLOCKED_UNSUPPORTED_SIDE_BIAS",
+              "BLOCKED_BACKTEST_PACK"
             ]
           },
           "symbols": {
@@ -137,25 +138,9 @@
               "type": "string",
               "minLength": 1
             }
-          },
-          "backtest_kill_gate_state": {
-            "enum": ["KILL", "INCONCLUSIVE_DATA", "RESEARCH_ONLY", "SHORTLIST_FOR_VIRTUAL"]
-          },
-          "profit_core_blocker_codes": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "minLength": 1
-            }
           }
         }
       }
-    },
-    "protocol_manifest_ref": {
-      "$ref": "#/$defs/profit_core_artifact_ref"
-    },
-    "multiplicity_account_ref": {
-      "$ref": "#/$defs/profit_core_artifact_ref"
     },
     "summary": {
       "type": "object",
@@ -165,8 +150,17 @@
         "status_counts",
         "bridged_count",
         "blocked_count",
+        "technical_bridged_count",
+        "economic_gate_ready_count",
+        "economic_gate_not_evaluated_count",
+        "actual_cash_ready_count",
+        "actual_cash_missing_count",
+        "bridge_success_semantics",
+        "bridged_status_semantics",
+        "economic_gate_status",
         "candidate_scoped_outputs",
-        "actual_cash_result_available"
+        "actual_cash_result_available",
+        "default_backtest_pack_is_candidate_proof"
       ],
       "properties": {
         "candidate_count": {
@@ -188,10 +182,40 @@
           "type": "integer",
           "minimum": 0
         },
+        "technical_bridged_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "economic_gate_ready_count": {
+          "const": 0
+        },
+        "economic_gate_not_evaluated_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "actual_cash_ready_count": {
+          "const": 0
+        },
+        "actual_cash_missing_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bridge_success_semantics": {
+          "const": "technical_only"
+        },
+        "bridged_status_semantics": {
+          "const": "technical_bridge_only_not_profit_proof"
+        },
+        "economic_gate_status": {
+          "const": "NOT_EVALUATED"
+        },
         "candidate_scoped_outputs": {
           "const": true
         },
         "actual_cash_result_available": {
+          "const": false
+        },
+        "default_backtest_pack_is_candidate_proof": {
           "const": false
         }
       }
@@ -239,31 +263,6 @@
         },
         "exchange_write_used": {
           "const": false
-        }
-      }
-    }
-  },
-  "$defs": {
-    "profit_core_artifact_ref": {
-      "type": "object",
-      "additionalProperties": false,
-      "required": ["schema_version", "path", "sha256"],
-      "properties": {
-        "schema_version": {
-          "type": "string",
-          "minLength": 1
-        },
-        "path": {
-          "type": "string",
-          "minLength": 1
-        },
-        "sha256": {
-          "type": "string",
-          "pattern": "^sha256:[0-9a-f]{64}$"
-        },
-        "artifact_id": {
-          "type": "string",
-          "minLength": 1
         }
       }
     }

@@ -1,44 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "trial_multiplicity_account.v1.schema.json",
+  "$id": "llm_adversarial_evidence_review.v1.schema.json",
   "$defs": {
-    "AdjustmentMethods": {
-      "additionalProperties": false,
-      "properties": {
-        "benjamini_hochberg_fdr": {
-          "$ref": "#/$defs/AdjustmentStatus"
-        },
-        "benjamini_yekutieli_fdr": {
-          "$ref": "#/$defs/AdjustmentStatus"
-        },
-        "pbo": {
-          "$ref": "#/$defs/AdjustmentStatus"
-        },
-        "white_reality_check": {
-          "$ref": "#/$defs/AdjustmentStatus"
-        },
-        "deflated_sharpe_ratio": {
-          "$ref": "#/$defs/AdjustmentStatus"
-        }
-      },
-      "required": [
-        "benjamini_hochberg_fdr",
-        "benjamini_yekutieli_fdr",
-        "pbo",
-        "white_reality_check",
-        "deflated_sharpe_ratio"
-      ],
-      "title": "AdjustmentMethods",
-      "type": "object"
-    },
-    "AdjustmentStatus": {
-      "enum": [
-        "NOT_ESTIMABLE",
-        "AVAILABLE"
-      ],
-      "title": "AdjustmentStatus",
-      "type": "string"
-    },
     "ArtifactRef": {
       "additionalProperties": false,
       "properties": {
@@ -141,6 +104,89 @@
       "title": "EdgeCandidateBoundary",
       "type": "object"
     },
+    "LLMAdversarialFinding": {
+      "additionalProperties": false,
+      "properties": {
+        "finding_id": {
+          "title": "Finding Id",
+          "type": "string"
+        },
+        "finding_type": {
+          "$ref": "#/$defs/LLMFindingType"
+        },
+        "severity": {
+          "$ref": "#/$defs/LLMFindingSeverity"
+        },
+        "source_ref": {
+          "title": "Source Ref",
+          "type": "string"
+        },
+        "claim_text": {
+          "title": "Claim Text",
+          "type": "string"
+        },
+        "problem": {
+          "title": "Problem",
+          "type": "string"
+        },
+        "required_fix": {
+          "title": "Required Fix",
+          "type": "string"
+        },
+        "machine_checkable": {
+          "title": "Machine Checkable",
+          "type": "boolean"
+        },
+        "hard_blocker": {
+          "title": "Hard Blocker",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "finding_id",
+        "finding_type",
+        "severity",
+        "source_ref",
+        "claim_text",
+        "problem",
+        "required_fix",
+        "machine_checkable",
+        "hard_blocker"
+      ],
+      "title": "LLMAdversarialFinding",
+      "type": "object"
+    },
+    "LLMAdversarialReviewStatus": {
+      "enum": [
+        "NO_BLOCKING_FINDING",
+        "ADVERSARIAL_FINDING",
+        "MISSING_ARTIFACT",
+        "CONTRADICTION",
+        "OVERCLAIM_FLAG",
+        "HUMAN_REVIEW_REQUIRED"
+      ],
+      "title": "LLMAdversarialReviewStatus",
+      "type": "string"
+    },
+    "LLMFindingSeverity": {
+      "enum": [
+        "hard",
+        "soft"
+      ],
+      "title": "LLMFindingSeverity",
+      "type": "string"
+    },
+    "LLMFindingType": {
+      "enum": [
+        "MISSING_ARTIFACT",
+        "CONTRADICTION",
+        "OVERCLAIM_FLAG",
+        "LEAKAGE_RISK",
+        "UNSAFE_BOUNDARY"
+      ],
+      "title": "LLMFindingType",
+      "type": "string"
+    },
     "ProducerInfo": {
       "additionalProperties": false,
       "properties": {
@@ -165,13 +211,13 @@
   "additionalProperties": false,
   "properties": {
     "schema_version": {
-      "const": "trial_multiplicity_account.v1",
-      "default": "trial_multiplicity_account.v1",
+      "const": "llm_adversarial_evidence_review.v1",
+      "default": "llm_adversarial_evidence_review.v1",
       "title": "Schema Version",
       "type": "string"
     },
-    "account_id": {
-      "title": "Account Id",
+    "review_id": {
+      "title": "Review Id",
       "type": "string"
     },
     "created_at": {
@@ -190,119 +236,74 @@
       "title": "Source Refs",
       "type": "array"
     },
-    "candidate_run_id": {
-      "title": "Candidate Run Id",
+    "packet_hash": {
+      "title": "Packet Hash",
       "type": "string"
     },
-    "candidate_count_total": {
-      "minimum": 0,
-      "title": "Candidate Count Total",
-      "type": "integer"
+    "review_status": {
+      "$ref": "#/$defs/LLMAdversarialReviewStatus"
     },
-    "candidate_count_shortlisted": {
-      "minimum": 0,
-      "title": "Candidate Count Shortlisted",
-      "type": "integer"
-    },
-    "candidate_count_rejected": {
-      "minimum": 0,
-      "title": "Candidate Count Rejected",
-      "type": "integer"
-    },
-    "family_count": {
-      "minimum": 0,
-      "title": "Family Count",
-      "type": "integer"
-    },
-    "family_trial_counts": {
-      "additionalProperties": {
-        "type": "integer"
-      },
-      "title": "Family Trial Counts",
-      "type": "object"
-    },
-    "parameter_grid_hashes": {
+    "findings": {
       "items": {
-        "type": "string"
+        "$ref": "#/$defs/LLMAdversarialFinding"
       },
-      "minItems": 1,
-      "title": "Parameter Grid Hashes",
+      "title": "Findings",
       "type": "array"
     },
-    "candidate_cluster_count": {
+    "hard_blocker_count": {
       "minimum": 0,
-      "title": "Candidate Cluster Count",
+      "title": "Hard Blocker Count",
       "type": "integer"
     },
-    "effective_trial_count_status": {
-      "$ref": "#/$defs/AdjustmentStatus"
-    },
-    "effective_trial_count": {
-      "anyOf": [
-        {
-          "minimum": 0,
-          "type": "integer"
-        },
-        {
-          "type": "null"
-        }
-      ],
-      "default": null,
-      "title": "Effective Trial Count"
-    },
-    "validation_peek_count": {
+    "soft_warning_count": {
       "minimum": 0,
-      "title": "Validation Peek Count",
+      "title": "Soft Warning Count",
       "type": "integer"
     },
-    "rerank_count": {
-      "minimum": 0,
-      "title": "Rerank Count",
-      "type": "integer"
-    },
-    "sealed_test_used_for_selection": {
-      "const": false,
-      "default": false,
-      "title": "Sealed Test Used For Selection",
+    "llm_approval_ignored": {
+      "const": true,
+      "default": true,
+      "title": "Llm Approval Ignored",
       "type": "boolean"
     },
-    "success_only_reporting": {
+    "paper_execution_allowed": {
       "const": false,
       "default": false,
-      "title": "Success Only Reporting",
+      "title": "Paper Execution Allowed",
       "type": "boolean"
     },
-    "adjustment_methods": {
-      "$ref": "#/$defs/AdjustmentMethods"
+    "live_allowed": {
+      "const": false,
+      "default": false,
+      "title": "Live Allowed",
+      "type": "boolean"
     },
-    "known_gaps": {
-      "items": {
-        "type": "string"
-      },
-      "title": "Known Gaps",
-      "type": "array"
+    "actual_cash_decision_allowed": {
+      "const": false,
+      "default": false,
+      "title": "Actual Cash Decision Allowed",
+      "type": "boolean"
+    },
+    "gate_override_allowed": {
+      "const": false,
+      "default": false,
+      "title": "Gate Override Allowed",
+      "type": "boolean"
     },
     "boundary": {
       "$ref": "#/$defs/EdgeCandidateBoundary"
     }
   },
   "required": [
-    "account_id",
+    "review_id",
     "created_at",
     "producer",
     "source_refs",
-    "candidate_run_id",
-    "candidate_count_total",
-    "candidate_count_shortlisted",
-    "candidate_count_rejected",
-    "family_count",
-    "parameter_grid_hashes",
-    "candidate_cluster_count",
-    "effective_trial_count_status",
-    "validation_peek_count",
-    "rerank_count",
-    "adjustment_methods"
+    "packet_hash",
+    "review_status",
+    "hard_blocker_count",
+    "soft_warning_count"
   ],
-  "title": "TrialMultiplicityAccount",
+  "title": "LLMAdversarialEvidenceReview",
   "type": "object"
 }

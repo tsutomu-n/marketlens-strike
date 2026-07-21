@@ -1,72 +1,444 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "backtest_kill_gate.v1.schema.json",
-  "type": "object",
-  "required": [
-    "schema_version",
-    "gate_id",
-    "evaluated_at",
-    "candidate_id",
-    "mode",
-    "family_id",
-    "gate_state",
-    "blocker_codes",
-    "actual_cash",
-    "permits_live_order",
-    "permits_paper_order",
-    "permits_actual_cash",
-    "summary"
-  ],
-  "properties": {
-    "schema_version": {"const": "backtest_kill_gate.v1"},
-    "gate_id": {"$ref": "#/$defs/id"},
-    "evaluated_at": {"type": "string", "format": "date-time"},
-    "candidate_id": {"$ref": "#/$defs/id"},
-    "mode": {"enum": ["verification_throughput", "risk_taker_sprint"]},
-    "family_id": {"$ref": "#/$defs/id"},
-    "gate_state": {
-      "enum": ["KILL", "INCONCLUSIVE_DATA", "RESEARCH_ONLY", "SHORTLIST_FOR_VIRTUAL"]
-    },
-    "blocker_codes": {
-      "type": "array",
-      "items": {"type": "string", "minLength": 1},
-      "uniqueItems": true
-    },
-    "actual_cash": {"const": false},
-    "permits_live_order": {"const": false},
-    "permits_paper_order": {"const": false},
-    "permits_actual_cash": {"const": false},
-    "summary": {
-      "type": "object",
+  "$defs": {
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "ref_id": {
+          "title": "Ref Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
       "required": [
-        "event_count",
-        "closed_trade_count",
-        "no_trade_comparison_present",
-        "after_cost_edge_over_no_trade",
-        "stress_edge_over_no_trade",
+        "ref_id",
+        "schema_version",
+        "path",
+        "sha256"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    },
+    "BacktestKillGateStatus": {
+      "enum": [
+        "KILL",
+        "INCONCLUSIVE_DATA",
+        "RESEARCH_ONLY",
+        "SHORTLIST_FOR_VIRTUAL"
+      ],
+      "title": "BacktestKillGateStatus",
+      "type": "string"
+    },
+    "BacktestMetrics": {
+      "additionalProperties": false,
+      "properties": {
+        "event_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Event Count"
+        },
+        "closed_trade_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Closed Trade Count"
+        },
+        "after_cost_edge_over_no_trade_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "After Cost Edge Over No Trade Usd"
+        },
+        "stress_edge_over_no_trade_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Stress Edge Over No Trade Usd"
+        },
+        "largest_loss_usd": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Largest Loss Usd"
+        },
+        "profit_concentration": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Profit Concentration"
+        },
+        "source_gap_count": {
+          "minimum": 0,
+          "title": "Source Gap Count",
+          "type": "integer"
+        },
+        "unexecutable_reason_count": {
+          "minimum": 0,
+          "title": "Unexecutable Reason Count",
+          "type": "integer"
+        },
+        "validation_peek_count": {
+          "minimum": 0,
+          "title": "Validation Peek Count",
+          "type": "integer"
+        },
+        "candidate_cluster_count": {
+          "minimum": 0,
+          "title": "Candidate Cluster Count",
+          "type": "integer"
+        },
+        "effective_trial_count": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Effective Trial Count"
+        }
+      },
+      "required": [
         "source_gap_count",
         "unexecutable_reason_count",
-        "selection_adjustment_status"
+        "validation_peek_count",
+        "candidate_cluster_count"
       ],
+      "title": "BacktestMetrics",
+      "type": "object"
+    },
+    "ConditionStatus": {
+      "enum": [
+        "PASS",
+        "FAIL",
+        "NOT_ESTIMABLE",
+        "NOT_APPLICABLE"
+      ],
+      "title": "ConditionStatus",
+      "type": "string"
+    },
+    "EdgeCandidateBoundary": {
+      "additionalProperties": false,
       "properties": {
-        "event_count": {"type": "integer", "minimum": 0},
-        "closed_trade_count": {"type": "integer", "minimum": 0},
-        "no_trade_comparison_present": {"type": "boolean"},
-        "after_cost_edge_over_no_trade": {"type": "number"},
-        "stress_edge_over_no_trade": {"type": "number"},
-        "largest_loss_usd": {"type": "number"},
-        "profit_concentration": {"type": "number"},
-        "regime_stability": {"type": "string", "minLength": 1},
-        "source_gap_count": {"type": "integer", "minimum": 0},
-        "unexecutable_reason_count": {"type": "integer", "minimum": 0},
-        "selection_adjustment_status": {"enum": ["AVAILABLE", "NOT_ESTIMABLE"]},
-        "execution_candidate": {"type": "boolean"}
+        "paper_execution_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Paper Execution Allowed",
+          "type": "boolean"
+        },
+        "live_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Live Allowed",
+          "type": "boolean"
+        },
+        "permits_live_order": {
+          "const": false,
+          "default": false,
+          "title": "Permits Live Order",
+          "type": "boolean"
+        },
+        "live_conversion_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Live Conversion Allowed",
+          "type": "boolean"
+        },
+        "wallet_used": {
+          "const": false,
+          "default": false,
+          "title": "Wallet Used",
+          "type": "boolean"
+        },
+        "signing_used": {
+          "const": false,
+          "default": false,
+          "title": "Signing Used",
+          "type": "boolean"
+        },
+        "exchange_write_used": {
+          "const": false,
+          "default": false,
+          "title": "Exchange Write Used",
+          "type": "boolean"
+        },
+        "production_exchange_write_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Production Exchange Write Allowed",
+          "type": "boolean"
+        },
+        "production_exchange_write_used": {
+          "const": false,
+          "default": false,
+          "title": "Production Exchange Write Used",
+          "type": "boolean"
+        },
+        "live_order_submitted": {
+          "const": false,
+          "default": false,
+          "title": "Live Order Submitted",
+          "type": "boolean"
+        },
+        "auto_promote": {
+          "const": false,
+          "default": false,
+          "title": "Auto Promote",
+          "type": "boolean"
+        }
       },
-      "additionalProperties": false
+      "title": "EdgeCandidateBoundary",
+      "type": "object"
+    },
+    "GateCondition": {
+      "additionalProperties": false,
+      "properties": {
+        "condition_id": {
+          "title": "Condition Id",
+          "type": "string"
+        },
+        "condition_status": {
+          "$ref": "#/$defs/ConditionStatus"
+        },
+        "observed": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Observed"
+        },
+        "required": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "integer"
+            },
+            {
+              "type": "number"
+            },
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Required"
+        },
+        "source_ref": {
+          "title": "Source Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "condition_id",
+        "condition_status",
+        "observed",
+        "required",
+        "source_ref"
+      ],
+      "title": "GateCondition",
+      "type": "object"
+    },
+    "ProducerInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "const": "sis",
+          "default": "sis",
+          "title": "Tool",
+          "type": "string"
+        },
+        "command": {
+          "title": "Command",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "title": "ProducerInfo",
+      "type": "object"
     }
   },
   "additionalProperties": false,
-  "$defs": {
-    "id": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"}
-  }
+  "properties": {
+    "schema_version": {
+      "const": "backtest_kill_gate.v1",
+      "default": "backtest_kill_gate.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "gate_id": {
+      "title": "Gate Id",
+      "type": "string"
+    },
+    "created_at": {
+      "format": "date-time",
+      "title": "Created At",
+      "type": "string"
+    },
+    "producer": {
+      "$ref": "#/$defs/ProducerInfo"
+    },
+    "candidate_id": {
+      "title": "Candidate Id",
+      "type": "string"
+    },
+    "candidate_source_refs": {
+      "items": {
+        "$ref": "#/$defs/ArtifactRef"
+      },
+      "minItems": 1,
+      "title": "Candidate Source Refs",
+      "type": "array"
+    },
+    "bridge_refs": {
+      "items": {
+        "$ref": "#/$defs/ArtifactRef"
+      },
+      "title": "Bridge Refs",
+      "type": "array"
+    },
+    "multiplicity_account_ref": {
+      "$ref": "#/$defs/ArtifactRef"
+    },
+    "backtest_refs": {
+      "items": {
+        "$ref": "#/$defs/ArtifactRef"
+      },
+      "title": "Backtest Refs",
+      "type": "array"
+    },
+    "gate_status": {
+      "$ref": "#/$defs/BacktestKillGateStatus"
+    },
+    "recommended_action": {
+      "title": "Recommended Action",
+      "type": "string"
+    },
+    "metric_extraction_status": {
+      "$ref": "#/$defs/ConditionStatus"
+    },
+    "metric_source_refs": {
+      "items": {
+        "$ref": "#/$defs/ArtifactRef"
+      },
+      "title": "Metric Source Refs",
+      "type": "array"
+    },
+    "metric_not_estimable_reasons": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Metric Not Estimable Reasons",
+      "type": "array"
+    },
+    "conditions": {
+      "items": {
+        "$ref": "#/$defs/GateCondition"
+      },
+      "minItems": 1,
+      "title": "Conditions",
+      "type": "array"
+    },
+    "metrics": {
+      "$ref": "#/$defs/BacktestMetrics"
+    },
+    "known_gaps": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Known Gaps",
+      "type": "array"
+    },
+    "boundary": {
+      "$ref": "#/$defs/EdgeCandidateBoundary"
+    }
+  },
+  "required": [
+    "gate_id",
+    "created_at",
+    "producer",
+    "candidate_id",
+    "candidate_source_refs",
+    "multiplicity_account_ref",
+    "gate_status",
+    "recommended_action",
+    "metric_extraction_status",
+    "conditions",
+    "metrics"
+  ],
+  "title": "BacktestKillGate",
+  "type": "object"
 }

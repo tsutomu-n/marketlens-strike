@@ -221,7 +221,7 @@ def test_generated_source_root_can_feed_authoring_bridge(tmp_path: Path, monkeyp
         replace_existing=False,
     )
 
-    assert bridge_result.manifest.candidates[0].status == "BRIDGED_TECHNICAL_ONLY"
+    assert bridge_result.manifest.candidates[0].status == "BRIDGED"
     assert bridge_result.manifest.summary["bridged_count"] == 1
 
 

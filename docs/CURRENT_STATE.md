@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-25_19:45 JST
-更新日: 2026-07-01_21:05 JST
+更新日: 2026-06-28_19:04 JST
 -->
 
 # Current State
@@ -13,7 +13,6 @@
 - 技術者向けではない利用者目線の説明は [APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md](APP_USER_GUIDE_NON_TECHNICAL_2026-06-20.md) を読む。
 - アプリの全体像、できること、できないこと、専門用語の説明を一枚で読む場合は [APP_CURRENT_STATE_DETAILED_2026-06-20.md](APP_CURRENT_STATE_DETAILED_2026-06-20.md) を読む。
 - 個人向け・利益目線で誤読しやすい点を見る場合は [AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md](AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md) と [AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md](AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md) を読む。どちらも正本ではなく判断補助です。
-- 利益目線で scope を絞る場合は [EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md](EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md)、[profit_core_hybrid_modes/README.md](profit_core_hybrid_modes/README.md)、[PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md](PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md)、[PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md](PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md) を読む。Profit Core は docs-only の scope-control として Discovery Core / Validation Core / Execution Evidence Core に分け、Edge Candidate Factory は候補生成 Core だが利益証拠ではない。hybrid mode docs は `verification_throughput` を本命、`risk_taker_sprint` を隔離された攻撃モードとして扱う。v0 の外部市場は crypto perps の cross-market context feature であり、standalone trade path ではない。CP1-CP3 後の長期 goal / checkpoint 差分は [plans/profit-core-long-horizon-goal-checkpoints-2026-06-30.md](plans/profit-core-long-horizon-goal-checkpoints-2026-06-30.md) を読む。P0-P13 をコーダーが再現・監査できる粒度にまとめた completion package は [plans/profit-core-completion-implementation-package-2026-07-01/README.md](plans/profit-core-completion-implementation-package-2026-07-01/README.md) を読む。
 - いま使える主要 surface は Crypto Perp Truth-Cycle MVP artifact chain / Strategy Lab / Strategy Authoring / backtest pack / Strategy Review / NDX local research gates / read-only Trade[XYZ] / paper operations / operations audit。詳細は [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) を読む。
 - AI / Codex が戦略作成と backtest を迷わず扱う入口は [AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](AI_AGENT_STRATEGY_BACKTEST_GUIDE.md) を読む。
 - 人間が戦略、YAML、backtest 結果、次の確認を専門用語少なめで読む入口は [STRATEGY_AND_BACKTEST_USER_GUIDE.md](STRATEGY_AND_BACKTEST_USER_GUIDE.md) を読む。
@@ -39,12 +38,6 @@
 | アプリの全体像、できること、専門用語を詳しく知る | [APP_CURRENT_STATE_DETAILED_2026-06-20.md](APP_CURRENT_STATE_DETAILED_2026-06-20.md) |
 | 個人トレーダー目線の現実的な評価を読む | [AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md](AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md) |
 | 利益目線でPASSやSharpeの誤読を避ける | [AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md](AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md) |
-| Edge Candidate Factory / Execution Evidence Core の境界を読む | [EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md](EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md) |
-| 本命 + 隔離攻撃 mode の開発者向け decision package を読む | [profit_core_hybrid_modes/README.md](profit_core_hybrid_modes/README.md) |
-| Profit Core の先の goal と checkpoint 差分を読む | [plans/profit-core-long-horizon-goal-checkpoints-2026-06-30.md](plans/profit-core-long-horizon-goal-checkpoints-2026-06-30.md) |
-| Profit Core P0-P13 の実装・再現・監査 package を読む | [plans/profit-core-completion-implementation-package-2026-07-01/README.md](plans/profit-core-completion-implementation-package-2026-07-01/README.md) |
-| Profit Core と Add-on の境界を実装者向けに固定する | [PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md](PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md) |
-| 利用者目線で利益誤読を避ける | [PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md](PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md) |
 | 実装済み surface を確認する | [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md) |
 | AI が戦略作成 / backtest を安全に操作する | [AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](AI_AGENT_STRATEGY_BACKTEST_GUIDE.md) |
 | 人間が戦略 / backtest 結果を理解する | [STRATEGY_AND_BACKTEST_USER_GUIDE.md](STRATEGY_AND_BACKTEST_USER_GUIDE.md) |
@@ -120,31 +113,27 @@ archive 配下は historical context です。現行判断の正本にはしま�
 3. [APP_CURRENT_STATE_DETAILED_2026-06-20.md](APP_CURRENT_STATE_DETAILED_2026-06-20.md)
 4. [AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md](AGENT_ASSESSMENT_INDIVIDUAL_TRADER_2026-06-20.md)
 5. [AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md](AGENT_ASSESSMENT_PRACTICAL_DECISION_NOTE_2026-06-20.md)
-6. [EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md](EDGE_CANDIDATE_FACTORY_CORE_2026-06-29.md)
-7. [profit_core_hybrid_modes/README.md](profit_core_hybrid_modes/README.md)
-8. [PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md](PROFIT_CORE_SCOPE_DEVELOPER_2026-06-29.md)
-9. [PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md](PROFIT_CORE_SCOPE_USER_GUIDE_2026-06-29.md)
-10. [AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](AI_AGENT_STRATEGY_BACKTEST_GUIDE.md)
-11. [STRATEGY_AND_BACKTEST_USER_GUIDE.md](STRATEGY_AND_BACKTEST_USER_GUIDE.md)
-12. [FEATURE_CAPABILITY_SUMMARY_2026-06-27.md](FEATURE_CAPABILITY_SUMMARY_2026-06-27.md)
-13. [strategy_idea_candidates/NON_TECHNICAL_OVERVIEW_2026-06-28.md](strategy_idea_candidates/NON_TECHNICAL_OVERVIEW_2026-06-28.md)
-14. [STRATEGY_IDEA_GENERATION_RESEARCH_2026-06-27.md](STRATEGY_IDEA_GENERATION_RESEARCH_2026-06-27.md)
-15. [STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md](STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md)
-16. [STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md](STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md)
-17. [strategy_idea_candidates/README.md](strategy_idea_candidates/README.md)
-18. [STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md](STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md)
-19. [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md)
-20. [CODE_STATUS.md](CODE_STATUS.md)
-21. [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md)
-22. [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md)
-23. [CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md](CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md)
-24. [backtest/README.md](backtest/README.md)
-25. [strategy_review/README.md](strategy_review/README.md)
-26. [strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
-27. [research/ndx/README.md](research/ndx/README.md)
-28. [strategy_lifecycle/README.md](strategy_lifecycle/README.md)
-29. [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md)
-30. [plan/README.md](../plan/README.md)
+6. [AI_AGENT_STRATEGY_BACKTEST_GUIDE.md](AI_AGENT_STRATEGY_BACKTEST_GUIDE.md)
+7. [STRATEGY_AND_BACKTEST_USER_GUIDE.md](STRATEGY_AND_BACKTEST_USER_GUIDE.md)
+8. [FEATURE_CAPABILITY_SUMMARY_2026-06-27.md](FEATURE_CAPABILITY_SUMMARY_2026-06-27.md)
+9. [strategy_idea_candidates/NON_TECHNICAL_OVERVIEW_2026-06-28.md](strategy_idea_candidates/NON_TECHNICAL_OVERVIEW_2026-06-28.md)
+10. [STRATEGY_IDEA_GENERATION_RESEARCH_2026-06-27.md](STRATEGY_IDEA_GENERATION_RESEARCH_2026-06-27.md)
+11. [STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md](STRATEGY_IDEA_GENERATION_PRE_IMPLEMENTATION_AUDIT_2026-06-27.md)
+12. [STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md](STRATEGY_IDEA_CANDIDATE_PIPELINE_CHECKPOINTS_2026-06-27.md)
+13. [strategy_idea_candidates/README.md](strategy_idea_candidates/README.md)
+14. [STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md](STRATEGY_IDEA_GENERATION_DEPENDENCY_RESEARCH_2026-06-27.md)
+15. [REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md](REPO_CAPABILITIES_PLAIN_JA_2026-06-17.md)
+16. [CODE_STATUS.md](CODE_STATUS.md)
+17. [IMPLEMENTED_SURFACES.md](IMPLEMENTED_SURFACES.md)
+18. [NEXT_DIRECTION_CURRENT.md](NEXT_DIRECTION_CURRENT.md)
+19. [CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md](CURRENT_DOCS_AND_STRUCTURE_TRIAGE_2026-06-27.md)
+20. [backtest/README.md](backtest/README.md)
+21. [strategy_review/README.md](strategy_review/README.md)
+22. [strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md](strategy_review/OPERATOR_REVIEW_PACKET_RECIPE.md)
+23. [research/ndx/README.md](research/ndx/README.md)
+24. [strategy_lifecycle/README.md](strategy_lifecycle/README.md)
+25. [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md)
+26. [plan/README.md](../plan/README.md)
 
 ## Verification
 

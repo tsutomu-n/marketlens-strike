@@ -1,0 +1,828 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "smart_candidate_prior_report.v1.schema.json",
+  "$defs": {
+    "ArtifactRef": {
+      "additionalProperties": false,
+      "properties": {
+        "ref_id": {
+          "title": "Ref Id",
+          "type": "string"
+        },
+        "schema_version": {
+          "title": "Schema Version",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        },
+        "sha256": {
+          "title": "Sha256",
+          "type": "string"
+        }
+      },
+      "required": [
+        "ref_id",
+        "schema_version",
+        "path",
+        "sha256"
+      ],
+      "title": "ArtifactRef",
+      "type": "object"
+    },
+    "CandidateDecision": {
+      "enum": [
+        "GENERATED",
+        "REJECTED"
+      ],
+      "title": "CandidateDecision",
+      "type": "string"
+    },
+    "CandidateExecutionPrecheck": {
+      "additionalProperties": false,
+      "properties": {
+        "venue_id": {
+          "title": "Venue Id",
+          "type": "string"
+        },
+        "product_type": {
+          "title": "Product Type",
+          "type": "string"
+        },
+        "symbol": {
+          "title": "Symbol",
+          "type": "string"
+        },
+        "min_notional_ok": {
+          "title": "Min Notional Ok",
+          "type": "boolean"
+        },
+        "tick_size_ok": {
+          "title": "Tick Size Ok",
+          "type": "boolean"
+        },
+        "lot_size_ok": {
+          "title": "Lot Size Ok",
+          "type": "boolean"
+        },
+        "max_spread_bps": {
+          "minimum": 0,
+          "title": "Max Spread Bps",
+          "type": "number"
+        },
+        "observed_spread_bps": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed Spread Bps"
+        },
+        "min_depth_usd": {
+          "minimum": 0,
+          "title": "Min Depth Usd",
+          "type": "number"
+        },
+        "observed_depth_usd": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Observed Depth Usd"
+        },
+        "fee_rate_available": {
+          "title": "Fee Rate Available",
+          "type": "boolean"
+        },
+        "funding_available": {
+          "title": "Funding Available",
+          "type": "boolean"
+        },
+        "estimated_operator_time_minutes": {
+          "minimum": 0,
+          "title": "Estimated Operator Time Minutes",
+          "type": "integer"
+        },
+        "estimated_capital_tied_up_minutes": {
+          "minimum": 0,
+          "title": "Estimated Capital Tied Up Minutes",
+          "type": "integer"
+        },
+        "unexecutable_reasons": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unexecutable Reasons",
+          "type": "array"
+        },
+        "execution_precheck_status": {
+          "$ref": "#/$defs/CandidateGateStatus"
+        }
+      },
+      "required": [
+        "venue_id",
+        "product_type",
+        "symbol",
+        "min_notional_ok",
+        "tick_size_ok",
+        "lot_size_ok",
+        "max_spread_bps",
+        "min_depth_usd",
+        "fee_rate_available",
+        "funding_available",
+        "estimated_operator_time_minutes",
+        "estimated_capital_tied_up_minutes",
+        "execution_precheck_status"
+      ],
+      "title": "CandidateExecutionPrecheck",
+      "type": "object"
+    },
+    "CandidateGateStatus": {
+      "enum": [
+        "PASS",
+        "BLOCKED",
+        "NOT_ESTIMABLE"
+      ],
+      "title": "CandidateGateStatus",
+      "type": "string"
+    },
+    "CandidateMechanismCard": {
+      "additionalProperties": false,
+      "properties": {
+        "mechanism_id": {
+          "title": "Mechanism Id",
+          "type": "string"
+        },
+        "mechanism_summary": {
+          "title": "Mechanism Summary",
+          "type": "string"
+        },
+        "who_is_forced_or_constrained": {
+          "title": "Who Is Forced Or Constrained",
+          "type": "string"
+        },
+        "why_flow_may_be_unfavorable": {
+          "title": "Why Flow May Be Unfavorable",
+          "type": "string"
+        },
+        "expected_time_horizon": {
+          "title": "Expected Time Horizon",
+          "type": "string"
+        },
+        "failure_modes": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Failure Modes",
+          "type": "array"
+        },
+        "counter_hypothesis": {
+          "title": "Counter Hypothesis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mechanism_id",
+        "mechanism_summary",
+        "who_is_forced_or_constrained",
+        "why_flow_may_be_unfavorable",
+        "expected_time_horizon",
+        "failure_modes",
+        "counter_hypothesis"
+      ],
+      "title": "CandidateMechanismCard",
+      "type": "object"
+    },
+    "CandidatePriorScore": {
+      "additionalProperties": false,
+      "properties": {
+        "mechanism_score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Mechanism Score",
+          "type": "number"
+        },
+        "source_availability_score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Source Availability Score",
+          "type": "number"
+        },
+        "execution_feasibility_score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Execution Feasibility Score",
+          "type": "number"
+        },
+        "testability_score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Testability Score",
+          "type": "number"
+        },
+        "diversity_score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Diversity Score",
+          "type": "number"
+        },
+        "information_gain_score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Information Gain Score",
+          "type": "number"
+        },
+        "operator_cost_penalty": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Operator Cost Penalty",
+          "type": "number"
+        },
+        "unexecutable_penalty": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Unexecutable Penalty",
+          "type": "number"
+        },
+        "overfit_surface_penalty": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Overfit Surface Penalty",
+          "type": "number"
+        },
+        "total_score": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Total Score",
+          "type": "number"
+        },
+        "score_basis": {
+          "const": "prior_not_profit_proof",
+          "default": "prior_not_profit_proof",
+          "title": "Score Basis",
+          "type": "string"
+        }
+      },
+      "required": [
+        "mechanism_score",
+        "source_availability_score",
+        "execution_feasibility_score",
+        "testability_score",
+        "diversity_score",
+        "information_gain_score",
+        "operator_cost_penalty",
+        "unexecutable_penalty",
+        "overfit_surface_penalty",
+        "total_score"
+      ],
+      "title": "CandidatePriorScore",
+      "type": "object"
+    },
+    "CandidateSourceRequirement": {
+      "additionalProperties": false,
+      "properties": {
+        "source_id": {
+          "title": "Source Id",
+          "type": "string"
+        },
+        "source_type": {
+          "title": "Source Type",
+          "type": "string"
+        },
+        "required": {
+          "title": "Required",
+          "type": "boolean"
+        },
+        "expected_schema": {
+          "title": "Expected Schema",
+          "type": "string"
+        },
+        "available_at_policy": {
+          "title": "Available At Policy",
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/CandidateGateStatus"
+        },
+        "known_gaps": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Known Gaps",
+          "type": "array"
+        }
+      },
+      "required": [
+        "source_id",
+        "source_type",
+        "required",
+        "expected_schema",
+        "available_at_policy",
+        "status"
+      ],
+      "title": "CandidateSourceRequirement",
+      "type": "object"
+    },
+    "CausePrior": {
+      "enum": [
+        "FORCED_FLOW",
+        "INVENTORY_RISK_TRANSFER",
+        "SLOW_INFORMATION",
+        "CONSTRAINED_ARBITRAGE",
+        "CROWDED_POSITIONING",
+        "BEHAVIORAL_ATTENTION",
+        "ADVERSE_SELECTION",
+        "EXECUTION_FRICTION",
+        "DATA_OBSERVABILITY"
+      ],
+      "title": "CausePrior",
+      "type": "string"
+    },
+    "EdgeCandidateBoundary": {
+      "additionalProperties": false,
+      "properties": {
+        "paper_execution_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Paper Execution Allowed",
+          "type": "boolean"
+        },
+        "live_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Live Allowed",
+          "type": "boolean"
+        },
+        "permits_live_order": {
+          "const": false,
+          "default": false,
+          "title": "Permits Live Order",
+          "type": "boolean"
+        },
+        "live_conversion_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Live Conversion Allowed",
+          "type": "boolean"
+        },
+        "wallet_used": {
+          "const": false,
+          "default": false,
+          "title": "Wallet Used",
+          "type": "boolean"
+        },
+        "signing_used": {
+          "const": false,
+          "default": false,
+          "title": "Signing Used",
+          "type": "boolean"
+        },
+        "exchange_write_used": {
+          "const": false,
+          "default": false,
+          "title": "Exchange Write Used",
+          "type": "boolean"
+        },
+        "production_exchange_write_allowed": {
+          "const": false,
+          "default": false,
+          "title": "Production Exchange Write Allowed",
+          "type": "boolean"
+        },
+        "production_exchange_write_used": {
+          "const": false,
+          "default": false,
+          "title": "Production Exchange Write Used",
+          "type": "boolean"
+        },
+        "live_order_submitted": {
+          "const": false,
+          "default": false,
+          "title": "Live Order Submitted",
+          "type": "boolean"
+        },
+        "auto_promote": {
+          "const": false,
+          "default": false,
+          "title": "Auto Promote",
+          "type": "boolean"
+        }
+      },
+      "title": "EdgeCandidateBoundary",
+      "type": "object"
+    },
+    "GeneratorConfig": {
+      "additionalProperties": false,
+      "properties": {
+        "profile": {
+          "title": "Profile",
+          "type": "string"
+        },
+        "symbols": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Symbols",
+          "type": "array"
+        },
+        "product_type": {
+          "title": "Product Type",
+          "type": "string"
+        },
+        "timeframe": {
+          "title": "Timeframe",
+          "type": "string"
+        },
+        "families": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Families",
+          "type": "array"
+        },
+        "candidate_cap": {
+          "minimum": 1,
+          "title": "Candidate Cap",
+          "type": "integer"
+        },
+        "parameter_grid_hash": {
+          "title": "Parameter Grid Hash",
+          "type": "string"
+        },
+        "source_root": {
+          "title": "Source Root",
+          "type": "string"
+        },
+        "sealed_test_policy": {
+          "title": "Sealed Test Policy",
+          "type": "string"
+        },
+        "network_attempted": {
+          "const": false,
+          "default": false,
+          "title": "Network Attempted",
+          "type": "boolean"
+        },
+        "credentials_used": {
+          "const": false,
+          "default": false,
+          "title": "Credentials Used",
+          "type": "boolean"
+        },
+        "production_exchange_write_used": {
+          "const": false,
+          "default": false,
+          "title": "Production Exchange Write Used",
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "profile",
+        "symbols",
+        "product_type",
+        "timeframe",
+        "families",
+        "candidate_cap",
+        "parameter_grid_hash",
+        "source_root",
+        "sealed_test_policy"
+      ],
+      "title": "GeneratorConfig",
+      "type": "object"
+    },
+    "Observable": {
+      "enum": [
+        "funding_rate",
+        "funding_window",
+        "liquidation_notional",
+        "liquidation_side",
+        "mark_price",
+        "index_price",
+        "mark_index_basis_bps",
+        "spot_perp_basis_bps",
+        "open_interest",
+        "open_interest_change",
+        "spread_bps",
+        "bid_price",
+        "ask_price",
+        "book_depth",
+        "order_flow_imbalance",
+        "aggressive_trade_imbalance",
+        "volume",
+        "turnover",
+        "realized_volatility",
+        "volatility_compression",
+        "session_time",
+        "weekday",
+        "quote_age",
+        "fee_rate",
+        "min_notional",
+        "tick_size",
+        "lot_size",
+        "source_quality",
+        "available_at"
+      ],
+      "title": "Observable",
+      "type": "string"
+    },
+    "ProducerInfo": {
+      "additionalProperties": false,
+      "properties": {
+        "tool": {
+          "const": "sis",
+          "default": "sis",
+          "title": "Tool",
+          "type": "string"
+        },
+        "command": {
+          "title": "Command",
+          "type": "string"
+        }
+      },
+      "required": [
+        "command"
+      ],
+      "title": "ProducerInfo",
+      "type": "object"
+    },
+    "SmartCandidateCard": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_id": {
+          "title": "Candidate Id",
+          "type": "string"
+        },
+        "candidate_status": {
+          "const": "UNVERIFIED_CANDIDATE",
+          "default": "UNVERIFIED_CANDIDATE",
+          "title": "Candidate Status",
+          "type": "string"
+        },
+        "candidate_decision": {
+          "$ref": "#/$defs/CandidateDecision"
+        },
+        "cause_priors": {
+          "items": {
+            "$ref": "#/$defs/CausePrior"
+          },
+          "minItems": 1,
+          "title": "Cause Priors",
+          "type": "array"
+        },
+        "family": {
+          "title": "Family",
+          "type": "string"
+        },
+        "mechanism_card": {
+          "$ref": "#/$defs/CandidateMechanismCard"
+        },
+        "observables": {
+          "items": {
+            "$ref": "#/$defs/Observable"
+          },
+          "minItems": 1,
+          "title": "Observables",
+          "type": "array"
+        },
+        "required_sources": {
+          "items": {
+            "$ref": "#/$defs/CandidateSourceRequirement"
+          },
+          "minItems": 1,
+          "title": "Required Sources",
+          "type": "array"
+        },
+        "source_requirement_status": {
+          "$ref": "#/$defs/CandidateGateStatus"
+        },
+        "execution_precheck": {
+          "$ref": "#/$defs/CandidateExecutionPrecheck"
+        },
+        "candidate_prior_score": {
+          "$ref": "#/$defs/CandidatePriorScore"
+        },
+        "parameter_set": {
+          "additionalProperties": true,
+          "title": "Parameter Set",
+          "type": "object"
+        },
+        "action_set": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Action Set",
+          "type": "array"
+        },
+        "entry_logic": {
+          "title": "Entry Logic",
+          "type": "string"
+        },
+        "exit_logic": {
+          "title": "Exit Logic",
+          "type": "string"
+        },
+        "kill_conditions": {
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1,
+          "title": "Kill Conditions",
+          "type": "array"
+        },
+        "expected_information_gain": {
+          "title": "Expected Information Gain",
+          "type": "string"
+        },
+        "test_cost_estimate": {
+          "title": "Test Cost Estimate",
+          "type": "string"
+        },
+        "operator_burden_estimate": {
+          "title": "Operator Burden Estimate",
+          "type": "string"
+        },
+        "candidate_cluster_id": {
+          "title": "Candidate Cluster Id",
+          "type": "string"
+        },
+        "similar_candidate_count": {
+          "minimum": 0,
+          "title": "Similar Candidate Count",
+          "type": "integer"
+        },
+        "negative_control_refs": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Negative Control Refs",
+          "type": "array"
+        },
+        "proof_status": {
+          "const": "not_alpha_or_profit_proof",
+          "default": "not_alpha_or_profit_proof",
+          "title": "Proof Status",
+          "type": "string"
+        },
+        "rejection_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Rejection Reason"
+        },
+        "shortlist_reason": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Shortlist Reason"
+        },
+        "boundary": {
+          "$ref": "#/$defs/EdgeCandidateBoundary"
+        }
+      },
+      "required": [
+        "candidate_id",
+        "candidate_decision",
+        "cause_priors",
+        "family",
+        "mechanism_card",
+        "observables",
+        "required_sources",
+        "source_requirement_status",
+        "execution_precheck",
+        "candidate_prior_score",
+        "parameter_set",
+        "action_set",
+        "entry_logic",
+        "exit_logic",
+        "kill_conditions",
+        "expected_information_gain",
+        "test_cost_estimate",
+        "operator_burden_estimate",
+        "candidate_cluster_id",
+        "similar_candidate_count"
+      ],
+      "title": "SmartCandidateCard",
+      "type": "object"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {
+      "const": "smart_candidate_prior_report.v1",
+      "default": "smart_candidate_prior_report.v1",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "report_id": {
+      "title": "Report Id",
+      "type": "string"
+    },
+    "generated_at": {
+      "format": "date-time",
+      "title": "Generated At",
+      "type": "string"
+    },
+    "producer": {
+      "$ref": "#/$defs/ProducerInfo"
+    },
+    "source_refs": {
+      "items": {
+        "$ref": "#/$defs/ArtifactRef"
+      },
+      "minItems": 1,
+      "title": "Source Refs",
+      "type": "array"
+    },
+    "generator_config": {
+      "$ref": "#/$defs/GeneratorConfig"
+    },
+    "candidate_cards": {
+      "items": {
+        "$ref": "#/$defs/SmartCandidateCard"
+      },
+      "minItems": 1,
+      "title": "Candidate Cards",
+      "type": "array"
+    },
+    "candidate_count_total": {
+      "minimum": 0,
+      "title": "Candidate Count Total",
+      "type": "integer"
+    },
+    "candidate_count_accepted": {
+      "minimum": 0,
+      "title": "Candidate Count Accepted",
+      "type": "integer"
+    },
+    "candidate_count_rejected": {
+      "minimum": 0,
+      "title": "Candidate Count Rejected",
+      "type": "integer"
+    },
+    "rejection_summary": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Rejection Summary",
+      "type": "object"
+    },
+    "score_summary": {
+      "additionalProperties": {
+        "type": "number"
+      },
+      "title": "Score Summary",
+      "type": "object"
+    },
+    "boundary": {
+      "$ref": "#/$defs/EdgeCandidateBoundary"
+    },
+    "known_gaps": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Known Gaps",
+      "type": "array"
+    }
+  },
+  "required": [
+    "report_id",
+    "generated_at",
+    "producer",
+    "source_refs",
+    "generator_config",
+    "candidate_cards",
+    "candidate_count_total",
+    "candidate_count_accepted",
+    "candidate_count_rejected"
+  ],
+  "title": "SmartCandidatePriorReport",
+  "type": "object"
+}
