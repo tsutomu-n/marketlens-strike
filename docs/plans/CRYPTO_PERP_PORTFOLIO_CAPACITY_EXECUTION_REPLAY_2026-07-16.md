@@ -1,14 +1,20 @@
 
+<!--
+作成日: 2026-07-16_23:18 JST
+更新日: 2026-07-20_19:49 JST
+-->
+
 # Crypto Perp Portfolio Capacity／Execution Replay 導入設計
 
 * 対象Repo: `tsutomu-n/marketlens-strike`
-* 確認HEAD: `c8c950d2cb5677ed233ade7d8ac15a5f07979095`
+* 初稿確認HEAD: `c8c950d2cb5677ed233ade7d8ac15a5f07979095`
+* 再配置時の統合基準: `427de2b62ebb21a613793aee92b1d49bbe69e09c`
 * 対象読者: 現行Repoの構造・Crypto Perp Candidate Pack・Backtest surfaceを把握しているSE
-* 設計状態: 実装前の確定案
+* 設計状態: 実装前の設計案（実装開始前に現行コードで再検証が必要）
 * 主目的: **現行のイベント単位推定損益を、共通資本・同時ポジション・執行可能性を含む判断可能な推定へ引き上げる**
 * 非目的: actual cash証明、live注文、万能バックテストエンジンの構築
 
-現行mainの最新確認HEADは`c8c950d2`です。最新commitはSeed Foundry関連のdocs整理であり、本設計が対象とするCrypto Perp／Backtestの実装面は、現在の`src/`、`tests/`、`schemas/`を正本として判断します。
+初稿は`c8c950d2`時点のコードを調査して作成した。2026-07-20に`origin/main`の`427de2b`起点の統合ブランチへ再配置したが、この作業では設計内容の実装可否を再承認していない。実装前には、現行の`src/`、`tests/`、`schemas/`、CLI helpを正本として、対象ファイルと完了条件を再検証する。
 
 ---
 

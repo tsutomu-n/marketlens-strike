@@ -1,4 +1,12 @@
 
+<!--
+作成日: 2026-07-16_23:18 JST
+更新日: 2026-07-20_19:49 JST
+-->
+
+> [!WARNING]
+> これは2026-07-16時点の実装指示を保存した履歴資料であり、現在の作業指示ではない。文中のPR #46とIssue #47の状態は古い。A1 Technical Walking Productは`origin/main` の `427de2b` に取り込まれている。現行のA1計画は[`docs/plans/STRATEGY_IDEA_SEED_FOUNDRY_A1_IMPLEMENTATION_2026-07-16.md`](../../../docs/plans/STRATEGY_IDEA_SEED_FOUNDRY_A1_IMPLEMENTATION_2026-07-16.md)を参照し、本文を実行手順として使用しないこと。
+
 # コーダーへ渡す最終指示
 
 現時点では、**PR #46がOpen・Ready for Review・Merge可能・CI成功・未マージ**です。したがって、A1実装はPR #46を人間レビュー後にマージし、更新された`main`から開始してください。

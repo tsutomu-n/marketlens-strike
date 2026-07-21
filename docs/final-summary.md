@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-06-27_11:32 JST
-更新日: 2026-07-16_17:16 JST
+更新日: 2026-07-20_20:12 JST
 -->
 
 # Final Summary
@@ -201,3 +201,51 @@ ty: PASS
 ## 次に検討すべき事項
 
 A2へ進む場合も別Branch・別Checkpointとし、A1のSeed契約と禁止境界を維持する。
+
+## 2026-07-20 ローカルmain文書統合
+
+### ゴール
+
+統合基準commit `427de2b62ebb21a613793aee92b1d49bbe69e09c` のA1実装を正本としつつ、分岐したローカル`main`にのみ存在したリポジトリ理解レポート、調査文書、実装前設計を安全に再配置する。
+
+### 作業ブランチ
+
+`ai/reconcile-main-no-graph-20260720-2010`
+
+### 達成したこと
+
+- リポジトリ理解レポートを`docs/720-info/`に保全した。
+- 仮説探索エンジンの調査・意思決定文書を`docs/plans/`に統合した。
+- Execution Replay文書は未実装の設計案であることと、実装前の再検証条件を明記した。
+- PR #46マージ前のSeed Foundry指示を、実行禁止の履歴資料として`plan/archive/`に移した。
+- `.serena/project.yml`の無関係なtemplateドリフトは移植しなかった。
+- A2、Execution Replay実装、製品コード変更は行っていない。
+- `graphify-out/`全体をGit ignore対象とし、Graphify artifactをbranch履歴から除外した。
+
+### 破壊的変更と依存関係変更
+
+どちらもなし。
+
+### 実行した確認
+
+- リポジトリ外のdetached worktreeで`./scripts/check`: PASS。
+- Ruff lint / format: PASS。
+- current-docs: PASS。
+- CLI catalog: PASS。
+- Pyrefly: 0 errors。
+- ty: PASS。
+- Pytest: PASS（1 skip）。
+- `graphify update .`: PASS。クエリ可能なJSONとreportをローカルに生成し、Git対象外であることを確認した。
+
+Pytest終了時に、権限制御fixtureが作る一時ディレクトリの掃除警告が出た。テスト結果は成功で、製品ツリーの変更や実行時データの欠損はない。
+
+### 移行とロールバック
+
+自動移行は行わない。必要な場合のみ、検証済み統合ブランチを人間が`main`へ取り込む。ロールバックはこのブランチを使用せず、統合基準commit `427de2b`を維持することで完了する。
+
+### 残った課題
+
+- Execution Replayの設計は現行コードに対する再検証と明示承認が必要。
+- A2開始判定は本統合と分ける。
+- ローカルの`graphify-out/graph.json`は約50 MiBで、node数がツールの上限を超えるためHTML visualizationは生成されない。JSONとreportはローカルクエリ用に限定する。
+- `main`への取り込みは未実施。

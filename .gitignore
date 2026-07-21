@@ -79,3 +79,6 @@ plan/0628から/0628-0623.md
 
 # Hypothesis local state
 .hypothesis/
+
+# Graphify knowledge graphs are large, reproducible, local-only artifacts.
+graphify-out/
