@@ -32,6 +32,8 @@ build/
 
 # Runtime data and research artifacts
 data/
+# Retained source data stays local even when narrower data rules are introduced later.
+data/raw/
 *.parquet
 *.duckdb
 *.duckdb.wal
@@ -56,6 +58,8 @@ logs/
 tmp/
 temp/
 .tmp/*
+# Retained local archives must never be committed.
+.tmp/archive/
 # Keep checked-in live-evidence helper scripts and notes available from fresh clones.
 !.tmp/live_evidence_*.sh
 !.tmp/live_evidence_*.md
