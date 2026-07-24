@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-25_00:56 JST
-更新日: 2026-07-25_00:56 JST
+更新日: 2026-07-25_01:10 JST
 -->
 
 # SCR論文の価値抽出判断と最小検証指示
@@ -125,6 +125,8 @@ funding、OI、book depth、text、embedding、cross-asset featureはv0へ追加
 - 結論を出す最低evaluation数: 60件の非重複event、7 UTC date以上
 
 不足時は `COLLECT_MORE_DATA` とし、feature追加、synthetic data、重複window水増しで回避しない。
+
+`100 / 14 / 60 / 7`、`k = 20`、後述の`50% / 80%`は最適値として確認済みの数ではない。結果後の閾値調整を防ぐためのv0事前登録値であり、変更する場合は別experiment IDと新しいforward期間を必要とする。
 
 ### event subset
 
@@ -268,13 +270,14 @@ SIS_ALLOW_PUBLIC_NETWORK=1 uv run sis strategy-idea-candidates-bitget-source-ref
   --append-existing
 ```
 
-2. current artifactを再生成し、非重複event数、UTC date数、3 feature coverageを数える。data floor未達なら `COLLECT_MORE_DATA` で終了する。
+2. current artifactを再生成し、非重複event数、UTC date数、3 feature coverageを数える。data floor未達なら `COLLECT_MORE_DATA` で終了する。command既定の30 eventではfloor判定が不可能なため、抽出要求は `--target-event-count 200` を明示する。200件は非重複160件を保証する値ではなく、headroomを持たせた抽出要求であり、生成後に非重複件数を別途数える。
 
 ```bash
 uv run sis crypto-perp-real-market-no-cash-sample \
   --source-root data/strategy_idea_candidates/btc-perp/bitget_public_source/source_root \
   --require-ticker-coverage \
   --ticker-max-staleness-seconds 900 \
+  --target-event-count 200 \
   --out data/crypto_perp/real_market_no_cash/latest
 
 uv run sis crypto-perp-backtest-candidate-pack \
