@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-05-26_19:07 JST
-更新日: 2026-07-05_11:55 JST
+更新日: 2026-07-25_00:56 JST
 -->
 
 # marketlens-strike Planning Records
@@ -18,6 +18,7 @@
 | 現在の方向性 | `docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md` |
 | current docs index | `docs/CURRENT_DOCS_INDEX_2026-07-05.md` |
 | 実装済み surface map | `docs/IMPLEMENTED_SURFACES.md` |
+| SCR論文の価値抽出判断と最小検証指示 | `plan/2026-07-25-scr-value-extraction/README.md` |
 | Strategy Feedback / Case Index 旧 active package summary | `plan/2026-06-22-strategy-feedback-case-index/README.md` |
 
 ## Historical Planning Records
