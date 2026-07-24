@@ -1,6 +1,6 @@
 <!--
 作成日: 2026-07-05_11:55 JST
-更新日: 2026-07-11_18:35 JST
+更新日: 2026-07-25_00:52 JST
 -->
 
 # Current Docs Index 2026-07-05
@@ -48,6 +48,16 @@ Crypto Perp no-cash laneの現在値は、default fold_count 0によるguard BLO
 | NDX local research gates | [research/ndx/README.md](research/ndx/README.md) |
 | Runbooks | [runbooks/README.md](runbooks/README.md) |
 | Venue boundary | [venues/read_only_capability_probe.md](venues/read_only_capability_probe.md) |
+
+## Current Discovery Plans
+
+次は実装済みSurfaceではなく、独立Discovery SpikeのPlanである。これらをalpha、profit proof、Core integration permission、paper/live permissionとして読まない。
+
+| 目的 | 読むもの |
+|---|---|
+| Alpha StrikeとResearch Foundryの非線形な運用原則 | [plans/ALPHA_STRIKE_RESEARCH_FOUNDRY_OPERATING_MODEL_2026-07-25.md](plans/ALPHA_STRIKE_RESEARCH_FOUNDRY_OPERATING_MODEL_2026-07-25.md) |
+| 現Checkpointで実装するResearch Policy A/B Discovery Spike | [plans/RESEARCH_POLICY_AB_DISCOVERY_SPIKE_IMPLEMENTATION_2026-07-25.md](plans/RESEARCH_POLICY_AB_DISCOVERY_SPIKE_IMPLEMENTATION_2026-07-25.md) |
+| Agent実装用の機械可読Task / Gate | [plans/RESEARCH_POLICY_AB_DISCOVERY_SPIKE_TASKS_2026-07-25.yaml](plans/RESEARCH_POLICY_AB_DISCOVERY_SPIKE_TASKS_2026-07-25.yaml) |
 
 ## Decision Support, Not Source Of Truth
 

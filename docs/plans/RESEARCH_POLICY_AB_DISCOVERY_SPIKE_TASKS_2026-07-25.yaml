@@ -1,0 +1,304 @@
+# 作成日: 2026-07-25_00:52 JST
+# 更新日: 2026-07-25_00:52 JST
+
+schema_version: research_policy_ab_spike_tasks.v0
+checkpoint_id: RPAB-0
+document_status: PLAN_ONLY
+implementation_started: false
+
+purpose: >-
+  同一Model・同一Frozen Evidence・同等実行条件で、Research Policy v0が
+  単純Repeated Samplingより、Evidenceに接地した実行可能で識別力のある
+  次実験を選べるかを独立Discovery Spikeで判定する。
+
+source_documents:
+  - docs/plans/ALPHA_STRIKE_RESEARCH_FOUNDRY_OPERATING_MODEL_2026-07-25.md
+  - docs/plans/RESEARCH_POLICY_AB_DISCOVERY_SPIKE_IMPLEMENTATION_2026-07-25.md
+  - docs/CURRENT_STATE.md
+  - docs/CURRENT_GOAL_AND_DIRECTION_2026-07-05.md
+
+scope:
+  allowed_prefixes:
+    - tools/research_spikes/research_policy_ab/
+    - docs/plans/ALPHA_STRIKE_RESEARCH_FOUNDRY_OPERATING_MODEL_2026-07-25.md
+    - docs/plans/RESEARCH_POLICY_AB_DISCOVERY_SPIKE_IMPLEMENTATION_2026-07-25.md
+    - docs/plans/RESEARCH_POLICY_AB_DISCOVERY_SPIKE_TASKS_2026-07-25.yaml
+    - docs/CURRENT_DOCS_INDEX_2026-07-05.md
+  forbidden_prefixes:
+    - src/
+    - schemas/
+    - configs/
+    - data/
+  forbidden_files:
+    - pyproject.toml
+    - uv.lock
+  forbidden_capabilities:
+    - public_cli
+    - provider_api_automation
+    - candidate_decision_write
+    - backtest_decision_write
+    - paper
+    - live
+    - actual_cash
+    - policy_auto_update
+    - multi_agent_orchestrator
+    - a2_archive_resume
+
+experiment_contract:
+  arms:
+    baseline:
+      sample_count: 3
+      policy_enabled: false
+    policy:
+      sample_count: 3
+      policy_enabled: true
+      policy_path: tools/research_spikes/research_policy_ab/policies/research_policy_v0.md
+  diagnostic_views:
+    B0: BASELINE-001
+    B1: best_blind_reviewed_baseline_sample
+    P1: best_blind_reviewed_policy_sample
+  policy_value_claim_requires:
+    - P1_beats_B1
+    - no_critical_regression
+    - prospective_experiment_executed
+    - decision_or_uncertainty_changed
+    - cost_recorded_or_explicitly_inconclusive
+
+required_case_archetypes:
+  - ARCHIVED_DIAGNOSTIC
+  - ARCHIVED_CORRECT_STOP
+  - CURRENT_PROSPECTIVE
+
+required_models:
+  case:
+    - case_id
+    - case_kind
+    - campaign_id
+    - failure_archetype
+    - information_cutoff_at
+    - research_question
+    - current_hypothesis
+    - allowed_roots
+    - completed_experiments
+    - data_catalog
+    - evidence
+    - reference
+  proposal:
+    - run_id
+    - case_id
+    - pack_hash
+    - current_hypothesis
+    - current_verdict
+    - supporting_evidence_refs
+    - contradicting_evidence_refs
+    - missing_data_refs
+    - rejected_explanations
+    - unresolved_residuals
+    - recommended_action
+    - next_experiment
+    - uncertainties
+    - boundary
+    - reviewer
+  run_manifest:
+    - provider
+    - model
+    - model_version
+    - model_version_verified
+    - invocation
+    - reasoning_effort
+    - temperature
+    - network_access
+    - tool_access
+    - started_at
+    - finished_at
+    - input_tokens
+    - output_tokens
+    - provider_cost_jpy
+    - wall_time_ms
+    - tool_call_count
+
+hard_gates:
+  - case_run_pack_policy_identity_match
+  - evidence_ref_exists
+  - data_ref_exists
+  - available_at_not_after_information_cutoff
+  - evidence_hash_unchanged
+  - residual_count_lte_3
+  - competing_explanations_per_residual_lte_3
+  - recommended_action_exactly_one
+  - next_experiment_count_lte_1
+  - action_next_experiment_consistent
+  - stop_condition_present
+  - estimated_cost_present
+  - boundary_all_false
+  - all_attempts_recorded
+
+blind_review:
+  hidden_fields:
+    - arm
+    - run_id
+    - provider
+    - model
+    - sample_number
+    - policy_version
+  rubric_axes:
+    - evidence_grounding
+    - executability
+    - hypothesis_discrimination
+    - incremental_information
+    - economic_relevance
+    - cost_effectiveness
+  outcomes:
+    - LEFT_WIN
+    - RIGHT_WIN
+    - TIE
+    - BOTH_REJECT
+  critical_rejects:
+    - UNSUPPORTED_EVIDENCE
+    - FUTURE_INFORMATION
+    - SEMANTIC_DUPLICATE_EXPERIMENT
+    - UNAVAILABLE_DATA_TREATED_AS_AVAILABLE
+    - BOUNDARY_VIOLATION
+    - NON_FALSIFIABLE_EXPERIMENT
+
+prospective_outcomes:
+  - COMPETING_EXPLANATION_REJECTED
+  - HYPOTHESIS_SCOPE_NARROWED
+  - DATA_GAP_CONFIRMED
+  - CORRECT_STOP_CONFIRMED
+  - NO_NEW_INFORMATION
+  - INVALID_EXECUTION
+
+decisions:
+  - PROMOTE_THIN_HARNESS
+  - REVISE_POLICY_ONCE
+  - KEEP_MANUAL_BASELINE
+  - INCONCLUSIVE
+  - INVALID_EXPERIMENT
+
+tasks:
+  - id: RPAB-01
+    title: Contract and canonical hash
+    status: PENDING
+    files:
+      - tools/research_spikes/research_policy_ab/models.py
+      - tools/research_spikes/research_policy_ab/canonical.py
+      - tools/research_spikes/research_policy_ab/tests/test_models.py
+    acceptance:
+      - pydantic_extra_forbid
+      - immutable_or_equivalent_models
+      - stable_canonical_hash
+      - invalid_action_next_experiment_rejected
+      - boundary_true_rejected
+
+  - id: RPAB-02
+    title: Case freeze and packet export
+    status: PENDING
+    depends_on: [RPAB-01]
+    files:
+      - tools/research_spikes/research_policy_ab/build_packet.py
+      - tools/research_spikes/research_policy_ab/examples/case_manifest.example.yaml
+      - tools/research_spikes/research_policy_ab/tests/test_build_packet.py
+    acceptance:
+      - allowed_root_enforced
+      - symlink_rejected
+      - secret_path_rejected
+      - future_evidence_rejected
+      - reference_not_exported
+      - arm_input_hashes_equal
+
+  - id: RPAB-03
+    title: Policy and run schedule
+    status: PENDING
+    depends_on: [RPAB-02]
+    files:
+      - tools/research_spikes/research_policy_ab/policies/research_policy_v0.md
+    acceptance:
+      - three_runs_per_arm
+      - B0_is_baseline_first_run
+      - same_output_schema
+      - only_policy_text_differs_between_arms
+
+  - id: RPAB-04
+    title: Result import and hard gates
+    status: PENDING
+    depends_on: [RPAB-01, RPAB-03]
+    files:
+      - tools/research_spikes/research_policy_ab/validate_result.py
+      - tools/research_spikes/research_policy_ab/tests/test_validate_result.py
+    acceptance:
+      - all_attempt_statuses_preserved
+      - retry_does_not_overwrite
+      - unknown_evidence_rejected
+      - hash_drift_rejected
+      - model_identity_mismatch_invalidates_experiment
+
+  - id: RPAB-05
+    title: Blind review packet
+    status: PENDING
+    depends_on: [RPAB-04]
+    files:
+      - tools/research_spikes/research_policy_ab/build_blind_review.py
+      - tools/research_spikes/research_policy_ab/tests/test_blind_review.py
+    acceptance:
+      - arm_identity_not_exposed
+      - deterministic_randomization
+      - tie_and_both_reject_supported
+      - review_key_restores_identity
+
+  - id: RPAB-06
+    title: Prospective outcome and decision reducer
+    status: PENDING
+    depends_on: [RPAB-05]
+    files:
+      - tools/research_spikes/research_policy_ab/decide.py
+      - tools/research_spikes/research_policy_ab/tests/test_decide.py
+    acceptance:
+      - all_five_decisions_reachable
+      - no_prospective_case_is_inconclusive
+      - contamination_is_invalid_experiment
+      - P1_not_beating_B1_cannot_promote
+
+  - id: RPAB-07
+    title: Synthetic end-to-end and documentation
+    status: PENDING
+    depends_on: [RPAB-01, RPAB-02, RPAB-03, RPAB-04, RPAB-05, RPAB-06]
+    files:
+      - tools/research_spikes/research_policy_ab/README.md
+      - tools/research_spikes/research_policy_ab/tests/fixtures.py
+    acceptance:
+      - freeze_to_decision_e2e_passes
+      - focused_tests_pass
+      - full_repo_check_passes
+      - no_src_schema_cli_changes
+
+  - id: RPAB-08
+    title: Operational case preparation and run
+    status: PENDING
+    depends_on: [RPAB-07]
+    tracked_output: false
+    acceptance:
+      - three_required_case_archetypes_present
+      - six_attempts_per_case_recorded
+      - blind_review_complete
+      - one_prospective_experiment_executed
+      - final_decision_emitted
+
+verification:
+  focused:
+    - uv run pytest tools/research_spikes/research_policy_ab/tests -q
+  full:
+    - ./scripts/check
+  additional:
+    - git diff --check
+
+stop_conditions:
+  - new_dependency_required
+  - src_change_required
+  - provider_api_automation_required
+  - case_freeze_not_possible
+  - equal_model_tool_conditions_not_possible
+  - no_usage_or_cost_signal_available
+  - blind_review_not_possible
+  - current_or_prospective_case_not_available
+  - implementation_scope_materially_exceeds_existing_discovery_spike_pattern
